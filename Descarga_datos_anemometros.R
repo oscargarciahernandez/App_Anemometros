@@ -19,18 +19,18 @@ dt_list<- list()
 for(i in 1:length(disp[,1])){
   if(disp[i,3]==1){
     nomb<- as.character(disp[i,1])
-    dt<-as.data.frame(anemos(disp[i,2]))
+    dt<-as.data.frame(get_anem(disp[i,2]))
     dt_list[[nomb]]<- dt
   }
   if(disp[i,3]==2){
     nomb<- as.character(disp[i,1])
-    dt<-as.data.frame(pluvs(disp[i,2]))
+    dt<-as.data.frame(get_pluvs(disp[i,2]))
     dt_list[[nomb]]<- dt
     
   }
   if(disp[i,3]==3){
     nomb<- as.character(disp[i,1])
-    dt<-as.data.frame(term_hig(disp[i,2]))
+    dt<-as.data.frame(get_term_hig(disp[i,2]))
     dt_list[[nomb]]<- dt
     
   }

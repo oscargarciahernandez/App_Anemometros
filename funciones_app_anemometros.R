@@ -756,6 +756,10 @@ term_hig<-function(id){
   return(Dataset_XX2)
 }
 
+get_anem <- possibly(anemos, otherwise = NA)
+get_pluvs <- possibly(pluvs, otherwise = NA)
+get_term_hig <- possibly(term_hig, otherwise = NA)
+
 ### función actualizadora
 
 
