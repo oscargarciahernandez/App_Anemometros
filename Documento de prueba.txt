@@ -1,1 +1,0 @@
-Aupa soy Andoni, estoy usando este archivo .txt para hacer unas pruebas con git y github.
