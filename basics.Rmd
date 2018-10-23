@@ -37,7 +37,7 @@ Una vez que ya nos hemos creado el script podemos empezar a ver cositas básicas
 Es importante saber crear y tratar con vectores. En R los vectores se crean usando el siguiente comando. 
 
 ```{r}
-#Se usa c(), y entre los parentesis ponemos los elementos del vector
+#Se usa c(), y entre los parentesis ponemos los elementos del vector 
 
 c(1,2,3,4,5,6,7,8,9,10)
 ```
@@ -54,6 +54,7 @@ Nótese que en R el símbolo "**=**" se escribe como "**<-**"
 Tambien podemos crear vectores que contengan palabras o palabras y numeros.  
 
 ```{r}
+#Las palabras se definen entre comillas
 vector_2 <- c(1,"mono",3,4,"platano",6,7,8,"pato",10)
 ```
 
@@ -62,7 +63,9 @@ A la hora de crear vectores se pueden usar otros atajos. Por ejemplo:
 1:10
 ```
 
-Nos crean un vector con un intervalo de 1. Si queremos variar el intervalo del vector podemos usar el comando *seq*. 
+Nos crean un vector con un intervalo de 1.
+
+Si queremos variar el intervalo del vector podemos usar el comando *seq*. 
 
 ```{r}
 #seq(numero_inicial, numero_final, intervalo)
@@ -74,8 +77,9 @@ b<- seq(1,10,length.out = 20)
 ```
 
 
+#Comandos que nos dan información de las variables
 
-#Comando "class". 
+##Comando "class". 
 
 Este comando nos permite ver de que tipo es una variable. 
 
@@ -87,7 +91,116 @@ class(vector_2)
 
 Observamos que el *vector_1* es de tipo "numerico" y el *vector_2* es de tipo "character". 
 
+##Comando "length"
 
+Este comando nos da el tamaño de un elemento.
+
+```{r}
+length(a)
+length(b)
+```
+
+
+
+#Tablas o matrices
+A la hora de analizar datos es muy importante saber manejar tablas, ya que normalmente los datos suelen venir organizados de esta manera. 
+
+##Comando "cbind" y "rbind"
+
+Usaremos "vector_1" y "vector_2" definidos en el apartado de *vectores*. 
+
+El comando cbind nos une los elementos por columnas. 
+```{r}
+tabla_1 <- cbind(vector_1,vector_2) 
+```
+
+Por defecto a la hora de realizar el comando cbind nos devuelve un elemento tipo "matriz". 
+
+```{r}
+class(tabla_1)
+```
+
+##Comando "dim"
+
+Este comando nos da información del tamaño de matrices y tablas
+
+```{r}
+dim(tabla_1)
+```
+
+Nos dice que "tabla_1" tiene 10 filas y 2 columnas. 
+
+Suele ser interesante trabajar con tablas tipo *data.frame* en vez de con matrices. 
+
+```{r}
+tabla_1 <- as.data.frame(tabla_1)
+class(tabla_1)
+```
+
+De esta manera convertimos una matriz en un **data.frame**. 
+
+##Conversion de elemntos
+
+Suele ser normal tener que cambiar una variable, vector, matriz, tabla ... de "clase" o "forma". Por ello existen muchos comandos que empiezan por el prefijo: **as**.*formato_deseado*. 
+
+```{r}
+as.matrix()
+as.array()
+as.numeric()
+as.vector()
+as.factor()
+as.integer()
+as.Date()
+as.character()
+as.data.frame()
+# Y muchos más, estos son los que más utilizaremos
+```
+
+Suele ser habitual nombrar o renombrar las columnas de las tablas. Para ello usaremos **colnames**. 
+
+```{r}
+colnames(tabla_1) <- c("Columna 1", "Columna2")
+```
+
+Es menos habitual pero tambien se pueden nombrar las filas de las tablas. 
+
+```{r}
+row.names(tabla_1) <- c("Enero", "Febrero", "Marzo",
+                        "Abril", "Mayo", "Junio",
+                        "Julio","Agosto", "Septiembre","Octubre") 
+```
+
+Para accceder a la información de la tabla lo haremos de la siguiente manera. 
+
+```{r}
+#tabla[fila,columna]
+tabla_1[1,1]
+
+```
+
+Si dejo la información de fila o columna vacía, se entiende que queremos todas las filas o todas las columnas. 
+
+
+```{r}
+#Queremos todas las filas de la columna 1
+tabla_1[,1]
+
+#Queremos todas las columnas de la fila 1
+tabla_1[1,]
+```
+
+
+
+Una de las ventajas de nombrar las columnas es la siguiente. Normalmente tendremos una tabla con muchas variables (columnas) y queremos acceder a una variable concreta. Si sabemos en qué columna está mi variable podemos acceder a esta información como ya hemos visto poniendo el número de columna. Pero, si hemos nombrado la columna debidamente podemos acceder a la informacion de dicha columna utilizando el símbolo "$". **Esto es muy útil**. *HAY QUE NOMBRAR LAS COLUMNAS.*
+
+```{r}
+tabla_1$`Columna 1`
+```
+
+
+```{r}
+
+```
 
 ```{r cars}
 summary(cars)
