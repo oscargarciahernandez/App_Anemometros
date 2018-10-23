@@ -1,0 +1,29 @@
+---
+title: "Introducción a R"
+author: "Óscar García Hernández"
+date: "23 de octubre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ¿Qué es esto?
+Hola chicxs¡ este documento pretende ser una pequeña guía para adquirir los conocimientos básicos del lenguaje de programación R, para poder trabajar en un futuro con **Rstudio**, y desarrollar la herramienta para medir el potencial eólico de edificios. 
+
+
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
