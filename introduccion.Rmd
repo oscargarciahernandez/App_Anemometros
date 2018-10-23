@@ -12,15 +12,59 @@ knitr::opts_chunk$set(echo = TRUE)
 # ¿Qué es esto?
 Hola chicxs¡ este documento pretende ser una pequeña guía para adquirir los conocimientos básicos del lenguaje de programación R, para poder trabajar en un futuro con **Rstudio**, y desarrollar la herramienta para medir el potencial eólico de edificios. 
 
+Cuando quedamos el primer día, ya vimos que el método que he empleado para obtener los datos es una rayada, basada en *web scraping*[https://es.wikipedia.org/wiki/Web_scraping]. ¡¡Pero!!, no vamos ha entrar ahí. Vamos a suponer que ese código funciona y vamos a pasar a trabajar directamente con los datos. 
+
+De hecho he creado una carpeta llamada **data** donde están guardados estos datos. *PORFAVOR NO MODIFIQUEN ESTA CARPETA*,**SOLAMENTE IMPORTAR**. 
+
+Para importar vamos a necesitar dos paquetes. Uno relacionado con el tratamiento de los datos en formato lista (rlist) y otro relacionado con la organización de los datos (here).  
 
 
-```{r cars}
-summary(cars)
+```{r}
+#Comando para instalar paquetes
+install.packages("rlist", "here")
+
+#Comandos para "cargar paquetes" 
+library(rlist)
+library(here)
 ```
 
-## Including Plots
+En Rstudio, cuando cerramos sesion se resetean los paquetes que usamos. Es decir, siguen instalados, pero hay que "llamarlos", "cargarlos", "importarlos" usando el comando **library()**.
 
-You can also embed plots, for example:
+A modo de ejemplo podemos mirar como está organizado el *script: funciones_app_anemometros.R*.  
+
+![](here:here("imagenes/1.PNG"))
+
+Se puede ver como las primeras líneas del código están dirigidas a "importar" todos los paquetes necesarios para que R pueda interpretar nuestro *script*. 
+
+Una vez hemos cargado los paquetes, importamos los datos. 
+
+```{r}
+#Función para importar los datos. 
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+
+```
+
+Los datos se cargarán en una variable que nosotros en este caso hemos llamado *datos*. Si todo ha ido bien aparecerá en lo que se suele llamar *Enviroment*. Ahí podemos ver una resumida información: *lista de 7 elementos y 13.5 Mb* 
+
+![](here:here("imagenes/2.PNG"))
+
+Si pinchamos encima de *Datos* podemos acceder a algo más de información o, también podemos ir a dicha información ejecutando el siguiente comando. 
+
+```{r}
+View(Datos)
+
+```
+
+
+![](here:here("imagenes/3.PNG"))
+
+Accedemos a poder ver el nombre de cada elemento de la lista y la forma. En nuestro caso: **data.frames** (tabla). Nosotros queremos trabajar con *data.frames*. 
+
+
+# Comandos básicos para trabajar en R. 
+
+
+
 
 ```{r pressure, echo=FALSE}
 plot(pressure)
