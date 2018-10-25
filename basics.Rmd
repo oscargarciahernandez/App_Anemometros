@@ -2,7 +2,11 @@
 title: "Básico"
 author: "Óscar García Hernández"
 date: "23 de octubre de 2018"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  
 ---
 
 ```{r setup, include=FALSE}
@@ -14,8 +18,13 @@ library(here)
 #¿Qué es esto? 
 
 Este documento tiene la intención de ser un a *GUÍA SUPER BÁSICA* introductoria al lenguaje de programación en R. 
+<br />
+<br />
+
 
 #Interfaz Rstudio 
+
+<br />
 
 Dentro de la interfaz de Rstudio hay varias secciones. Principalmente podemos definir 4. 
 
@@ -24,20 +33,40 @@ Dentro de la interfaz de Rstudio hay varias secciones. Principalmente podemos de
 * Enviroment: donde se guardan las variable que definimos. 
 * Ventana multiusos donde se presentan las gráficas que elaboramos, aparecen las ayudas, los archivos de la carpeta de trabajo etc. 
 
-```{r echo=FALSE}
+<br />
+<br />
+
+```{r echo=FALSE, fig.align='center'}
 include_graphics(here::here("imagenes/introduccion/2.PNG"))
 
 ```
+<br />
+<br />
+
 
 Si no te aparece la ventan de script's es porque aun no has creado uno. 
 
+<br />
+<br />
 
-![](C:/Users/Oscar/Documents/App_Anemometros/imagenes/introduccion/1.png)
+
+```{r echo=FALSE, fig.align='center', fi}
+include_graphics(here::here("imagenes/introduccion/1.PNG"))
+
+```
+
+
+<br />
+<br />
+
 
 
 Una vez que ya nos hemos creado el script podemos empezar a ver cositas básicas para programar. 
 
-#Vectores
+<br />
+
+# Vectores
+<br />
 
 Es importante saber crear y tratar con vectores. En R los vectores se crean usando el siguiente comando. 
 
@@ -76,13 +105,21 @@ Incluso puedo acceder a varios valores a la vez.
 
 ```{r}
 #Accedo al valor 2 y al valor 6 del vector. 
+vector_2[c(2,6)]
+```
+
+Nótese que para buscar el valor 2 y 6 del vector, debo introducir un vector. Si lo hago sin definir un vector da error, porque interpreta que estamos buscando el valor de la fila 2 y la columna 6, y nuestro vector solamente tienen una dimensión. 
+
+```{r error=TRUE}
 vector_2[2,6]
 ```
 
-*** 
->Es importante interiorizar cuando se usan paréntesis y cuando se usan corchetes. Por norma general podemos decir que los corchetes nos sirven para buscar información dentro de vectores, matrices, tablas, etc.
 
-*** 
+---
+
+**Es importante interiorizar cuando se usan paréntesis y cuando se usan corchetes. Por norma general podemos decir que los corchetes nos sirven para buscar información dentro de vectores, matrices, tablas, etc.**
+
+---
 
 
 
@@ -104,9 +141,11 @@ a
 
 ```
 
+Incluso podemos utilizar **seq** para definir el tamaño del vector entre dos valores. 
 
 ```{r}
 #seq(numero_inicial, numero_final, length.out= tamaño del vector)
+
 b<- seq(1,10,length.out = 20)
 ```
 ```{r echo=F}
@@ -116,7 +155,7 @@ b
 
 *** 
 
->Nótese que en el script de R podemos añadir comentarios siempre y cuando pongamos delante "**#**". Esto es muy importe sobretodo cuando estamos aprendiendo, nos va a servir a enterarnos de lo que hacemos en cada momento del código, escribir la funcionalidad de comandos nuevos que aprendemos, etc.
+>Nótese que en el script de R podemos añadir comentarios siempre y cuando pongamos delante "**#**". Esto es muy importe sobretodo cuando estamos aprendiendo, nos va a servir para "narrar" lo que hacemos en cada momento del código, escribir la funcionalidad de comandos nuevos que aprendemos, etc.
 
 ***
 
@@ -158,6 +197,10 @@ El comando cbind nos une los elementos por columnas.
 tabla_1 <- cbind(vector_1,vector_2) 
 ```
 
+```{r echo=FALSE}
+tabla_1
+```
+
 Por defecto a la hora de realizar el comando cbind nos devuelve un elemento tipo "matriz". 
 
 ```{r}
@@ -178,12 +221,13 @@ Suele ser interesante trabajar con tablas tipo *data.frame* en vez de con matric
 
 ```{r}
 tabla_1 <- as.data.frame(tabla_1)
+
 class(tabla_1)
 ```
 
 De esta manera convertimos una matriz en un **data.frame**. 
 
-##Conversion de elemntos
+##Conversion de elementos
 
 Suele ser normal tener que cambiar una variable, vector, matriz, tabla ... de "clase" o "forma". Por ello existen muchos comandos que empiezan por el prefijo: **as**.*formato_deseado*. 
 
@@ -200,24 +244,29 @@ as.data.frame()
 # Y muchos más, estos son los que más utilizaremos
 ```
 
-Suele ser habitual nombrar o renombrar las columnas de las tablas. Para ello usaremos **colnames**. 
+Suele ser habitual nombrar o renombrar las columnas de las tablas. Para ello usaremos **colnames**. Lógicamente los nombres de las columnas son palabras, definidas entre comillas y se usa un vector tan largo como número de columnas tengamos. 
 
 ```{r}
 colnames(tabla_1) <- c("Columna 1", "Columna2")
 ```
+```{r echo=FALSE}
+tabla_1
+```
 
-Es menos habitual pero tambien se pueden nombrar las filas de las tablas. 
+Es menos habitual pero tambien se pueden nombrar las filas de las tablas usando **row.names()**. Para nosotros no tiene sentido, porque siempre trabajaremos con series temporales, es decir, las filas simplemente representan diferentes tiempos y por lo tanto no tienen nombre. A continuación un ejemplo de una tabla que recoje una serie temporal. 
 
-```{r}
-row.names(tabla_1) <- c("Enero", "Febrero", "Marzo",
-                        "Abril", "Mayo", "Junio",
-                        "Julio","Agosto", "Septiembre","Octubre") 
+
+
+```{r echo=FALSE}
+include_graphics(here::here("imagenes/introduccion/3.PNG"))
+
 ```
 
 Para accceder a la información de la tabla lo haremos de la siguiente manera. 
 
 ```{r}
 #tabla[fila,columna]
+
 tabla_1[1,1]
 
 ```
@@ -227,6 +276,7 @@ Si dejo la información de fila o columna vacía, se entiende que queremos todas
 
 ```{r}
 #Queremos todas las filas de la columna 1
+
 tabla_1[,1]
 
 #Queremos todas las columnas de la fila 1
@@ -242,20 +292,12 @@ tabla_1$`Columna 1`
 ```
 
 
-```{r}
+# Moraleja
 
-```
+Este documento es el primero de unos cuantos que iré subiendo a nuestra carpeta compartida de github. Creo que es importante saber manejar y crear vectores y tablas para seguir avanzando en programación. Ya me comentaréis si preferís más nivel o vamos así, *poliki poliki*. Una vez ya estemos comodos trabajando con vectores y tablas pasaremos al siguiente nivel: 
 
-```{r cars}
-summary(cars)
-```
++ Operaciones con vectores y tablas
++ Operaciones lógicas
++ Bucles, funciones if, while y for. 
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Pero eso más adelante.Un abrazzzzito. 
