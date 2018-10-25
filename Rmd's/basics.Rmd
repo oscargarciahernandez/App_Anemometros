@@ -1,5 +1,6 @@
 ---
-title: "Básico"
+title: "Guía básica de R"
+subtitle: "1. Vectores, tablas y primeros comandos"
 author: "Óscar García Hernández"
 date: "23 de octubre de 2018"
 output:
@@ -16,8 +17,18 @@ library(here)
 ```
 
 #¿Qué es esto? 
+<br />
 
-Este documento tiene la intención de ser un a *GUÍA SUPER BÁSICA* introductoria al lenguaje de programación en R. 
+
+Este documento tiene la intención de ser un a *GUÍA BÁSICA* introductoria al lenguaje de programación en R. 
+<br />
+<br />
+
+Para seguir está guía lo suyo es tener Rstudio abierto e ir pegando el código que aparece en los recuadrítos grises para ir tomando manejo con el software.
+<br />
+<br />
+
+Mi intención es que estos documentos sean los suficientemente breve como para poder interiorizar la información bien y sin agobios.**¡Mucho ánimo!**
 <br />
 <br />
 
@@ -83,37 +94,49 @@ vector_1 <- c(1,2,3,4,5,6,7,8,9,10)
 
 ```
 
-***
-> Nótese que en R el símbolo "**=**" se escribe como "**<-**"
 
-***
+---
+
+**Nótese que en R el símbolo "**=**" se escribe como "**<-**"**
+
+---
+
 
 Tambien podemos crear vectores que contengan palabras o palabras y numeros.  
+<br />
 
 ```{r}
 #Las palabras se definen entre comillas
 vector_2 <- c(1,"mono",3,4,"platano",6,7,8,"pato",10)
 ```
+<br />
 
 Si quiero acceder a un valor específico de mi vector usare corchetes "[]"
+<br />
+
 ```{r}
 #Accedo al elemento 2 del vector
 vector_2[2]
 ```
+<br />
 
 Incluso puedo acceder a varios valores a la vez. 
+<br />
 
 ```{r}
 #Accedo al valor 2 y al valor 6 del vector. 
 vector_2[c(2,6)]
 ```
+<br />
 
 Nótese que para buscar el valor 2 y 6 del vector, debo introducir un vector. Si lo hago sin definir un vector da error, porque interpreta que estamos buscando el valor de la fila 2 y la columna 6, y nuestro vector solamente tienen una dimensión. 
+<br />
 
 ```{r error=TRUE}
 vector_2[2,6]
 ```
 
+<br />
 
 ---
 
@@ -121,16 +144,22 @@ vector_2[2,6]
 
 ---
 
+<br />
 
 
 A la hora de crear vectores se pueden usar otros atajos. Por ejemplo: 
+<br />
+
 ```{r}
 1:10
 ```
+<br />
 
 Nos crean un vector con un intervalo de 1.
+<br />
 
 Si queremos variar el intervalo del vector podemos usar el comando *seq*. 
+<br />
 
 ```{r}
 #seq(numero_inicial, numero_final, intervalo)
@@ -140,8 +169,10 @@ a<-seq(1,10,0.03)
 a
 
 ```
+<br />
 
 Incluso podemos utilizar **seq** para definir el tamaño del vector entre dos valores. 
+<br />
 
 ```{r}
 #seq(numero_inicial, numero_final, length.out= tamaño del vector)
@@ -152,47 +183,65 @@ b<- seq(1,10,length.out = 20)
 b
 
 ```
+<br />
 
-*** 
+--- 
 
->Nótese que en el script de R podemos añadir comentarios siempre y cuando pongamos delante "**#**". Esto es muy importe sobretodo cuando estamos aprendiendo, nos va a servir para "narrar" lo que hacemos en cada momento del código, escribir la funcionalidad de comandos nuevos que aprendemos, etc.
+**Nótese que en el script de R podemos añadir comentarios siempre y cuando pongamos delante "**#**". Esto es muy importe sobretodo cuando estamos aprendiendo, nos va a servir para "narrar" lo que hacemos en cada momento del código, escribir la funcionalidad de comandos nuevos que aprendemos, etc.**
 
-***
+---
+<br />
+
 
 
 #Comandos que nos dan información de las variables
+<br />
 
 ##Comando "class". 
+<br />
 
 Este comando nos permite ver de que tipo es una variable. 
+<br />
 
 ```{r}
 class(vector_1)
 
 class(vector_2)
 ```
+<br />
 
 Observamos que el *vector_1* es de tipo "numerico" y el *vector_2* es de tipo "character". 
+<br />
 
 ##Comando "length"
+<br />
 
 Este comando nos da el tamaño de un elemento.
+<br />
 
 ```{r}
 length(a)
 length(b)
 ```
+<br />
 
 
 
 #Tablas o matrices
+<br />
+
 A la hora de analizar datos es muy importante saber manejar tablas, ya que normalmente los datos suelen venir organizados de esta manera. 
+<br />
 
 ##Comando "cbind" y "rbind"
+<br />
 
 Usaremos "vector_1" y "vector_2" definidos en el apartado de *vectores*. 
+<br />
 
 El comando cbind nos une los elementos por columnas. 
+<br />
+
 ```{r}
 tabla_1 <- cbind(vector_1,vector_2) 
 ```
@@ -200,37 +249,53 @@ tabla_1 <- cbind(vector_1,vector_2)
 ```{r echo=FALSE}
 tabla_1
 ```
+<br />
 
 Por defecto a la hora de realizar el comando cbind nos devuelve un elemento tipo "matriz". 
+<br />
 
 ```{r}
 class(tabla_1)
 ```
+<br />
 
 ##Comando "dim"
+<br />
 
 Este comando nos da información del tamaño de matrices y tablas
+<br />
 
 ```{r}
 dim(tabla_1)
 ```
+<br />
 
 Nos dice que "tabla_1" tiene 10 filas y 2 columnas. 
+<br />
 
+
+
+##Conversion de elementos
 Suele ser interesante trabajar con tablas tipo *data.frame* en vez de con matrices. 
+<br />
 
 ```{r}
 tabla_1 <- as.data.frame(tabla_1)
 
 class(tabla_1)
 ```
+<br />
 
 De esta manera convertimos una matriz en un **data.frame**. 
+<br />
 
-##Conversion de elementos
+<br />
 
 Suele ser normal tener que cambiar una variable, vector, matriz, tabla ... de "clase" o "forma". Por ello existen muchos comandos que empiezan por el prefijo: **as**.*formato_deseado*. 
 
+
+
+<br />
 ```{r eval=FALSE}
 as.matrix()
 as.array()
@@ -243,8 +308,13 @@ as.character()
 as.data.frame()
 # Y muchos más, estos son los que más utilizaremos
 ```
+<br />
+
+## Nombrar columnas
+<br />
 
 Suele ser habitual nombrar o renombrar las columnas de las tablas. Para ello usaremos **colnames**. Lógicamente los nombres de las columnas son palabras, definidas entre comillas y se usa un vector tan largo como número de columnas tengamos. 
+<br />
 
 ```{r}
 colnames(tabla_1) <- c("Columna 1", "Columna2")
@@ -252,17 +322,25 @@ colnames(tabla_1) <- c("Columna 1", "Columna2")
 ```{r echo=FALSE}
 tabla_1
 ```
+<br />
 
 Es menos habitual pero tambien se pueden nombrar las filas de las tablas usando **row.names()**. Para nosotros no tiene sentido, porque siempre trabajaremos con series temporales, es decir, las filas simplemente representan diferentes tiempos y por lo tanto no tienen nombre. A continuación un ejemplo de una tabla que recoje una serie temporal. 
 
+<br />
 
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.align='center'}
 include_graphics(here::here("imagenes/introduccion/3.PNG"))
 
 ```
+<br />
+<br />
+
 
 Para accceder a la información de la tabla lo haremos de la siguiente manera. 
+<br />
+<br />
+
 
 ```{r}
 #tabla[fila,columna]
@@ -270,8 +348,10 @@ Para accceder a la información de la tabla lo haremos de la siguiente manera.
 tabla_1[1,1]
 
 ```
+<br />
 
 Si dejo la información de fila o columna vacía, se entiende que queremos todas las filas o todas las columnas. 
+<br />
 
 
 ```{r}
@@ -282,22 +362,30 @@ tabla_1[,1]
 #Queremos todas las columnas de la fila 1
 tabla_1[1,]
 ```
+<br />
 
 
 
 Una de las ventajas de nombrar las columnas es la siguiente. Normalmente tendremos una tabla con muchas variables (columnas) y queremos acceder a una variable concreta. Si sabemos en qué columna está mi variable podemos acceder a esta información como ya hemos visto poniendo el número de columna. Pero, si hemos nombrado la columna debidamente podemos acceder a la informacion de dicha columna utilizando el símbolo "$". **Esto es muy útil**. *HAY QUE NOMBRAR LAS COLUMNAS.*
+<br />
 
 ```{r}
 tabla_1$`Columna 1`
 ```
+<br />
 
 
 # Moraleja
+<br />
 
 Este documento es el primero de unos cuantos que iré subiendo a nuestra carpeta compartida de github. Creo que es importante saber manejar y crear vectores y tablas para seguir avanzando en programación. Ya me comentaréis si preferís más nivel o vamos así, *poliki poliki*. Una vez ya estemos comodos trabajando con vectores y tablas pasaremos al siguiente nivel: 
+<br />
+<br />
 
 + Operaciones con vectores y tablas
 + Operaciones lógicas
 + Bucles, funciones if, while y for. 
+<br />
+<br />
 
 Pero eso más adelante.Un abrazzzzito. 
