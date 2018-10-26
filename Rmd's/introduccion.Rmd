@@ -1,25 +1,45 @@
 ---
-title: "Introducción a R"
+title: "Guía básica de R"
+subtitle: "2. Vectores, tablas y primeros comandos"
 author: "Óscar García Hernández"
 date: "23 de octubre de 2018"
-output: html_document
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(knitr)
+library(here)
 ```
 
-# ¿Qué es esto?
-Hola chicxs¡ este documento pretende ser una pequeña guía para adquirir los conocimientos básicos del lenguaje de programación R, para poder trabajar en un futuro con **Rstudio**, y desarrollar la herramienta para medir el potencial eólico de edificios. 
+# Segimos
+<br />
+He pensado que a partir de ahora, como un metodo para ir familiarizandonos con los datos con los que vamos a trabajar, la guía se va a desarrollar empleando los datos obtenidos por los sensores que nosotros hemos instaldo.
 
-Cuando quedamos el primer día, ya vimos que el método que he empleado para obtener los datos es una rayada, basada en *web scraping*[https://es.wikipedia.org/wiki/Web_scraping]. ¡¡Pero!!, no vamos ha entrar ahí. Vamos a suponer que ese código funciona y vamos a pasar a trabajar directamente con los datos. 
+<br />
+<br />
 
-De hecho he creado una carpeta llamada **data** donde están guardados estos datos. *PORFAVOR NO MODIFIQUEN ESTA CARPETA*,**SOLAMENTE IMPORTAR**. 
+
+Cuando quedamos el primer día, ya vimos que el método que se ha empleado para obtener los datos es una rayada, basada en *web scraping*[https://es.wikipedia.org/wiki/Web_scraping]. ¡¡Pero!!, no vamos ha entrar ahí. Vamos a suponer que ese código funciona y vamos a pasar a trabajar directamente con los datos. 
+
+<br />
+
+De hecho he creado una carpeta llamada **data**(dentro del directorio de trabajo que creamos en github) donde están guardados estos datos. *PORFAVOR NO MODIFIQUEN ESTA CARPETA*,**SOLAMENTE IMPORTAR**. 
 
 Para importar vamos a necesitar dos paquetes. Uno relacionado con el tratamiento de los datos en formato lista (rlist) y otro relacionado con la organización de los datos (here).  
+<br />
+<br />
+Esto me sirve para explicar rapidamente como se instalan y se importan paquetes en Rstudio.
+
+<br />
+<br />
 
 
-```{r}
+```{r eval=FALSE}
 #Comando para instalar paquetes
 install.packages("rlist", "here")
 
@@ -27,47 +47,160 @@ install.packages("rlist", "here")
 library(rlist)
 library(here)
 ```
+```{r echo=FALSE}
+library(rlist)
+library(here)
+```
 
+<br />
+<br />
 En Rstudio, cuando cerramos sesion se resetean los paquetes que usamos. Es decir, siguen instalados, pero hay que "llamarlos", "cargarlos", "importarlos" usando el comando **library()**.
-
+<br />
+<br />
 A modo de ejemplo podemos mirar como está organizado el *script: funciones_app_anemometros.R*.  
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/1.PNG"))
 
-![](here:here("imagenes/1.PNG"))
+```
+<br />
+<br />
 
 Se puede ver como las primeras líneas del código están dirigidas a "importar" todos los paquetes necesarios para que R pueda interpretar nuestro *script*. 
 
+<br />
+<br />
 Una vez hemos cargado los paquetes, importamos los datos. 
-
+<br />
+<br />
 ```{r}
 #Función para importar los datos. 
 Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
 
 ```
+<br />
+<br />
+---
 
+**Es importante remarcar que para que este comando funcione correctamente debemos estar trabajando con el proyecto de App_anemometros abierto. Tal y como hicimos el primer dia. Creando un proyecto (version control) linkeado directamente con el repositorio de github, habiendo instalado Git previamente e iniciado sesión. SI AUN LES CUESTA REALIZAR ESTE PROCESO DE MANERA SENCILLA DECIDMELO Y HAGO UNA GUIA EXPLICATIVA TAMBIÉN, NO ME CUESTA NADA Y VA A AGILIZAR MUCHO LA DINÁMICA DE TRABAJO.**
+
+---
+
+
+<br />
+<br />
 Los datos se cargarán en una variable que nosotros en este caso hemos llamado *datos*. Si todo ha ido bien aparecerá en lo que se suele llamar *Enviroment*. Ahí podemos ver una resumida información: *lista de 7 elementos y 13.5 Mb* 
+<br />
+<br />
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/2.PNG"))
 
-![](here:here("imagenes/2.PNG"))
-
+```
+<br />
+<br />
+<br />
+<br />
 Si pinchamos encima de *Datos* podemos acceder a algo más de información o, también podemos ir a dicha información ejecutando el siguiente comando. 
 
-```{r}
+```{r eval=FALSE}
 View(Datos)
 
 ```
 
 
-![](here:here("imagenes/3.PNG"))
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/3.PNG"))
 
+```
+<br />
+<br />
 Accedemos a poder ver el nombre de cada elemento de la lista y la forma. En nuestro caso: **data.frames** (tabla). Nosotros queremos trabajar con *data.frames*. 
 
+<br />
+<br />
 
-# Comandos básicos para trabajar en R. 
+Como ya vimos en el capitulo 1, usamos el comando class para ver de que tipo de objeto es datos.
 
+```{r}
+class(Datos)
+```
+<br />
+<br />
 
+Vemos que se trata de una lista. es un formato de objeto muy utilizado en R por su versatilidad. En una lista se pueden agrupar muchos objetos de diferente tipo, lo cual ofrece una oportunidad para organizar y simplificar nuestro enviroment. Además ofrece muchas posibilidades a la hora de generar datos con loops (bucle for), pero es lo veremos más adelante. 
+<br />
+<br />
 
+Refiriendonos a nuestro ejemplo, hemos agrupado la informacion de todos los sensores en una sola "variable" llamada Datos (tipo lista). 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+<br />
+<br />
+
+Ya vimos en el capitulo 1 de la guía como obteniamos valores de un vector y una tabla. A continuación veremos como se obtiene la informacion contenida en una lista. 
+
+<br />
+<br />
+
+Ya vimos que nuestra lista se compone de 7 elementos (una tabla por cada sensor que se ha instalado), para acceder, por ejemplo, a los datos del anemometro 1 (anem1). Como ya vimos en el capitulo 1, el simbolo "$" nos puede ayudar a buscar esta información.
+
+<br />
+<br />
+
+```{r eval=FALSE}
+Datos$anem1
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Al ejecutar el anterior comando saldrá por consola todos los elementos de *anem1*. 31000 filas por lo menos... **¡Demasiado!**. Muchas veces nos interesa ver por consola la información contenida en una variable, pero no necesitamos 30000 lineas para comprobar que aspecto tiene, con un par de filas nos vale. R tiene un comando interesante para esto. 
+
+<br />
+<br />
+
+Este comando es **head()**. Nos permite ver la "cabeza de la variable" es decir, saca por consola solo las 6 primeras líneas. Suficiente para nosotros, porque muchas veces lo que necesitamos es ver que variables contiene la tabla en cada columna. De esta manera no "petamos" la consola y nosotros encontramos la información que andabamos buscando.  
+
+<br />
+<br />
+```{r}
+head(Datos$anem1)
+```
+
+<br />
+<br />
+
+Ana vez hemos ejecutado el head() ya podemos analizar que información contiene nuestra tabla. 
+<br />
+<br />
++ **s.since_1.1.1970**: esta columna contiene información de tiempo, expresada en "Segundos desde el 1 de enero de 1970". Este formato a la hora de representar una fecha puede resultar raro, pero es muy utilizado en el análisis estadístico de datos meteorológicos. 
+
++ **date_string_hour**: información de tiempo expresado en formato "string" o palabra, una manera de ver las fechas de manera más legible para nosotros. 
+
++  **Mean**: velocidad del viento media. 
+
++ **Max**: Velocidad del viento máxima. 
+
++ **Dir_ch**: Dirección del viento en formato palabra. 
+
++ **Dir_deg**: Dirección del viento en formato grados. 
+<br />
+<br />
+Ahora me gustaría explicar porqué los datos están organizados de este modo. Principalmente los datos tiene este aspecto por la manera en la que los sensores envían la información. Los sensores que usamos MA10660 suben datos a la nube cada 7 minutos (se puede comprobar en la tabla) y además envían inforamción de velocidad máxima durante esos 7 minutos y velocidad media. En cuanto a la dirección del viento. La información contenida en la web está enformato palabra (*Dir_ch*), pero como a nosotros nos interesa trabajar con numeros, hemos hecho una transformación de los datos a formato grados. 
+Tambien podemos acceder a la información de anem1, usando su posición dentro de la lista Datos. Antes vimos que *anem1* es el primero de la lista 
+<br />
+<br />
+
+```{r}
+head(Datos[[1]])
+```
+
+---
+
+**Nótese que en el caso de las listas tenemos que usar doble corchete "[[]]" a diferencia de tablas  y vectores en las que únicamente usabamos corchetes simples "[]" **
+
+---
+
+
+
