@@ -1,0 +1,65 @@
+---
+title: "Guía básica de R"
+subtitle: "3.Gráficas"
+author: "Óscar García Hernández"
+date: "27 de octubre de 2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true 
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(rlist)
+```
+
+# Intro
+
+<br />
+<br />
+A la hora de analizar cualquier tipo de datos, es muy interesante visualizarlos mediante gráficas. Esto nos permite asimilar de manera visual el comportamiento de una variable. Por ello, este capítulo va a ir enfocado a graficar en R, y hacer una pequeña introducción a todas las posibilidades que este software nos ofrece para llevar a cabo este comentido. 
+<br />
+<br />
+Como ya remarqué en el capitulo anterior, para seguir esta guía es importante estar dentro del directorio de trabajo de github y ejecutar una serie de paquetes para poder trabajar con la lista *Datos*,
+<br />
+<br />
+```{r}
+library(rlist)
+library(here)
+
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+
+```
+
+<br />
+<br />
+
+#Plots
+<br />
+<br />
+Para ir familiarizandonos con la jerga de R. Una gráfica es un "Plot". Antes de comenzar a plotear cosas vamos a extraer los datos del termometro + higrómetro 7.
+<br />
+<br />
+```{r}
+term_hig7 <- Datos$term_hig7
+```
+
+<br />
+<br />
+Comentar rápidamente que es interesante acostumbrarnos a nombrar a las variables de manera clave y clara. Es decir, ya leyendo el nombree de una variable debo saber que contiene.Por eso no os de miedo poner nombres largos a las variables, es aconsejable que no sea un nombre kilométrico pero si que me de la información necesaria para saber que contiene. 
+<br />
+<br />
+En lo referido a la nomenclatura de las variables es interesante remarcar que la única norma es que el nombre que le vallamos a poner no interfiera con una función de R, es muy problable que se produzcan conflictos. Es decir, **no nombraremos a una variable: vector, porque R tienen un comando que se llama vector, por ejemplo, podemos usar el nombre vector_1**
+<br />
+<br />
+Como ya vimos en el anterior capítulo usamos head para analizar la tabla term_hig7. 
+<br />
+<br />
+```{r}
+head(term_hig7)
+```
+<br />
+<br />
+Vemos que la tabla contiene información de fecha en dos formatos, temperatura y humedad relativa. 
