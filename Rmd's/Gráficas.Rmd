@@ -622,6 +622,8 @@ lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
 <br />
 <br />
 El hecho de tener varias informaciones superpuestas en una única gráfica obliga a tener que añadir una leyenda que nos permita diferenciar cada variable. 
+<br />
+<br />
 
 ```{r}
 legend("topright", legend = c("Semana 39",
@@ -635,4 +637,56 @@ legend("topright", legend = c("Semana 39",
 
 <br />
 <br />
+Se puede hacer mucho mejor, legend() ofrece cambiar muchos parámetros de estilo. 
+<br />
+<br />
 Otro ejercicio interesante es plotear las medias semanales, Para ver más claramente cual fue la semana más fría. Aunque se puede intuir que es la semana 40. 
+<br />
+<br />
+Primero obtenemos las medias semanales. 
+<br />
+<br />
+```{r}
+medias_semanales<- vector()
+for (i in 1:4) {
+  x<- mean(as.numeric(Agrupacion_semanas[i,]))
+  medias_semanales[i] <- x
+  
+}
+```
+<br />
+<br />
+Hay que tener en cuenta el orden el vector medias semanales está organizado desde la semana 39 (elemento 1) hasta la semana 42 (elemento 4)
+
+<br />
+<br />
+Para plotear la línea de temperatura media, tendremos que generar un vector cuyo valor se repita una serie de veces. Para ello usaremos *rep()*, que crear un vector que repite el valor de x, tantas veces le indiquemos. 
+<br />
+<br />
+En este apartado también veremos como se pueden hacer gráficos conjuntos, por otro método. usaremoso **par(new=TRUE)**. Que básicamente lo que dice es: añade el siguiente gráfico al gráfico existente. 
+
+<br />
+<br />
+```{r}
+colores <-  c("red","green","black","orange")
+
+for (j in 1:4) {
+  
+  vector_media <- rep(medias_semanales[j],7)
+  
+  par(new=TRUE)
+
+  plot(vector_media, 
+       type = "l",
+       ylim = c(12,25),
+       col= colores[j],
+       lty=3,
+       lwd=2,
+       xaxt="n", 
+       yaxt="n",
+       ylab = "",
+       xlab = "")
+  
+}
+```
+
