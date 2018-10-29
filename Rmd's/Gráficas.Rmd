@@ -606,7 +606,7 @@ plot(as.numeric(Agrupacion_semanas[1,]),
      type = "l",
      col="red", 
      ylim = c(12,25),
-     xlab = "Días dde la semana",
+     xlab = "Días de la semana",
      ylab = "Temperatura (ºC)",
      xaxt="n",
      main = "Comparativa temperatura entre semanas")
@@ -660,11 +660,27 @@ Hay que tener en cuenta el orden el vector medias semanales está organizado des
 
 <br />
 <br />
-Para plotear la línea de temperatura media, tendremos que generar un vector cuyo valor se repita una serie de veces. Para ello usaremos *rep()*, que crear un vector que repite el valor de x, tantas veces le indiquemos. 
+Para plotear la línea de temperatura media, tendremos que generar un vector cuyo valor se repita una serie de veces. Para ello usaremos *rep()*, que crear un vector que repite el valor de x, tantas veces le indiquemos.Esto nos puede ayudar a plotear líneas rectas en los gráficos. Como pueden ser valores medios.  
+<br />
+<br />
+
+## Comando par(new=TRUE)
 <br />
 <br />
 En este apartado también veremos como se pueden hacer gráficos conjuntos, por otro método. usaremoso **par(new=TRUE)**. Que básicamente lo que dice es: añade el siguiente gráfico al gráfico existente. 
 
+<br />
+<br />
+---
+
+**Nótese que para que esta manera de hilar gráficos funcione, se tienen que haber ejecutado una gráfica a la que se añada esta nueva. **
+
+--- 
+
+
+<br />
+<br />
+Añadimos las sucesivas líneas usando un bucle.
 <br />
 <br />
 ```{r}
@@ -689,4 +705,6 @@ for (j in 1:4) {
   
 }
 ```
-
+<br />
+<br />
+Este cometido se puede realizar usando el parámetro dentro de plot llamado **add=TRUE**. 
