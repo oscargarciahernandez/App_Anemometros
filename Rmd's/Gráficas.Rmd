@@ -612,7 +612,7 @@ plot(as.numeric(Agrupacion_semanas[1,]),
      main = "Comparativa temperatura entre semanas")
 
 axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
-
+grid()
 
 lines(as.numeric(Agrupacion_semanas[2,]), col="green")
 lines(as.numeric(Agrupacion_semanas[3,]),col="black")
@@ -624,12 +624,15 @@ lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
 El hecho de tener varias informaciones superpuestas en una única gráfica obliga a tener que añadir una leyenda que nos permita diferenciar cada variable. 
 
 ```{r}
-legend("right", legend = c("Semana 39",
+legend("topright", legend = c("Semana 39",
                           "Semana 40",
                           "Semana 41",
-                          "Semana 42"), text.col = c("red",
-                                                     "green",
-                                                     "black",
-                                                     "orange"))
+                          "Semana 42"), 
+       text.col = c("red","green","black","orange"), 
+       cex = 1,
+       bty = "n")
 ```
 
+<br />
+<br />
+Otro ejercicio interesante es plotear las medias semanales, Para ver más claramente cual fue la semana más fría. Aunque se puede intuir que es la semana 40. 
