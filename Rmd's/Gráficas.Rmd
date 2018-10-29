@@ -13,6 +13,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(rlist)
+library(lubridate)
+
 ```
 
 # Intro
@@ -63,3 +65,571 @@ head(term_hig7)
 <br />
 <br />
 Vemos que la tabla contiene información de fecha en dos formatos, temperatura y humedad relativa. 
+<br />
+<br />
+```{r}
+class(term_hig7$`temp (ÂºC)`)
+
+```
+<br />
+<br />
+Como vimos en el capítulo anterior. Nos volvemos a encontrar con el problema de datos tipo "factor". Por ello, lo resolvemos de la manera que  ya vimos. 
+<br />
+<br />
+```{r}
+#columna de temperatura
+term_hig7$`temp (ÂºC)` <- as.numeric(as.character(term_hig7$`temp (ÂºC)`))
+
+#Columna de humedad
+term_hig7$`Humedad (%)` <- as.numeric(as.character(term_hig7$`Humedad (%)`))
+
+```
+<br />
+<br />
+Una vez hemos resuelto este problema. Podemos empezar a graficar los datos. Normalmente el se usa el comando plot especificando cual es el eje x y cual es el eje y. 
+<br />
+<br />
+```{r eval=FALSE}
+plot(x,y)
+
+```
+<br />
+<br />
+Pero como nuestros datos representan una serie temporal podemos plotearlos únicamente usando el eje y, ya que el eje x representa el tiempo. 
+
+<br />
+<br />
+```{r}
+plot(term_hig7$`temp (ÂºC)`)
+```
+<br />
+<br />
+Observamos que en el eje y tenemos la temperatura y el eje x, contiene únicamente un vector de posiciones. 
+<br />
+<br />
+
+#Modificar plots
+<br />
+<br />
+
+## Modificar labels, ylab y xlab
+<br />
+<br />
+Podemos modificar la etiqueta del eje x y del eje y. Usando dentro del plot: *ylab* y *xlab*
+<br />
+<br />
+```{r}
+plot(term_hig7$`temp (ÂºC)`, ylab = "Temperatura", xlab = "Tiempo")
+
+```
+<br />
+<br />
+## Modificar los ejes, comando axis()
+Si queremos modificar lo que se representa en el eje x, podemos usar la siguiente opción.
+<br />
+<br />
+```{r}
+#Ponemos xaxt="n", dentro del plot y  vemos como desaparece la infor del eje x. 
+
+plot(term_hig7$`temp (ÂºC)`, ylab = "Temperatura", xlab = "Tiempo", xaxt="n")
+```
+
+<br />
+<br />
+De esta manera desaparece la información del eje x. Y ahora podemos modificarla usando el comando **axis()**. Vamos a representar 5 fechas en el eje x. 
+<br />
+<br />
+Para plotear 5 fechas equidistantes creamos un vector usando *seq(inicio,final,length.out= 5)*. Donde el final será el último término de vector que hemos ploteado. 
+<br />
+<br />
+```{r}
+#Indicamos la posicion donde queremos plotear las "etiquetas".
+posicion_eje <- seq(1,length(term_hig7$date_string_hour),length.out = 5)
+
+```
+<br />
+<br />
+Si ejecutamos **posicion_eje**. Podemos ver las posiciones donde estarán las etiquetas. 
+<br />
+<br />
+Ahora tenemos que especificar que aparece en las etiquetas del eje. Por lo tanto plotearemos las etiquetas contenidas en la columna de fecha en formato palabra. **term_hig7$date_string_hour** para esas posiciones. 
+<br />
+<br />
+```{r}
+etiquetas <- term_hig7$date_string_hour[posicion_eje]
+```
+<br />
+<br />
+Una vez hemos decidido cuantas posiciones vamos a poner en el eje x y que vamos a poner en cada posición ejecutamos el comando **axis()**.
+<br />
+<br />
+```{r}
+#Ponemos axis(1, ...). Porque el 1 hace referencia al eje x. 
+#Si fueramos a modificar el eje y pondríamos axis(2, ...)
+
+axis(1,at = posicion_eje,labels = etiquetas)
+```
+<br />
+<br />
+Para ver las gráficas con mejor detalle podemos pulsar "Zoom"
+ en la ventana de plots y se abrirá una ventan independiente de mayor tamaño, que nos permitirá ver mejor la gráfica. 
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/Gráficas/1.PNG"))
+
+```
+<br />
+<br />
+> ¿Ven algo raro en la gráfica?
+<br />
+<br />
+Yo sí, los datos están cronológicamente mal ordenados. Lo normal es que el tiempo aumente con el eje x, no al revés como pasa en esta gráfica. 
+<br />
+<br />
+El comando **rev()** sirve para revertir series de datos. 
+
+```{r}
+# usamos rev en el plot
+plot(rev(term_hig7$`temp (ÂºC)`), 
+     ylab = "Temperatura",
+     xlab = "Tiempo",
+     xaxt="n")
+
+posicion_eje <- seq(1,length(term_hig7$date_string_hour),length.out = 5)
+
+#usamos rev para revertir tambien las etiquetas del eje. 
+etiquetas <- rev(term_hig7$date_string_hour[posicion_eje])
+axis(1,at = posicion_eje,labels = etiquetas)
+
+
+```
+
+
+## Modificar límites
+<br />
+<br />
+Muchas veces es necesario modicar el tamaño de un plot. Para ello podemos o: Cambiar el tamaño de los datos ploteados o directamente usar **xlim e ylim**
+<br />
+<br />
+```{r}
+#xlim en forma de vector para decir cual es él limite por la izquierda y derecha
+plot(rev(term_hig7$`temp (ÂºC)`), 
+     ylab = "Temperatura",
+     xlab = "Tiempo",
+     xaxt="n",
+     xlim = c(0,1200))
+
+
+#hay que usar la lógica para poder ajustar las etiquetas de los ejes. 
+
+posicion_eje <- seq(1,1200,length.out = 5)
+
+etiquetas <- term_hig7$date_string_hour[length(term_hig7$`temp (ÂºC)`) - posicion_eje]
+axis(1,at = posicion_eje,labels = etiquetas)
+```
+<br />
+<br />
+La otra manera, es acotar los datos que vamos a plotear. Dentro de la tabla los datos correspondientes al 22/10/2018 están comprendidos entre la fila 141 y la fila 345.Creamos una nueva tabla que únicamente tenga estas filas. 
+<br />
+<br />
+```{r}
+Datos_dia_22_oct <- term_hig7[141:345,]
+```
+<br />
+<br />
+Ploteamos estos datos, teniendo en cuenta que hay que dar la vuelta a la tabla. 
+<br />
+<br />
+```{r}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     xaxt="n")
+
+#Representamos en el gráfico las horas del día. 
+posicion_eje <- seq(1,length(Datos_dia_22_oct$`temp (ÂºC)`),length.out = 24)
+
+etiquetas <- as.character(0:23)
+axis(1,at = posicion_eje,labels = etiquetas)
+```
+<br />
+<br />
+
+# Estilos en las gráficas
+<br />
+<br />
+Podemos cambiar el estilo de nuestras gráficas:
+
++ Cambiando el modo de representación de puntos a lineas. (type = "p" ó "l") 
++ Cambiar estilo de los puntos. 
++ Cambiar ancho de linea (lwd)
++ Cambiar color de linea (col)
++ Añadir titulo a la gráficav (main). 
+<br />
+<br />
+```{r}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     main= "Temperatura día 22-oct-2018 Eibar",
+     xaxt="n",
+     type = "l",
+     lwd = 4,
+     col= "red")
+```
+<br />
+<br />
+Se puede añadir una "grid" a la gráfica facilmente. Esta grid se puede modificar, indicando el número de celdas o incluso, cambiando el estilo de la misma. Si ejecutamos únicamente grid(), se añade una por defecto. 
+<br />
+<br />
+```{r}
+grid()
+```
+<br />
+<br />
+# Añadir puntos a una gráfica. 
+<br />
+<br />
+Muchas veces es necesario remarcar un punto concreto dentro de una gráfica. Para ello emplemos *points()*. Points directamente añade un punto a una gráfica existente. Por ejemplo añadamos al ejemplo anterior el punto de máxima temperatura. 
+
+<br />
+<br />
+Para usar points hay que marcar posición x e y. 
+
++x: posición del máximo (OJO: vector invertido)
++y: valor del máximo
+<br />
+<br />
+```{r}
+y <- max(Datos_dia_22_oct$`temp (ÂºC)`)
+x <- which.max(rev(Datos_dia_22_oct$`temp (ÂºC)`))
+```
+<br />
+<br />
+Quizas los parámetros más utilizados en points sean:
+
++pch: tipo de punto. Se indica un número que se relaciona con un tipo de punto. 
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/Gráficas/1.PNG"))
+
+```
+<br />
+<br />
++ cex: tamaño del punto. cex=1 por defecto. 
+<br />
+<br />
+```{r}
+points(x,y, pch=11, cex=0.5)
+```
+
+<br />
+<br />
+
+#Añadir texto a una gráfica.
+<br />
+<br />
+Existe un comando llamado text(), que añade texto a una gráfica. Hay que indicar la posición del texto y lo que se quiere que aparezca en el texto.
+<br />
+<br />
+##Comando paste y paste0. 
+<br />
+<br />
+Es muy recurrente tener que construir texto a partir de valores y valores mezclados con texto. Para ello se emplea paste o paste0. La única diferencia entre ellos es que paste pega los elementos que queremos con espacio (incluso podemos modificar el caracter entre elementos)
+ y parse0 los pega sin espacio entre ellos
+<br />
+<br />
+```{r}
+paste(max(Datos_dia_22_oct$`temp (ÂºC)`), "ºC")
+paste(max(Datos_dia_22_oct$`temp (ÂºC)`), "ºC", sep = "_")
+
+paste0(max(Datos_dia_22_oct$`temp (ÂºC)`), "ºC")
+```
+<br />
+<br />
+
+##Comando text()
+<br />
+<br />
+Una vez sabemos las coordenadas para añadir el texto (mismas coordenadas que el punto) y el texto que queremos añadir usamos el comando text() para añadirlo a la gráfica. 
+<br />
+<br />
+```{r}
+text_max <- paste("máx=",max(Datos_dia_22_oct$`temp (ÂºC)`), "ºC")
+
+text(x,y, labels = text_max)
+```
+<br />
+<br />
+Si vemos que se suporponen con la gráfica podemos modificar a mano la posición x o y para ajustarlo. 
+<br />
+<br />
+
+```{r}
+text(x+20,y, labels = text_max)
+```
+<br />
+<br />
+# Paquete lubridate.
+
+<br />
+<br />
+Este paquete está destinado a trabajar con fechas. De esta manera facilita el poder navegar dentro de una serie temporal, buscando días concretos o seleccionando diferencia entre noche y día. 
+<br />
+<br />
+```{r}
+library(lubridate)
+```
+
+```{r}
+class(Datos_dia_22_oct$date_string_hour[1])
+```
+<br />
+<br />
+
+##Conversión a dormato fecha
+Nos fijamos que la columna que refleja las fechas en formato palabra, es tipo "factor". Para poder explotar al máximo la versatilidad del paquete "lubridate". Para ello realizamos una doble transformación: de "factor" a "character" (palabra) y de "character" a "date" (formato fecha).
+<br />
+<br />
+```{r}
+Datos_dia_22_oct[,2] <-dmy_hms(
+  as.character(
+    Datos_dia_22_oct$date_string_hour))
+
+#Comprobamos la clase de de la columna 
+class(Datos_dia_22_oct$date_string_hour)
+```
+<br />
+<br />
+**Tanto el formato POSIXct como el POSIxt son formatos de fecha** y el lubridate los identifica como tal.
+<br />
+<br />
+Esto nos ofrece varias posibilidades para manipular y seleccionar datos por intervalos temporales. Hay que tener en cuenta que su formato sea tipo "fecha" guarda información oculta como el sistema de medida y la fecha en segundos desde el 1 de enero de 1970. 
+
+<br />
+<br />
+```{r}
+unclass(Datos_dia_22_oct$date_string_hour[1])
+```
+<br />
+<br />
+##Posibilidades del paquete lubridate
+<br />
+<br />
+Este paquete tambien es capaz de identificar segundos, minutoos, horas, días, meses. Partiendo de la primera fecha de la tabla.
+<br />
+<br />
+```{r}
+Datos_dia_22_oct$date_string_hour[1]
+
+second(Datos_dia_22_oct$date_string_hour[1])
+minute(Datos_dia_22_oct$date_string_hour[1])
+hour(Datos_dia_22_oct$date_string_hour[1])
+day(Datos_dia_22_oct$date_string_hour[1])
+month(Datos_dia_22_oct$date_string_hour[1])
+year(Datos_dia_22_oct$date_string_hour[1])
+
+```
+<br />
+<br />
+Esto nos permitirá poder seleccionar de manera sencilla agrupar los datos por estaciones, meses, semanas, etc.
+<br />
+<br />
+##Ejemplo 
+<br />
+<br />
+A modo de ejemplo vamos a comparar las temperaturas y humedades del *dataset* term_hig7. Primero transformamos la columna *date_string_hour* en formato fecha como ya vimos anteriormente.
+<br />
+<br />
+```{r}
+term_hig7$date_string_hour <- dmy_hms(
+  as.character(
+    term_hig7$date_string_hour))
+```
+<br />
+<br />
+###Comando unique()
+Si ejecutamos week, con toda la columna en formato fecha nos dirá a que semana del año pertenece cada dato, es decir: un vector de 6000 elementos. Si a nosotros lo que nos interesa ver es cuantos elementos diferentes hay podemos ejecutar *unique()* que únicamente sacará por consola elementos que sean diferentes. 
+<br />
+<br />
+```{r}
+week(term_hig7$date_string_hour)
+```
+<br />
+<br />
+```{r}
+unique(week(term_hig7$date_string_hour))
+```
+<br />
+<br />
+
+###Comando table()
+<br />
+<br />
+Otro comando muy recurrente es el comando table. Que es capaz de contar los elementos iguales de un vector.
+<br />
+<br />
+```{r}
+table(week(term_hig7$date_string_hour))
+```
+<br />
+<br />
+
+Nos damos que cuenta que tanto la semana 38 y lal 43 son semanas incompletas encuento a datos se refiere. Usaremos los datos de las semanas 39,40,41 y 42. 
+<br />
+<br />
+
+# Iniciación a los bucles
+<br />
+<br />
+Para separar estos datos y tratarlos de manera individualizada se puede hacer de varias maneras diferentes, seguro que de manera más sencilla, pero voy a realizar esta labor empleando **bucles for**. *NEXT LEVEL¡*. 
+<br />
+<br />
+Un bucle es algo que se ejecuta de manera cíclica, en la que cada vez que se ejecutan se pueden variar los valores y ahorrar tiempo. Es decir, si tengo que obtener 25 gráficas lo puedo hacer con un bucle de 25 cíclos y no tengo que ejecutar 25 veces el mismo código. *EFICIENCIA*.
+<br />
+<br />
+es interesante saber cual es la mecánica de un bucle. A mi me gusta seguir más o menos estas guías: 
+
++ Creo una lista, matriz o vector que posteriormente se va a rellenar
++ Creo vectores de valores que van a ser utilizados en el bucle
++ Hago el bucle, que básicamente coje valores de los vectores realiza una acción y guarda la información en una lista, matriz o vector vacía. 
+
+
+<br />
+<br />
+```{r}
+
+#Creo lista vacía para rellenar
+Datos_semanas <- list()
+
+#Vector de valores a utilizar, Dijimos que vamos a utilizar semana 39,40,41 y 42
+semana <- 39:42
+
+for (i in 1:4) {
+
+x <- term_hig7[week(term_hig7$date_string_hour) == semana[i], ] 
+Datos_semanas[[i]] <- x 
+}
+```
+<br />
+<br />
+para aclararnos podemos nombrar los elementos de la lista usando el vector "semanas". 
+<br />
+<br />
+```{r}
+names(Datos_semanas)<- semana
+```
+<br />
+<br />
+Los bucles se pueden ejecutar de maneras diferentes. **Imaginación y orden es lo único que hace falta para lograr optimizar nuestro trabajo y nuestro código**, minimizando el tiempo de programación empleando bucles que ejecuten muchas acciones de manera rápida. 
+<br />
+<br />
+Este cometido se puede lograr empleando varias lógicas diferentes. Por ejemplo:
+<br />
+<br />
+```{r}
+Datos_semanas_2 <- list()
+for (i in 39:42) {
+
+Datos_semanas_2[[i-38]] <- term_hig7[week(term_hig7$date_string_hour) == i,]
+}
+
+```
+<br />
+<br />
+
+Este ejercicio es unicamente para introduciros en los bucles. esto se puede complejizar usando bucles *if y while* que veremos en capítulos más adelante. **Es importante controlar los bucles muy bien, por ello, os animo a pensar siempre en una programación  enfocada a la eficiencia del código, basada en bucles**. Si puedo lograr que mi código tenga 50 líneas, empleando muchos bucles cortos en vez de 150 líneas a pelo, mucho mejor. 
+
+<br />
+<br />
+
+# Gráficos combinados. 
+<br />
+<br />
+Para hacer una demuestración de como combinar gráficos primero lo que vamos a hacer es realizar una media diaria. 
+<br />
+<br />
+```{r}
+Agrupacion_semanas <- data.frame()
+medias_diarias <- vector()
+for (i in 1:4) {
+  
+  for (j in 1:7) {
+     x <- Datos_semanas[[i]][wday(Datos_semanas[[i]]$date_string_hour,
+                               week_start = 1) == j,]
+     medias_diarias[j] <- mean(x$`temp (ÂºC)`)
+
+  }
+ Agrupacion_semanas <- rbind(Agrupacion_semanas,medias_diarias)
+
+}
+
+colnames(Agrupacion_semanas) <- c("L", "M","X","J", "V", "S", "D") 
+row.names(Agrupacion_semanas)<- 39:42
+```
+<br />
+<br />
+Podemos ver que aspecto tiene el resultado de este bucle. Nótese que la labor de nombrar columnas filas, listas etc. se suele ejecutar fuera del bucle. 
+<br />
+<br />
+```{r}
+View(Agrupacion_semanas)
+```
+<br />
+<br />
+## El uso de lines()
+<br />
+<br />
+Una manera de realizar gráficos combinados es usar el comando lines(). Lo que hace es, siempre una vez se ha ejecutado un plot() primeramente, realiza un plot añadiendose al plot principal. 
+<br />
+<br />
+```{r}
+plot(as.numeric(Agrupacion_semanas[1,]),type = "l",col="red")
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
+```
+
+<br />
+<br />
+Si hay datos fuera del gráfico, se puede modificar el ylim (rango de y) para forzar a la gráfica a contener todos los datos, esto se tiene que incluir en el primer plot. 
+
+<br />
+<br />
+
+
+```{r}
+plot(as.numeric(Agrupacion_semanas[1,]),
+     type = "l",
+     col="red", 
+     ylim = c(12,25),
+     xlab = "Días dde la semana",
+     ylab = "Temperatura (ºC)",
+     xaxt="n",
+     main = "Comparativa temperatura entre semanas")
+
+axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
+
+
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
+```
+<br />
+<br />
+El hecho de tener varias informaciones superpuestas en una única gráfica obliga a tener que añadir una leyenda que nos permita diferenciar cada variable. 
+
+```{r}
+legend("right", legend = c("Semana 39",
+                          "Semana 40",
+                          "Semana 41",
+                          "Semana 42"), text.col = c("red",
+                                                     "green",
+                                                     "black",
+                                                     "orange"))
+```
+
