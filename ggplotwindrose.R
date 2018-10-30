@@ -130,3 +130,4 @@ plot.windrose <- function(data,
   # return the handle to the wind rose
   return(p.windrose)
 }
+
