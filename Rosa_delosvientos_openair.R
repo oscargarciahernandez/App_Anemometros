@@ -5,3 +5,5 @@ names(prueba)<- c("date","ws","wd")
 windRose(prueba,ws.int = 0.5,angle = 22.5,
          breaks = 8,paddle = F, annotate = F,
          key.position = "right", statistic = "prop.mean")
+
+
