@@ -1,3 +1,4 @@
+# WindRose.R
 require(ggplot2)
 require(RColorBrewer)
 
@@ -115,10 +116,7 @@ plot.windrose <- function(data,
     scale_fill_manual(name = "Wind Speed (m/s)", 
                       values = spd.colors,
                       drop = FALSE) +
-    theme(panel.grid.major = element_line(colour = NA), axis.line = element_line(colour = NA), plot.background = element_rect(fill= "transparent", colour= NA), panel.background = element_rect(fill= "transparent", colour = NA))+
-  xlab("Wind Direction Recorded Every Five Minutes")+ ylab("")+ guides(fill=guide_legend(title="Direction")) + theme(plot.title = element_text(size=18, face= "bold", color = "burlywood1", vjust = -3, hjust = -0.15), axis.title.x = element_text(size= 8, color = "cornsilk1", hjust = 1.05, vjust = 1.4), 
-                                                                                                                     axis.text.y=element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_blank(),
-                                                                                                                     legend.position = "none")
+    theme(axis.title.x = element_blank())
   
   # adjust axes if required
   if (!is.na(countmax)){
