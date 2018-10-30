@@ -1,9 +1,12 @@
 library(here)
 library(rlist)
+library(lubridate)
 
 datos=list.load(here::here("data/Datos_anemometros.rdata"))
 anem1=datos$anem1
+
 anem1$Mean=as.numeric(as.character(anem1$Mean))
+anem1$date_string_hour=dmy_hms(as.character(anem1$date_string_hour))
 
 nombres_nuevos=colnames(anem1)
 nombres_nuevos[3]="ws"
