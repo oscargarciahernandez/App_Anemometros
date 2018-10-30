@@ -1,12 +1,14 @@
 ---
 title: "Guía básica de R"
-subtitle: "3.Gráficas básicas y combinadas + Paquete lubridate + Introducción a los bucles for "
+subtitle: "Gráficas básicas y combinadas + Paquete lubridate + introducción a los bucles for"
 author: "Óscar García Hernández"
 date: "27 de octubre de 2018"
 output:
+  
   html_document:
     toc: true
-    toc_float: true 
+    roc_float: true
+
 ---
 
 ```{r setup, include=FALSE}
