@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(rlist)
 library(lubridate)
+library(knitr)
+library(rmarkdown)
 
 ```
 
@@ -50,7 +52,7 @@ term_hig7 <- Datos$term_hig7
 
 <br />
 <br />
-Comentar rápidamente que es interesante acostumbrarnos a nombrar a las variables de manera clave y clara. Es decir, ya leyendo el nombree de una variable debo saber que contiene.Por eso no os de miedo poner nombres largos a las variables, es aconsejable que no sea un nombre kilométrico pero si que me de la información necesaria para saber que contiene. 
+Comentar rápidamente que es interesante acostumbrarnos a nombrar a las variables de manera clave y clara. Es decir, ya leyendo el nombre de una variable debo saber que contiene.Por eso no os de miedo poner nombres largos a las variables, es aconsejable que no sea un nombre kilométrico pero si que me de la información necesaria para saber que contiene. 
 <br />
 <br />
 En lo referido a la nomenclatura de las variables es interesante remarcar que la única norma es que el nombre que le vallamos a poner no interfiera con una función de R, es muy problable que se produzcan conflictos. Es decir, **no nombraremos a una variable: vector, porque R tienen un comando que se llama vector, por ejemplo, podemos usar el nombre vector_1**
@@ -131,7 +133,10 @@ Si queremos modificar lo que se representa en el eje x, podemos usar la siguient
 ```{r}
 #Ponemos xaxt="n", dentro del plot y  vemos como desaparece la infor del eje x. 
 
-plot(term_hig7$`temp (ÂºC)`, ylab = "Temperatura", xlab = "Tiempo", xaxt="n")
+plot(term_hig7$`temp (ÂºC)`,
+     ylab = "Temperatura", 
+     xlab = "Tiempo",
+     xaxt="n")
 ```
 
 <br />
@@ -163,12 +168,22 @@ etiquetas <- term_hig7$date_string_hour[posicion_eje]
 Una vez hemos decidido cuantas posiciones vamos a poner en el eje x y que vamos a poner en cada posición ejecutamos el comando **axis()**.
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
 #Ponemos axis(1, ...). Porque el 1 hace referencia al eje x. 
 #Si fueramos a modificar el eje y pondríamos axis(2, ...)
 
 axis(1,at = posicion_eje,labels = etiquetas)
 ```
+```{r echo=FALSE}
+plot(term_hig7$`temp (ÂºC)`,
+     ylab = "Temperatura", 
+     xlab = "Tiempo",
+     xaxt="n")
+
+axis(1,at = posicion_eje,labels = etiquetas)
+
+```
+
 <br />
 <br />
 Para ver las gráficas con mejor detalle podemos pulsar "Zoom"
@@ -176,12 +191,14 @@ Para ver las gráficas con mejor detalle podemos pulsar "Zoom"
 <br />
 <br />
 ```{r echo=FALSE, fig.align='center'}
-include_graphics(here::here("imagenes/Gráficas/1.PNG"))
+include_graphics(here::here("imagenes/Graficas/1.png"))
 
 ```
 <br />
 <br />
+
 > ¿Ven algo raro en la gráfica?
+
 <br />
 <br />
 Yo sí, los datos están cronológicamente mal ordenados. Lo normal es que el tiempo aumente con el eje x, no al revés como pasa en esta gráfica. 
@@ -209,7 +226,7 @@ axis(1,at = posicion_eje,labels = etiquetas)
 ## Modificar límites
 <br />
 <br />
-Muchas veces es necesario modicar el tamaño de un plot. Para ello podemos o: Cambiar el tamaño de los datos ploteados o directamente usar **xlim e ylim**
+Muchas veces es necesario modicar el tamaño de un plot. Para ello podemos: Cambiar el tamaño de los datos ploteados o directamente usar **xlim e ylim**
 <br />
 <br />
 ```{r}
@@ -248,7 +265,8 @@ plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
      xaxt="n")
 
 #Representamos en el gráfico las horas del día. 
-posicion_eje <- seq(1,length(Datos_dia_22_oct$`temp (ÂºC)`),length.out = 24)
+posicion_eje <- seq(1,length(Datos_dia_22_oct$`temp (ÂºC)`),
+                    length.out = 24)
 
 etiquetas <- as.character(0:23)
 axis(1,at = posicion_eje,labels = etiquetas)
@@ -283,7 +301,18 @@ plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
 Se puede añadir una "grid" a la gráfica facilmente. Esta grid se puede modificar, indicando el número de celdas o incluso, cambiando el estilo de la misma. Si ejecutamos únicamente grid(), se añade una por defecto. 
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
+grid()
+```
+```{r echo=FALSE}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     main= "Temperatura día 22-oct-2018 Eibar",
+     xaxt="n",
+     type = "l",
+     lwd = 4,
+     col= "red")
 grid()
 ```
 <br />
@@ -321,7 +350,18 @@ include_graphics(here::here("imagenes/Gráficas/1.PNG"))
 + cex: tamaño del punto. cex=1 por defecto. 
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     main= "Temperatura día 22-oct-2018 Eibar",
+     xaxt="n",
+     type = "l",
+     lwd = 4,
+     col= "red")
+
+
+#Añado puntos a la anterior gráfica
 points(x,y, pch=11, cex=0.5)
 ```
 
@@ -357,6 +397,16 @@ Una vez sabemos las coordenadas para añadir el texto (mismas coordenadas que el
 <br />
 <br />
 ```{r}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     main= "Temperatura día 22-oct-2018 Eibar",
+     xaxt="n",
+     type = "l",
+     lwd = 4,
+     col= "red")
+
+
 text_max <- paste("máx=",max(Datos_dia_22_oct$`temp (ÂºC)`), "ºC")
 
 text(x,y, labels = text_max)
@@ -368,6 +418,16 @@ Si vemos que se suporponen con la gráfica podemos modificar a mano la posición
 <br />
 
 ```{r}
+plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
+     xlab = "Hora del día",
+     ylab = "Temperatura",
+     main= "Temperatura día 22-oct-2018 Eibar",
+     xaxt="n",
+     type = "l",
+     lwd = 4,
+     col= "red")
+
+
 text(x+20,y, labels = text_max)
 ```
 <br />
@@ -625,7 +685,32 @@ El hecho de tener varias informaciones superpuestas en una única gráfica oblig
 <br />
 <br />
 
-```{r}
+```{r eval=FALSE}
+legend("topright", legend = c("Semana 39",
+                          "Semana 40",
+                          "Semana 41",
+                          "Semana 42"), 
+       text.col = c("red","green","black","orange"), 
+       cex = 1,
+       bty = "n")
+```
+```{r echo=FALSE}
+plot(as.numeric(Agrupacion_semanas[1,]),
+     type = "l",
+     col="red", 
+     ylim = c(12,25),
+     xlab = "Días de la semana",
+     ylab = "Temperatura (ºC)",
+     xaxt="n",
+     main = "Comparativa temperatura entre semanas")
+
+axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
+grid()
+
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
 legend("topright", legend = c("Semana 39",
                           "Semana 40",
                           "Semana 41",
@@ -684,6 +769,23 @@ Añadimos las sucesivas líneas usando un bucle.
 <br />
 <br />
 ```{r}
+plot(as.numeric(Agrupacion_semanas[1,]),
+     type = "l",
+     col="red", 
+     ylim = c(12,25),
+     xlab = "Días de la semana",
+     ylab = "Temperatura (ºC)",
+     xaxt="n",
+     main = "Comparativa temperatura entre semanas")
+
+axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
+grid()
+
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
+#Ahora ploteamos encima las medias
 colores <-  c("red","green","black","orange")
 
 for (j in 1:4) {
@@ -708,3 +810,83 @@ for (j in 1:4) {
 <br />
 <br />
 Este cometido se puede realizar usando el parámetro dentro de plot llamado **add=TRUE**. 
+
+```{r eval=FALSE}
+colores <-  c("red","green","black","orange")
+
+for (j in 1:4) {
+  
+  vector_media <- rep(medias_semanales[j],7)
+  
+  plot(vector_media, 
+       type = "l",
+       ylim = c(12,25),
+       col= colores[j],
+       lty=3,
+       lwd=2,
+       xaxt="n", 
+       yaxt="n",
+       ylab = "",
+       xlab = "",
+       add=TRUE)
+  
+}
+```
+<br />
+<br />
+Lo anteriormente visto nos sirve para darnos cuenta del potencial que tienen los bucles, tanto para extraer información como para manejarla y graficar dicha información. 
+<br />
+<br />
+Pero, para proximas veces que queramos representar una media, como una línea recta. Existe una comando especialmente pensado para ello. Este comando es **abline()**. Este comando se usa, para representar líneas en las gráficas, tanto verticales como diagonales u horizontales. En nuestro caso nos interesa que las líneas sean horizontales. 
+<br />
+<br />
+Antes de nada representamos de nuevo el gráfico principal.
+<br />
+<br />
+```{r}
+plot(as.numeric(Agrupacion_semanas[1,]),
+     type = "l",
+     col="red", 
+     ylim = c(12,25),
+     xlab = "Días de la semana",
+     ylab = "Temperatura (ºC)",
+     xaxt="n",
+     main = "Comparativa temperatura entre semanas")
+
+axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
+grid()
+
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
+```
+<br />
+<br />
+Sobre el gráfico principal representamos las líneas horizontales usando abline.
+<br />
+<br />
+```{r}
+colores <-  c("red","green","black","orange")
+
+#usamos h =... porque queremos lineas horizontales
+abline(h=medias_semanales, col=colores, lty=3)
+```
+<br />
+<br />
+
+#Moralina
+
+<br />
+<br />
+Las posibilidades que ofrece Rstudio a la hora de representar datos es inmensa. Existen comandos especifícos para hacer histogramas, boxplots, diagramas de barras, diagramas polares y un largo etc. Que en este capítulo no hemos abordado. 
+<br />
+<br />
+Esta guía simplemente quiere haceros entender que existen muchas maneras diferentes (unas más eficientes que tras) para lograr el mismo cometido y hay es donde a la hora de programar podemos dar nuestro toque personal. 
+
+<br />
+<br />
+
+Si es verdad que los gráficos en R, pueden realizarse mediante diferentes paquetes que nos ofrecen nuevas posibilidades. Es muy interesante el paquete **ggplot2**. Este paquete está enfocado a realizar gráficas, pero tambien enfocado a trabajar con un paradigma diferente de organización de los datos. Véase el paquete **dplyr**, un paquete muy muy potente. En el que profundizaremos un poco más adelante. Cabe mencionar, que al principio, cuando descubrimos una herramienta nueva, lo mas normal es que nos lleve mucho tiempo dominarla (por ejemplo la pareja *ggplot2+dplyr*), pero a la larga conseguirá que ahorremos tiempo y esfuerzo, lo prometo. Con esto no pretendo que empecéis a empoyar paquetes de R, pero es bueno tener claro que la programación y el tratamiento de datos no es un camino fijo, existen mil maneras de llegar al objetivo, y depende de nosotros elegir esa manera. 
+<br />
+<br />
