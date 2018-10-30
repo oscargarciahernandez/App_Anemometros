@@ -1,6 +1,6 @@
 ---
 title: "Guía básica de R"
-subtitle: "3.Gráficas"
+subtitle: "3.Gráficas básicas y combinadas + Paquete lubridate + Introducción a los bucles for "
 author: "Óscar García Hernández"
 date: "27 de octubre de 2018"
 output:
@@ -126,6 +126,7 @@ plot(term_hig7$`temp (ÂºC)`, ylab = "Temperatura", xlab = "Tiempo")
 ```
 <br />
 <br />
+
 ## Modificar los ejes, comando axis()
 Si queremos modificar lo que se representa en el eje x, podemos usar la siguiente opción.
 <br />
@@ -222,6 +223,8 @@ axis(1,at = posicion_eje,labels = etiquetas)
 
 ```
 
+<br />
+<br />
 
 ## Modificar límites
 <br />
@@ -317,6 +320,7 @@ grid()
 ```
 <br />
 <br />
+
 # Añadir puntos a una gráfica. 
 <br />
 <br />
@@ -326,8 +330,10 @@ Muchas veces es necesario remarcar un punto concreto dentro de una gráfica. Par
 <br />
 Para usar points hay que marcar posición x e y. 
 
-+x: posición del máximo (OJO: vector invertido)
-+y: valor del máximo
++ x: posición del máximo (OJO: vector invertido)
+
++ y: valor del máximo
+
 <br />
 <br />
 ```{r}
@@ -338,19 +344,22 @@ x <- which.max(rev(Datos_dia_22_oct$`temp (ÂºC)`))
 <br />
 Quizas los parámetros más utilizados en points sean:
 
-+pch: tipo de punto. Se indica un número que se relaciona con un tipo de punto. 
++ pch: tipo de punto. Se indica un número que se relaciona con un tipo de punto. 
+
 <br />
 <br />
 ```{r echo=FALSE, fig.align='center'}
-include_graphics(here::here("imagenes/Gráficas/1.PNG"))
+include_graphics(here::here("imagenes/Graficas/2.PNG"))
 
 ```
 <br />
 <br />
+
 + cex: tamaño del punto. cex=1 por defecto. 
+
 <br />
 <br />
-```{r eval=FALSE}
+```{r}
 plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
      xlab = "Hora del día",
      ylab = "Temperatura",
@@ -362,7 +371,7 @@ plot(rev(Datos_dia_22_oct$`temp (ÂºC)`),
 
 
 #Añado puntos a la anterior gráfica
-points(x,y, pch=11, cex=0.5)
+points(x,y, pch=11, cex=1.25)
 ```
 
 <br />
@@ -374,6 +383,7 @@ points(x,y, pch=11, cex=0.5)
 Existe un comando llamado text(), que añade texto a una gráfica. Hay que indicar la posición del texto y lo que se quiere que aparezca en el texto.
 <br />
 <br />
+
 ##Comando paste y paste0. 
 <br />
 <br />
@@ -432,11 +442,12 @@ text(x+20,y, labels = text_max)
 ```
 <br />
 <br />
+
 # Paquete lubridate.
 
 <br />
 <br />
-Este paquete está destinado a trabajar con fechas. De esta manera facilita el poder navegar dentro de una serie temporal, buscando días concretos o seleccionando diferencia entre noche y día. 
+Este paquete está destinado a trabajar con fechas. De esta manera facilita el poder navegar dentro de una serie temporal, buscando días concretos, intervalos temporales, etc. 
 <br />
 <br />
 ```{r}
@@ -449,7 +460,7 @@ class(Datos_dia_22_oct$date_string_hour[1])
 <br />
 <br />
 
-##Conversión a dormato fecha
+##Conversión a formato fecha
 Nos fijamos que la columna que refleja las fechas en formato palabra, es tipo "factor". Para poder explotar al máximo la versatilidad del paquete "lubridate". Para ello realizamos una doble transformación: de "factor" a "character" (palabra) y de "character" a "date" (formato fecha).
 <br />
 <br />
@@ -475,6 +486,7 @@ unclass(Datos_dia_22_oct$date_string_hour[1])
 ```
 <br />
 <br />
+
 ##Posibilidades del paquete lubridate
 <br />
 <br />
@@ -497,6 +509,7 @@ year(Datos_dia_22_oct$date_string_hour[1])
 Esto nos permitirá poder seleccionar de manera sencilla agrupar los datos por estaciones, meses, semanas, etc.
 <br />
 <br />
+
 ##Ejemplo 
 <br />
 <br />
@@ -510,6 +523,7 @@ term_hig7$date_string_hour <- dmy_hms(
 ```
 <br />
 <br />
+
 ###Comando unique()
 Si ejecutamos week, con toda la columna en formato fecha nos dirá a que semana del año pertenece cada dato, es decir: un vector de 6000 elementos. Si a nosotros lo que nos interesa ver es cuantos elementos diferentes hay podemos ejecutar *unique()* que únicamente sacará por consola elementos que sean diferentes. 
 <br />
@@ -537,7 +551,7 @@ table(week(term_hig7$date_string_hour))
 <br />
 <br />
 
-Nos damos que cuenta que tanto la semana 38 y lal 43 son semanas incompletas encuento a datos se refiere. Usaremos los datos de las semanas 39,40,41 y 42. 
+Nos damos que cuenta que tanto la semana 38 y lal 43 son semanas incompletas encuanto a datos se refiere. Usaremos los datos de las semanas 39,40,41 y 42. 
 <br />
 <br />
 
@@ -639,6 +653,7 @@ View(Agrupacion_semanas)
 ```
 <br />
 <br />
+
 ## El uso de lines()
 <br />
 <br />
@@ -679,6 +694,10 @@ lines(as.numeric(Agrupacion_semanas[3,]),col="black")
 lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
 
 ```
+<br />
+<br />
+
+## Añadir leyenda a una gráfica. Comando legend()
 <br />
 <br />
 El hecho de tener varias informaciones superpuestas en una única gráfica obliga a tener que añadir una leyenda que nos permita diferenciar cada variable. 
@@ -752,6 +771,7 @@ Para plotear la línea de temperatura media, tendremos que generar un vector cuy
 ## Comando par(new=TRUE)
 <br />
 <br />
+
 En este apartado también veremos como se pueden hacer gráficos conjuntos, por otro método. usaremoso **par(new=TRUE)**. Que básicamente lo que dice es: añade el siguiente gráfico al gráfico existente. 
 
 <br />
@@ -807,34 +827,15 @@ for (j in 1:4) {
   
 }
 ```
-<br />
-<br />
-Este cometido se puede realizar usando el parámetro dentro de plot llamado **add=TRUE**. 
 
-```{r eval=FALSE}
-colores <-  c("red","green","black","orange")
 
-for (j in 1:4) {
-  
-  vector_media <- rep(medias_semanales[j],7)
-  
-  plot(vector_media, 
-       type = "l",
-       ylim = c(12,25),
-       col= colores[j],
-       lty=3,
-       lwd=2,
-       xaxt="n", 
-       yaxt="n",
-       ylab = "",
-       xlab = "",
-       add=TRUE)
-  
-}
-```
 <br />
 <br />
 Lo anteriormente visto nos sirve para darnos cuenta del potencial que tienen los bucles, tanto para extraer información como para manejarla y graficar dicha información. 
+<br />
+<br />
+
+## Plotear líneas rectas, comando abline()
 <br />
 <br />
 Pero, para proximas veces que queramos representar una media, como una línea recta. Existe una comando especialmente pensado para ello. Este comando es **abline()**. Este comando se usa, para representar líneas en las gráficas, tanto verticales como diagonales u horizontales. En nuestro caso nos interesa que las líneas sean horizontales. 
@@ -866,12 +867,36 @@ lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
 Sobre el gráfico principal representamos las líneas horizontales usando abline.
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
 colores <-  c("red","green","black","orange")
 
 #usamos h =... porque queremos lineas horizontales
-abline(h=medias_semanales, col=colores, lty=3)
+abline(h=medias_semanales, col=colores, lty=4, lwd=2)
 ```
+
+```{r echo=FALSE}
+plot(as.numeric(Agrupacion_semanas[1,]),
+     type = "l",
+     col="red", 
+     ylim = c(12,25),
+     xlab = "Días de la semana",
+     ylab = "Temperatura (ºC)",
+     xaxt="n",
+     main = "Comparativa temperatura entre semanas")
+
+axis(1,at = 1:7,labels = colnames(Agrupacion_semanas))
+grid()
+
+lines(as.numeric(Agrupacion_semanas[2,]), col="green")
+lines(as.numeric(Agrupacion_semanas[3,]),col="black")
+lines(as.numeric(Agrupacion_semanas[4,]),col="orange")
+
+colores <-  c("red","green","black","orange")
+
+#usamos h =... porque queremos lineas horizontales
+abline(h=medias_semanales, col=colores, lty=4, lwd=2)
+```
+
 <br />
 <br />
 
@@ -884,6 +909,14 @@ Las posibilidades que ofrece Rstudio a la hora de representar datos es inmensa. 
 <br />
 Esta guía simplemente quiere haceros entender que existen muchas maneras diferentes (unas más eficientes que tras) para lograr el mismo cometido y hay es donde a la hora de programar podemos dar nuestro toque personal. 
 
+<br />
+<br />
+En este capítulo he decidido meter una pequeña introducción a los bucles for. Es normal que de primeras choque y también es muy normal que no entendamos el funcionamiento de los mismos. **TRANQUILIDAD**, tenemos mucho tiempo para llegar a dominar los bucles y es algo que se aprende haciendo, obteniendo fallos y warnings de todo tipo hasta que al final sale. **NO DESESPERÉIS, YA HARÉ ALGUNA GUÍA ENFOCADA ÚNICAMENTE A BUCLES**.
+
+<br />
+<br />
+
+Tambien se ha realizado una introducción al **paquete lubridate**. Es muy versatil y mejor verlo cuanto antes. *Saber que un paquete existe no es lo mismo que dominarlo* y yo únicamente pretendo que sepáis que existe. Es decir, la proxima vez que quieran trabajar con fechas, no van a saber utilizar el paquete lubridate, pero sabrán que existe y buscar información al respecto es muy sencillo. 
 <br />
 <br />
 
