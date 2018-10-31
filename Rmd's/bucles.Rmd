@@ -1,0 +1,214 @@
+---
+title: "Bucles , if, ifelse y while"
+author: "Óscar García Hernández"
+date: "30 de octubre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Intro  
+<br />
+<br />
+Bueno chicos, repasando el capítulo anterior he de admitir que se me fue un poco la olla metiendo bucles. Por ello me gustaría profundizar en ello en este capítulo. Y lo vamos a hacer como llevamos tiempo haciendolo con los datos de los nuestros sensores y aplicando todas las cositas que ya hemos visto. Con muy buen criterio, Andoni creo un script el cual nos permitirá ir siguiendo las cosas que vallamos haciendo. A mi me gustaría ir más allá, y voy a crear un script a partir de ahora de cada capitulo a la par que voy haciendo esta guía. De manera que el código utilizado quede guardado como un script de R y podemos acceder a él de manera sencilla. 
+<br />
+<br />
+
+#Bucles 
+<br />
+<br />
+Ya sabemos que un bucle ejecuta acciones de manera cíclica. Ese ciclo está definido por un vector numérico que puede tomar los valores que nosotros queramos. 
+<br />
+<br />
+Ese vector también puede tener el nombre que nosotros queramos
+<br />
+<br />
+```{r eval=FALSE}
+for (variable in vector) {
+    
+}
+```
+<br />
+<br />
+El bucle se difine de la anterior manera. Mediante un for, entre paréntesis la variable y los valores que va a tomar (vector) y dentro de *{}* la acción que se ejecutará en el for.
+<br />
+<br />
+Para ver el comportamiento de un bucle puede ser útil el comando **print()**. Lo único que hace es sacar por consola lo que pongamos dentro del paréntesis. 
+<br />
+<br />
+```{r}
+print(1)
+print("Perro")
+```
+<br />
+<br />
+Esto lo podemos usar para ver lo que ocurre dentro de un bucle
+<br />
+<br />
+```{r}
+for (numero in 1:7) {
+  
+  print(numero)
+}
+
+
+for (numero in seq(5,6,by = 0.2)) {
+  
+  print(numero)
+}
+```
+<br />
+<br />
+Esto que acabo de hacer es una chorrada pero nos puede valer para entender que una variable ejecutada en un bucle puede tomar cualquier valor. 
+<br />
+<br />
+Otra de las cosas que se suele hacer a la hora de ejectuar bucles es que la variable del bucle llame a un vector que se encuentra fuera del mismo.
+<br />
+<br />
+```{r}
+numero <- seq(5,6,by = 0.2)
+
+for (i in 1:6) {
+  
+  print(numero[i])
+}
+```
+<br />
+<br />
+Se suele utilizar este método por sencillez, ya que incluso se puede configurar la variable del bucle para que ejecute todos los elementos del vector "numero" sin saber su longitud, empleando *length()*. Esto se utiliza mucho por comodidad.
+<br />
+<br />
+```{r}
+numero <- seq(5,6,by = 0.2)
+
+for (i in 1:length(numero)) {
+  
+  print(numero[i])
+}
+```
+<br />
+<br />
+
+#Bucles y datos
+<br />
+<br />
+A la hora de tratar datos ya vimos que los bucles se pueden utilizar para clasificar los datos, analizarlos, modificar tablas, graficar resultados etc. Es decir,  *VALEN PARA TODO* Y POR ESO MISMO DEBEN SER NUESTROS AMIGOS. 
+<br />
+<br />
+Pasamos ahora a importar los datos de los sensores como ya sabemos.
+<br />
+<br />
+```{r}
+library(rlist)
+library(here)
+
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+```
+<br />
+<br />
+Con intencion de ver un poco como se organizan todos los datos, vamos a tratar con los datos del pluviómetro. 
+<br />
+<br />
+Ya hemos visto que muchas veces los datos vienen en formatos de mierda y hay que modificarlos, no voy ni a explicarlo de nuevo. Pego código y listo. <br />
+<br />
+```{r}
+pluv_5 <- Datos$pluv5
+
+library(lubridate)
+pluv_5$date_string_hour<- dmy_hms(as.character(pluv_5$date_string_hour))
+pluv_5$`rain (mm)`<- as.numeric(as.character(pluv_5$`rain (mm)`))
+```
+<br />
+<br />
+Comentar a cerca del pluviómetro que tiene una manera de registrar datos de manera particular. Solamente existen datos de cuando llueve. Por lo tanto tendremos muchos huecos en el *dataset*. Además, hay que darse cuenta de que la lluvia se expresa en milimetros que es lo mismo que litros por metro cuadrado y que se expresa como lluvia acumulada. Se me ocurre que podemos modificar esta información  y representar la lluvia como litros/metro cuadrado por mes.   
+<br />
+<br />
+Para esto vamos a usar la potencia del paquete lubridate y un bucle. 
+<br />
+<br />
+Primero vemos cuantos meses hay en la tabla. Usamos unique() usamos month() y algunos parámetros del comando month,  para obtener los meses en formato palabra. Esto es una pijada, pero me sirve para explicaros que **aunque conozcamos un comando**, por ejemplo, el comando month(), **es interesante ver la ayuda** del comando **para ver cuales son todas sus posibilidades, es probable que nos sorprenda.** La gra mayoria de comandos que usamos tienen parámetros modificables que no conocemos y que es probable que simplifiquen nuestro código. 
+<br />
+<br />
+```{r}
+unique(month(pluv_5$date_string_hour,label=TRUE,abbr = FALSE))
+```
+<br />
+<br />
+Vemos que tenemos datos desde junio a octubre.
+
+<br />
+<br />
+```{r}
+
+lluvia_mensual <- vector()
+vector_meses<- unique(month(pluv_5$date_string_hour))
+
+for (i in 1:length(vector_meses)) {
+  
+  #creo un vector con la lluvia acumulada del mes
+  lluvia_mes <- pluv_5$`rain (mm)`[month(pluv_5$date_string_hour) == vector_meses[i]] 
+  
+  
+  #Máximo menos mínimo para obtener la lluvia producida en ese mes
+  lluvia_mensual[i]<- max(lluvia_mes)-min(lluvia_mes)
+}
+          
+```
+<br />
+<br />
+Es importante saber en qué orden se ejecuta el orden para no confundir datos. En nuestro caso se ejecuta desde octubre hasta junio, es decir, el primer dato de lluvia mensual es la lluvia de octubre. 
+<br />
+<br />
+Este tipo de datos se pueden representar un diagrama de barras, queda bien. <br />
+<br />
+```{r}
+barplot(lluvia_mensual)
+```
+<br />
+<br />
+SE puede maquillar poniendo nombres a las columnas, títulos y demás. Los nombres de las columnas los podemos emplear usando los parámetros del comando month()[lubridate]
+<br />
+<br />
+
+```{r}
+nombres <- as.character(
+    unique(
+        month(pluv_5$date_string_hour,
+              label=TRUE,
+              abbr = FALSE)))
+```
+
+
+<br />
+<br />
+```{r}
+barplot(lluvia_mensual, names.arg = nombres,
+        ylab = "Litros por metro cuadrado",
+        main = "Pluviometría en la EIG-sección Eibar")
+```
+<br />
+<br />
+Bueno... Siguiendo con los bucles, vamos a complicar la cosa, vamos a hacer lo mismo, pero ahora, haciendo el registro de la lluvia por días. Lo cual se puede hacer por varios métodos pero nosotros vamos a emplear un bucle doble, es decir, un bucle dentro de otro bucle.  
+<br />
+<br />
+```{r}
+lista_lluvia<- list()
+vector_meses<- unique(month(pluv_5$date_string_hour))
+
+for (i in 1:length(vector_meses)) {
+  
+  #creo un vector con la lluvia acumulada del mes
+  Datos_mes <- pluv_5[month(pluv_5$date_string_hour) == vector_meses[i],] 
+  vector_dias<- unique(mday(Datos_mes))
+  
+  for (j in vector_dias) {
+    
+    
+  }
+  
+  
+}
+```
+
