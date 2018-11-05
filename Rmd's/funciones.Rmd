@@ -1,0 +1,106 @@
+---
+title: "Guía básica de R"
+subtitle: "Bucles , if, Diagramas de barras y gráficos combinados"
+author: "Óscar García Hernández"
+date: "5 de noviembre de 2018"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Intro  
+<br />
+<br />
+Hola de nuevo¡, Si soy sincero se me acababan las ideas para seguir esta guía. sobre todo, como seguir. Por ello, voy a pediros que me vallan  diciendo cuales son los puntos en los que se ven más flojos a la hora de programar. En esta guía vamos a empezar a crear funciones. 
+<br />
+<br />
+siempre que usamos un comando de R, Lo que estamos haciendo es recurrir a funciones que el software ya tienen definidas o que se han definido a la hora de instalar un paquete. 
+<br />
+<br />
+Pero es útil saber que nosotros tambien podemos crear nuestras propias funciones. Es una manera de organizar nuestro código en bloques más pequeños. De esta manera podemos tener un script donde definamos nuestras propias funciones y otro script para usar dichas funciones. Sin ir más lejos el código de la descarga de los datos de los sensores está organizado de esta manera: 
+<br />
+<br />
+
++ **Funciones**: un script para definir las funciones que vamos a ir usando. *"funciones_app_anemometros.R"*
++ **Código**: un script para aplicar dichas funciones. *"Descarga_datos_anemometros.R"*
+
+<br />
+<br />
+
+# Crear funciones propias
+<br />
+<br />
+A continuación vamos a empezar a crear nuestras propias funciones. Como base para empezar, podemos decir que haremos una función para que a raiz de unos objetos y parámetros, sea capaz de realizar un proceso o calculo y finalmente nos devuelva un resultado. 
+<br />
+<br />
+Por ejemplo, se me ocurre que podemos crear una funcion sencilla para comprender el funcionamiento de una funcion antes de pasar a trabajar con los datos de los sensores. 
+<br />
+<br />
+Vamos a crear una función que, añadiendole dos números, nos devuelva la suma y la multiplicación de ambos números. 
+<br />
+<br />
+```{r}
+#Definimos el nombre de la funcion y los parámetros de entrada
+suma_multiplica <- function(a,b) {
+  
+  #realizamos las acciones de sumar y multiplicar con los parámetros
+  suma <- a+b
+  multiplica <- a*b
+  
+  #el return marca lo que la funcion devuelve
+  return(c(suma, multiplica))
+  
+}
+```
+<br />
+<br />
+Una vez hemos ejecutamos la función se ve reflejada en nuestro *enviroment*, como una función.Una vez ya hemos definido la función podemos usarla. 
+
+<br />
+<br />
+```{r}
+suma_multiplica(15,3)
+```
+<br />
+<br />
+Normalmente, se declaran funciones para poder programar de manera más limpia y ordenada. Por ello os animo a que empleen funciones siempre que puedan para ir cojiendole callo. 
+<br />
+<br />
+
+# Funciones de ejemplo
+<br />
+<br />
+
+Lo que vamos a hacer es emplear los datos de nuestros sensores para desarrollar funciones más complejas que nos puedan ayudar en un futuro.
+<br />
+<br />
+Se me ocurre que: uno de los problemas que estamos teniendo con los datos es el tipo de objeto, siempre estamos cambiando de tipo caracter a numérico y noseque¡¡ pues para ahorrar tiempo vamos a crear una función que lo que haga sea cambiar todos los objetos de tipo y así nos olvidamos. 
+<br />
+<br />
+```{r}
+library(rlist)
+library(here)
+
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+```
+<br />
+<br />
+Tendremos que tener en cuenta que, Datos es una lista de tablas, pero cada sensor tiene una manera de organizar los datos diferente, quiero decir que no podemos usar el mismo algoritmo para la tabla de los anemometros y los pluviometros. Esto me sirve para sugerir otro paquete muy interesante. Este paquete es **stringr**. Especialmente diseñado para trabajar con palabras o carácteres. 
+<br />
+<br />
+Voy a proponer que la diferenciación entre los sensores se realice mediante el análisis de los nombres de las variables usando este paquete: *stringr*.
+<br />
+<br />
+```{r}
+names(Datos)
+```
+<br />
+<br />
+Analizando los nombres de las listas, se me ocurre que simplemente empleando la primera letra del nombre, yo ya puedo saber a que sensor nos referimos. 
+<br />
+<br />
