@@ -101,6 +101,172 @@ names(Datos)
 ```
 <br />
 <br />
-Analizando los nombres de las listas, se me ocurre que simplemente empleando la primera letra del nombre, yo ya puedo saber a que sensor nos referimos. 
+Analizando los nombres de las listas, se me ocurre que simplemente empleando la primera letra del nombre, yo ya puedo saber a que sensor nos referimos. Es decir, mi código va a analizar la primera letra del nombre de la lista. 
 <br />
 <br />
+```{r}
+library(stringr)
+
+str_sub(names(Datos[1]),1,1)
+```
+<br />
+<br />
+Hay muchisimos comandos (str_comando) que son dignos de mirar por lo menos una vez. 
+<br />
+<br />
+MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de anemometro, que van a estar utilizadas en un función única. 
+<br />
+<br />
+```{r}
+Formatos_columna <- function(Lista_datos){
+  numero_sensores <- length(Lista_datos)
+  
+  for (i in 1:numero_sensores) {
+    
+    #obtenemos la primera letra
+    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
+    
+    #usamos el ya visto ifelse 
+    ifelse(letra_nombre=="a",funcion_anemo(lista_datos[[i]]),
+           letra_nombre=="p",funcion_pluv(lista_datos[[i]]),
+           letra_nombre="t",funcion,term_hig(lista_datos[[i]]))
+
+  }
+  
+}
+```
+<br />
+<br />
+pequeño inciso: El ifelse tiene la ventaja que se pueden poner condiciones encadenadas de manera ordenada y fácil. Vamos a dejar un momento de lado la función principal y vamos a hacer las funciones de cada sensor. 
+<br />
+<br />
+```{r}
+funcion_anemo <- function(Tabla_sf){
+  library(lubridate)
+  
+  Tabla <- Tabla_sf 
+  #Cambiamos el formato de las columnas numericas
+  Tabla$Mean <- as.numeric(as.character(Tabla$Mean))
+  Tabla$Max <- as.numeric(as.character(Tabla$Max))
+  Tabla$Dir_deg <- as.numeric(as.character(Tabla$Dir_deg))
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(Tabla)
+  
+}
+```
+<br />
+<br />
+```{r}
+funcion_pluv <- function(Tabla_sf){
+    library(lubridate)
+  Tabla <- Tabla_sf 
+
+  
+  #Cambiamos el formato de las columnas numericas
+  Tabla$`rain (mm)` <- as.numeric(as.character(Tabla$`rain (mm)`))
+  
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(Tabla)
+  
+}
+```
+<br />
+<br />
+```{r}
+funcion_term_hig <- function(Tabla_sf){
+    library(lubridate)
+  Tabla <- Tabla_sf 
+
+  
+  #Cambiamos el formato de las columnas numericas
+  Tabla[,3]<- as.numeric(as.character(Tabla[,3]))
+  Tabla[,4] <- as.numeric(as.character(Tabla[,4]))
+
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(Tabla)
+  
+}
+```
+<br />
+<br />
+una vez ya hemos definido las funciones vamos a volver a la función principal. 
+<br />
+<br />
+```{r}
+Formatos_columna <- function(lista_datos){
+  numero_sensores <- length(lista_datos)
+  
+  lista_actualizada <- list()
+  for (i in 1:numero_sensores) {
+    
+    #obtenemos la primera letra
+    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
+    
+    #usamos el ya visto ifelse 
+    Tabla_actualizada <- ifelse(
+            letra_nombre=="a",funcion_anemo(lista_datos[[i]]),
+           ifelse(letra_nombre=="p",funcion_pluv(lista_datos[[i]]),
+           ifelse(letra_nombre="t",funcion_term_hig(lista_datos[[i]]),NA)))
+
+    lista_actualizada[[i]] <- Tabla_actualizada
+  }
+  
+  return(lista_actualizada)
+  
+}
+```
+<br />
+<br />
+Okey, ahora que ya tenemos hecha la función la ejecutamos y la ponemos a prueba. 
+<br />
+<br />
+```{r error=TRUE}
+Formatos_columna(Datos)
+```
+<br />
+<br />
+Vemos que da error...  otra cosa buena de separar el código en muchas funciones es que los errores son más fáciles de encontrar. Bueno, ya os digo que el problema está en que en la lista Datos, tienen un elemento llamado *term_hig3* que está vacio, y la función no sabe tratar con tablas que no sean iguales que las que hemos supuesto. Por lo tanto para abordar estos problemas podemos tomar varias estrategias. Por ejemplo, decir que si la función da error, seguir ejecutando la función. 
+<br />
+<br />
+esto lo permite hacer el comando possibly del paquetee purrr
+<br />
+<br />
+
+```{r}
+library(purrr)
+```
+<br />
+<br />
+```{r}
+Formatos_columna <- function(lista_datos){
+  numero_sensores <- length(lista_datos)
+  
+  lista_actualizada <- list()
+  for (i in 1:numero_sensores) {
+    
+    #obtenemos la primera letra
+    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
+    
+    #usamos el ya visto ifelse 
+    Tabla_actualizada <- ifelse(
+            letra_nombre=="a",possibly(funcion_anemo(lista_datos[[i]]),otherwise = NA),
+           ifelse(letra_nombre=="p",possibly(funcion_pluv(lista_datos[[i]]),otherwise = NA),
+           ifelse(letra_nombre="t",possibly(funcion_term_hig(lista_datos[[i]]),otherwise = NA),NA)))
+
+    lista_actualizada[[i]] <- Tabla_actualizada
+  }
+  
+  return(lista_actualizada)
+  
+}
+```
+
