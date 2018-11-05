@@ -1,8 +1,12 @@
 ---
-title: "Bucles , if, ifelse y while"
+title: "Guía básica de R"
+subtitle: "Bucles , if, Diagramas de barras y gráficos combinados"
 author: "Óscar García Hernández"
-date: "30 de octubre de 2018"
-output: html_document
+date: "5 de noviembre de 2018"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #Intro  
 <br />
 <br />
-Bueno chicos, repasando el capítulo anterior he de admitir que se me fue un poco la olla metiendo bucles. Por ello me gustaría profundizar en ello en este capítulo. Y lo vamos a hacer como llevamos tiempo haciendolo con los datos de los nuestros sensores y aplicando todas las cositas que ya hemos visto. Con muy buen criterio, Andoni creo un script el cual nos permitirá ir siguiendo las cosas que vallamos haciendo. A mi me gustaría ir más allá, y voy a crear un script a partir de ahora de cada capitulo a la par que voy haciendo esta guía. De manera que el código utilizado quede guardado como un script de R y podemos acceder a él de manera sencilla. 
+Bueno chicos, repasando el capítulo anterior he de admitir que se me fue un poco la olla metiendo bucles. Por ello me gustaría profundizar en ello en este capítulo. Y lo vamos a hacer como llevamos tiempo haciendolo con los datos de los nuestros sensores y aplicando todas las cositas que ya hemos visto.
 <br />
 <br />
 
@@ -100,12 +104,19 @@ A la hora de tratar datos ya vimos que los bucles se pueden utilizar para clasif
 Pasamos ahora a importar los datos de los sensores como ya sabemos.
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
 library(rlist)
 library(here)
 
 Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
 ```
+```{r include=FALSE}
+library(rlist)
+library(here)
+
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+```
+
 <br />
 <br />
 Con intencion de ver un poco como se organizan todos los datos, vamos a tratar con los datos del pluviómetro. 
@@ -113,13 +124,21 @@ Con intencion de ver un poco como se organizan todos los datos, vamos a tratar c
 <br />
 Ya hemos visto que muchas veces los datos vienen en formatos de mierda y hay que modificarlos, no voy ni a explicarlo de nuevo. Pego código y listo. <br />
 <br />
-```{r}
+```{r eval=FALSE}
 pluv_5 <- Datos$pluv5
 
 library(lubridate)
 pluv_5$date_string_hour<- dmy_hms(as.character(pluv_5$date_string_hour))
 pluv_5$`rain (mm)`<- as.numeric(as.character(pluv_5$`rain (mm)`))
 ```
+```{r include=FALSE}
+pluv_5 <- Datos$pluv5
+
+library(lubridate)
+pluv_5$date_string_hour<- dmy_hms(as.character(pluv_5$date_string_hour))
+pluv_5$`rain (mm)`<- as.numeric(as.character(pluv_5$`rain (mm)`))
+```
+
 <br />
 <br />
 Comentar a cerca del pluviómetro que tiene una manera de registrar datos de manera particular. Solamente existen datos de cuando llueve. Por lo tanto tendremos muchos huecos en el *dataset*. Además, hay que darse cuenta de que la lluvia se expresa en milimetros que es lo mismo que litros por metro cuadrado y que se expresa como lluvia acumulada. Se me ocurre que podemos modificar esta información  y representar la lluvia como litros/metro cuadrado por mes.   
@@ -199,16 +218,165 @@ vector_meses<- unique(month(pluv_5$date_string_hour))
 
 for (i in 1:length(vector_meses)) {
   
-  #creo un vector con la lluvia acumulada del mes
-  Datos_mes <- pluv_5[month(pluv_5$date_string_hour) == vector_meses[i],] 
-  vector_dias<- unique(mday(Datos_mes))
+  #Corto los datos del mes
+  Datos_mes <- pluv_5[month(pluv_5$date_string_hour) == vector_meses[i],]
   
-  for (j in vector_dias) {
+  #Miro cuantos días aparecen en la tabla (días de lluvia)
+  vector_dias<- unique(mday(Datos_mes$date_string_hour))
+  
+  #Comando nuevo, miro cuantos días tienen el mes a analizar
+  dias_mes <- unique(days_in_month(Datos_mes$date_string_hour))
+  
+  # Vector pa guardar lluvia diaria
+   lluvia_diaria <- vector()
+  for (j in 1:dias_mes) {
     
-    
+    if(sum(j==vector_dias ) != 0){
+      
+      Datos_dia <- Datos_mes$`rain (mm)`[
+        mday(Datos_mes$date_string_hour)==j]
+      
+      lluvia_diaria[j] <- max(Datos_dia) - min(Datos_dia)
+      
+    }else{lluvia_diaria[j] <- 0}
+  
   }
   
+   lista_lluvia[[i]] <- lluvia_diaria
   
 }
+
+
+#Nombramos los elementos de la lista
+names(lista_lluvia)<- vector_meses
+```
+<br />
+<br />
+Parece que hay muchas cosas raras en este bucle pero trankilos, QUE NO CUANDA EL PÁNICO. Hay un bucle doble para: el primer bucle corta los datos por meses y el segundo bucle, una vez el primer bucle ha cortado los datos del mes, los corta por días. 
+
+
+<br />
+<br />
+
+#if
+
+<br />
+<br />
+
+He añadido un **if**. Ahora explicaré para qué. Ya vimos que los dias que no llueven no se ven representados en la tabla. Yo lo que he hecho es crear un bucle que añada un 0 el día que no llueva. ¿Cómo?, implementando un if.
+
+<br />
+<br />
+```{r eval=FALSE}
+if(condicion = TRUE o FALSE){
+  
+  accion1
+  
+  
+}else{ 
+  
+  accion2
+  
+  }
 ```
 
+<br />
+<br />
+Un if funciona con una condición lógica, es decir, entre los parentesis tenemos que introducir un valor que sea **TRUE o FALSE**. Si la condición es TRUE se realiza la acción1 que se encuentra entre los corchetes del if. si la condición es FALSE se realiza la accion2 que se encuentra dentro del corchete del *else*. **LO NORMAL ES SIEMPRE USAR EL IF JUNTO CON EL ELSE**.
+<br />
+<br />
+De hecho R, nos ofrece un comando que se utiliza como *ifelse()*. Y se usa como: 
+
+```{r eval=FALSE}
+ifelse(condicion,accion1[TRUE], accion2[FALSE])
+```
+<br />
+<br />
+Tengo que reconocer que la condición que he usado para el bucle de la lluvia diaria es un poco rebuscada. A continuación explico la lógica. 
+<br />
+<br />
+
+
+```{r eval=FALSE}
+if(sum(j==vector_dias ) != 0){
+  .
+  .
+  .
+}
+```
+<br />
+<br />
+
++ j: es la variable del bucle que hace un barrido desde 1 hasta 31. Todos los dias del mes. 
++ vector_dias: contiene la información de los días del mes que ha llovido.
+<br />
+<br />
+Lo que hace esa condición es verificar si ha llovido ese día. **YO PUEDO SUMAR VECTORES LÓGICOS, empleando sum()**. Esto lo usamos para verificar cuantas veces se cumple una condición. Porque el valor **TRUE=1 y el valor FALSE=0** 
+<br />
+<br />
+
+# Gráficos combinados
+<br />
+<br />
+Aprovechando que tenemos una lista de 5 elementos, voy a aprovechar a explicar rápidamente que en R se pueden representar gráficos diferentes en la misma ventana. 
+<br />
+<br />
+Se puede hacer de varias maneras, por ejemplo:
+<br />
+<br />
+```{r eval=FALSE}
+par(mfrow=c("filas","columnas"))
+```
+<br />
+<br />
+Este comando divide la ventana de gráficos en columnas y filas. y cada emplezamiento de la ventana se dedicará a una gráfica. 
+<br />
+<br />
+A continuación realizaremos las gráficas empleando un bucle, como no¡
+<br />
+<br />
+```{r}
+par(mfrow=c(5,1))
+
+#Obtengo los nombres de los meses para incluirlos en las gráficas
+nombres_meses <- as.character(
+  month(
+    as.numeric(names(lista_lluvia)),
+    label=TRUE,
+    abbr = FALSE))
+
+
+for (i in 1:length(lista_lluvia)) {
+  par(mar = rep(2, 4))
+
+  barplot(lista_lluvia[[i]], main = nombres_meses[i], ylim = c(0,15))
+}
+
+```
+
+<br />
+<br />
+Un detalle, que me gustaría comentar es que a la de representar gráficos "juntos" es importe que sean fácilmente complarables, para ello es interesante que los ejes, tengan el mismo tamaño, para ello se utiliza **ylim()**. Se fijan los tamaños de del eje y para que sean en todos igual. 
+<br />
+<br />
+```{r}
+par(mfrow=c(5,1))
+
+#Obtengo los nombres de los meses para incluirlos en las gráficas
+nombres_meses <- as.character(
+  month(
+    as.numeric(names(lista_lluvia)),
+    label=TRUE,
+    abbr = FALSE))
+
+
+for (i in 1:length(lista_lluvia)) {
+  par(mar = rep(2, 4))
+
+  barplot(lista_lluvia[[i]], main = nombres_meses[i], ylim = c(0,15))
+}
+
+```
+<br />
+<br />
+Tambien existe el comando **layout()** para separar la ventana de gráficos. Ya lo utilizaremos, o no¡¡, pero que sepan que existen más maneras, esta es la forma más básica y por ello es interesante usarla. por simplicidad. 
