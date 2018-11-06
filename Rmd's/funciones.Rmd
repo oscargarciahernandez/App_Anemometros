@@ -114,11 +114,12 @@ str_sub(names(Datos[1]),1,1)
 Hay muchisimos comandos (str_comando) que son dignos de mirar por lo menos una vez. 
 <br />
 <br />
-MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de anemometro, que van a estar utilizadas en un función única. 
+MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de sensor, que van a estar utilizadas en un función única. 
 <br />
 <br />
 ```{r}
 Formatos_columna <- function(Lista_datos){
+  
   numero_sensores <- length(Lista_datos)
   
   for (i in 1:numero_sensores) {
@@ -153,7 +154,7 @@ funcion_anemo <- function(Tabla_sf){
   #cambiamos el formato de la fecha
   Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }
 ```
@@ -172,7 +173,7 @@ funcion_pluv <- function(Tabla_sf){
   #cambiamos el formato de la fecha
   Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }
 ```
@@ -192,7 +193,7 @@ funcion_term_hig <- function(Tabla_sf){
   #cambiamos el formato de la fecha
   Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }
 ```
@@ -212,12 +213,14 @@ Formatos_columna <- function(lista_datos){
     letra_nombre <- str_sub(names(lista_datos[i]),1,1)
     
     #usamos el ya visto ifelse 
-    Tabla_actualizada <- ifelse(
-            letra_nombre=="a",funcion_anemo(lista_datos[[i]]),
-           ifelse(letra_nombre=="p",funcion_pluv(lista_datos[[i]]),
-           ifelse(letra_nombre="t",funcion_term_hig(lista_datos[[i]]),NA)))
+    Tabla_actualizada <- as.data.frame(ifelse(
+      letra_nombre=="a",funcion_anemo(lista_datos[[i]][,]),
+            ifelse(letra_nombre=="p",funcion_pluv(lista_datos[[i]]),
+                   ifelse(letra_nombre=="t",funcion_term_hig(lista_datos[[i]]),-31))))
 
-    lista_actualizada[[i]] <- Tabla_actualizada
+    
+    #Guardamos en nueva lista
+    lista_actualizada[[names(lista_datos[i])]] <- Tabla_actualizada
   }
   
   return(lista_actualizada)
@@ -247,26 +250,17 @@ library(purrr)
 <br />
 <br />
 ```{r}
-Formatos_columna <- function(lista_datos){
-  numero_sensores <- length(lista_datos)
-  
-  lista_actualizada <- list()
-  for (i in 1:numero_sensores) {
-    
-    #obtenemos la primera letra
-    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
-    
-    #usamos el ya visto ifelse 
-    Tabla_actualizada <- ifelse(
-            letra_nombre=="a",possibly(funcion_anemo(lista_datos[[i]]),otherwise = NA),
-           ifelse(letra_nombre=="p",possibly(funcion_pluv(lista_datos[[i]]),otherwise = NA),
-           ifelse(letra_nombre="t",possibly(funcion_term_hig(lista_datos[[i]]),otherwise = NA),NA)))
+funcion_anemo <- possibly(funcion_anemo,otherwise = NA)
 
-    lista_actualizada[[i]] <- Tabla_actualizada
-  }
-  
-  return(lista_actualizada)
-  
-}
+funcion_pluv <- possibly(funcion_pluv,otherwise = NA)
+
+funcion_term_hig <- possibly(funcion_term_hig,otherwise = NA)
+```
+
+<br />
+<br />
+```{r}
+
+
 ```
 
