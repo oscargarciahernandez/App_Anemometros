@@ -1,10 +1,17 @@
 
-
+library(here)
+library(rlist)
+library()
 
 ###########Actualizar los datos
-clean_data_list<- list.load(here::here("RoseoDashboard/data/Datos_anemometros.rdata"))
+clean_data_list<- list.load(here::here("data/Datos_anemometros.rdata"))
 
 last_timestamp<-t(as.data.frame(lapply(clean_data_list,"[", 1, 1)))
+for(i in 1:length(clean_data_list)){
+  if (is.data.frame(clean_data_list[[i]])){
+    vector_fechas[i]=clean_data_list[[i]][1,1]
+  }else{vector_fechas[i]=NA}
+} 
 disp<-cbind(disp[,1:4],last_timestamp)
 #### creamos lista con la nueva informacion de todos los sensores
 dt_list_new_values<- list()
