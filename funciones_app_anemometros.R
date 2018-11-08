@@ -765,11 +765,9 @@ get_term_hig <- possibly(term_hig, otherwise = NA)
 
 actualizar_anemos<-function(id,last_time){
   
-  last_time<-last_time
   link<- "https://measurements.mobile-alerts.eu/Home/MeasurementDetails?deviceid="
   link1<-"https://measurements.mobile-alerts.eu/Home/MeasurementDetails?"
   link2<- "&vendorid=f193c634-2611-475b-ba7a-27b0ead33c6f&appbundle=eu.mobile_alerts.mobilealerts"
-  id<- id
   p1<- paste0(link,id,link2)
   p2<- POST(p1, encode = "form")
   p3<-htmlParse(p2, asText = TRUE)
