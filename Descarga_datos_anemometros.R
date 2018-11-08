@@ -37,7 +37,7 @@ for(i in 1:length(disp[,1])){
   
 }
 clean_data_list<-lapply(dt_list, clean_data, fechainicio= fechaini)
-path_data <- here::here(paste0("data/Datos_anemometros.rdata",Sys.time()))
+path_data <- here::here(paste0("data/Datos_anemometros",Sys.time(),".rdata"))
 list.save(clean_data_list, here::here("data/Datos_anemometros.rdata"))
 
 #Borrar variables que no se vayan a usar ----
