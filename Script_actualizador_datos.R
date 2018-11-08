@@ -1,18 +1,20 @@
-
 library(here)
 library(rlist)
-library()
 
 ###########Actualizar los datos
+#Bajar datos y crear ultimas_fechas ----
 clean_data_list<- list.load(here::here("data/Datos_anemometros.rdata"))
 
-last_timestamp<-t(as.data.frame(lapply(clean_data_list,"[", 1, 1)))
-for(i in 1:length(clean_data_list)){
+ultimas_fechas=vector()  #Lo creamos vacio para el for
+for(i in 1:length(clean_data_list)){    #Crea ultimas_fechas con la ultilma fecha de cada sensor. #Habria k cambiar por lapply
   if (is.data.frame(clean_data_list[[i]])){
-    vector_fechas[i]=clean_data_list[[i]][1,1]
-  }else{vector_fechas[i]=NA}
-} 
-disp<-cbind(disp[,1:4],last_timestamp)
+    ultimas_fechas[i]=clean_data_list[[i]][1,1]  #El trm_hig 3 da problemas. Nos lo saltamos.
+  }else{ultimas_fechas[i]=NA}
+}
+#----
+source(here::here("funciones_app_anemometros.R"))  #Cargar funciones
+disp<-id_iden(640689911849)
+disp<-cbind(disp,ultimas_fechas)
 #### creamos lista con la nueva informacion de todos los sensores
 dt_list_new_values<- list()
 for(i in 1:length(disp[,1])){
