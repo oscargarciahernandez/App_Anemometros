@@ -39,3 +39,7 @@ for(i in 1:length(disp[,1])){
 clean_data_list<-lapply(dt_list, clean_data, fechainicio= fechaini)
 list.save(clean_data_list, here::here("data/Datos_anemometros.rdata"))
 
+#Borrar variables que no se vayan a usar ----
+remove(fechaini,i,nomb)   #Borrar variables
+remove(id_iden,actualizar_anemos,actualizar_pluvs,actualizar_term_hig,data_M_A,clean_data,anemos,pluvs,term_hig,get_anem,get_pluvs,get_term_hig) #Borrar funciones 
+
