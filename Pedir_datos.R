@@ -35,5 +35,41 @@ cuerpo=list(devicetoken = 'empty',
             #request += '&measurementfroms=%s' % ('0,' * len(sensors)),
             #request += '&measurementcounts=%s' % ('50,' * len(sensors)))
 
-POST(url=link)
+POST(url=link)"
   
+#### c("0B38DAE79059","03254ACF1E27","08610F383C7B","08734DCAC206","0B1FDF90050B","032B8F08E708")
+##phoneid= "640689911849"
+
+
+
+###################
+# Con este script somos capaces de acceder al último valor registrado en la web
+
+library(httr)
+
+url<- "https:/www.data199.com/api/pv1/device/lastmeasurement"
+body<- list(deviceids= "0B38DAE79059,08610F383C7B,08734DCAC206,0B1FDF90050B")
+
+POST(url,body = body,verbose(),encode = "form")
+
+########################
+add_headers(User-Agent= "remotemonitor/248 CFNetwork/758.2.8 Darwin/15.0.0",
+            Accept-Language= "en-us",
+            Content-Type= "application/x-www-form-urlencoded; charset=utf-8",
+            Host= "www.data199.com:8080")
+
+url1<- "http://www.data199.com/api/v1/dashboard"
+body1<- list(devicetoken = 'empty',			
+             vendorid = 'f193c634-2611-475b-ba7a-27b0ead33c6f',	
+             phoneid = 'Unknow',					
+             version = '1.37',				
+             build = '136',						
+             executable = 'Mobile-Alerts',		
+             bundle = 'de.synertronixx.remotemonitor',	
+             lang = 'en',	
+             deviceids= "0B38DAE79059,08610F383C7B,08734DCAC206,0B1FDF90050B")
+
+POST(url1,
+     body = body,verbose(),
+     encode = "form",
+     user_agent("remotemonitor/248 CFNetwork/758.2.8 Darwin/15.0.0"))
