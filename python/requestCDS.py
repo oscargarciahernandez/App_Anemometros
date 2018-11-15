@@ -55,4 +55,4 @@ for i in [
         'area' : '45/-4/41/-1', #N/W/S/E
         'grid' : '0.1/0.1'
     },
-    'download{i}.nc')
+    'Data_{}.nc'.format(i))
