@@ -273,8 +273,9 @@ library(here)</code></pre>
 
 str_sub(names(Datos[1]),1,1)</code></pre>
 <pre><code>## [1] &quot;a&quot;</code></pre>
-<p><br /> <br /> Hay muchisimos comandos (str_comando) que son dignos de mirar por lo menos una vez. <br /> <br /> MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de anemometro, que van a estar utilizadas en un función única. <br /> <br /></p>
+<p><br /> <br /> Hay muchisimos comandos (str_comando) que son dignos de mirar por lo menos una vez. <br /> <br /> MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de sensor, que van a estar utilizadas en un función única. <br /> <br /></p>
 <pre class="r"><code>Formatos_columna &lt;- function(Lista_datos){
+  
   numero_sensores &lt;- length(Lista_datos)
   
   for (i in 1:numero_sensores) {
@@ -283,31 +284,33 @@ str_sub(names(Datos[1]),1,1)</code></pre>
     letra_nombre &lt;- str_sub(names(lista_datos[i]),1,1)
     
     #usamos el ya visto ifelse 
-    ifelse(letra_nombre==&quot;a&quot;,funcion_anemo(Lista_datos[[i]]),
-           letra_nombre==&quot;p&quot;,funcion_pluv(Lista_datos[[i]]),
-           letra_nombre=&quot;t&quot;,funcion,term_hig(Lista_datos[[i]]))
+    ifelse(letra_nombre==&quot;a&quot;,funcion_anemo(lista_datos[[i]]),
+           letra_nombre==&quot;p&quot;,funcion_pluv(lista_datos[[i]]),
+           letra_nombre=&quot;t&quot;,funcion,term_hig(lista_datos[[i]]))
 
   }
   
 }</code></pre>
 <p><br /> <br /> pequeño inciso: El ifelse tiene la ventaja que se pueden poner condiciones encadenadas de manera ordenada y fácil. Vamos a dejar un momento de lado la función principal y vamos a hacer las funciones de cada sensor. <br /> <br /></p>
-<pre class="r"><code>funcion_anemo &lt;- function(Tabla){
+<pre class="r"><code>funcion_anemo &lt;- function(Tabla_sf){
   library(lubridate)
   
+  Tabla &lt;- Tabla_sf 
   #Cambiamos el formato de las columnas numericas
-  Tabla$Mean=as.numeric(as.character(Tabla$Mean))
-  Tabla$Max=as.numeric(as.character(Tabla$Max))
-  Tabla$Dir_deg=as.numeric(as.character(Tabla$Dir_deg))
+  Tabla$Mean &lt;- as.numeric(as.character(Tabla$Mean))
+  Tabla$Max &lt;- as.numeric(as.character(Tabla$Max))
+  Tabla$Dir_deg &lt;- as.numeric(as.character(Tabla$Dir_deg))
   
   #cambiamos el formato de la fecha
   Tabla$date_string_hour &lt;- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }</code></pre>
 <p><br /> <br /></p>
-<pre class="r"><code>funcion_pluv &lt;- function(Tabla){
+<pre class="r"><code>funcion_pluv &lt;- function(Tabla_sf){
     library(lubridate)
+  Tabla &lt;- Tabla_sf 
 
   
   #Cambiamos el formato de las columnas numericas
@@ -317,12 +320,13 @@ str_sub(names(Datos[1]),1,1)</code></pre>
   #cambiamos el formato de la fecha
   Tabla$date_string_hour &lt;- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }</code></pre>
 <p><br /> <br /></p>
-<pre class="r"><code>funcion_term_hig &lt;- function(Tabla){
+<pre class="r"><code>funcion_term_hig &lt;- function(Tabla_sf){
     library(lubridate)
+  Tabla &lt;- Tabla_sf 
 
   
   #Cambiamos el formato de las columnas numericas
@@ -333,7 +337,7 @@ str_sub(names(Datos[1]),1,1)</code></pre>
   #cambiamos el formato de la fecha
   Tabla$date_string_hour &lt;- dmy_hms(as.character(Tabla$date_string_hour))
   
-  return(Tabla)
+  return(as.data.frame(Tabla))
   
 }</code></pre>
 <p><br /> <br /> una vez ya hemos definido las funciones vamos a volver a la función principal. <br /> <br /></p>
@@ -347,12 +351,16 @@ str_sub(names(Datos[1]),1,1)</code></pre>
     letra_nombre &lt;- str_sub(names(lista_datos[i]),1,1)
     
     #usamos el ya visto ifelse 
-    Tabla_actualizada &lt;- ifelse(
-            letra_nombre==&quot;a&quot;,funcion_anemo(lista_datos[[i]]),
-           ifelse(letra_nombre==&quot;p&quot;,funcion_pluv(lista_datos[[i]]),
-           ifelse(letra_nombre=&quot;t&quot;,funcion_term_hig(lista_datos[[i]]),NA)))
-
-    lista_actualizada[[i]] &lt;- Tabla_actualizada
+    ifelse(
+      letra_nombre==&quot;a&quot;,tabla_actualizada&lt;-funcion_anemo(lista_datos[[i]]),
+      ifelse(
+        letra_nombre==&quot;p&quot;,tabla_actualizada&lt;-funcion_pluv(lista_datos[[i]]),
+        ifelse(
+          letra_nombre==&quot;t&quot;,tabla_actualizada&lt;-funcion_term_hig(lista_datos[[i]]),-31)))
+    
+    
+    #Guardamos en nueva lista
+    lista_actualizada[[names(lista_datos[i])]] &lt;- tabla_actualizada
   }
   
   return(lista_actualizada)
@@ -368,8 +376,24 @@ str_sub(names(Datos[1]),1,1)</code></pre>
 <pre><code>## The following object is masked from 'package:base':
 ## 
 ##     date</code></pre>
-<pre><code>## Error in ifelse(letra_nombre = &quot;t&quot;, funcion_term_hig(lista_datos[[i]]), : unused argument (letra_nombre = &quot;t&quot;)</code></pre>
+<pre><code>## Error in Tabla[, 3]: número incorreto de dimensiones</code></pre>
+<p><br /> <br /> Vemos que da error… otra cosa buena de separar el código en muchas funciones es que los errores son más fáciles de encontrar. Bueno, ya os digo que el problema está en que en la lista <em>Datos</em>, tienen un elemento llamado <em>term_hig3</em> que está vacio, y la función no sabe tratar con tablas que no sean iguales que las que hemos supuesto. Por lo tanto para abordar estos problemas podemos tomar varias estrategias. Por ejemplo, decir que si la función da error, seguir ejecutando la función. <br /> <br /> esto lo permite hacer el comando possibly del paquetee purrr <br /> <br /></p>
+<pre class="r"><code>library(purrr)</code></pre>
 <p><br /> <br /></p>
+<pre class="r"><code>funcion_anemo &lt;- possibly(funcion_anemo,otherwise = NA)
+
+funcion_pluv &lt;- possibly(funcion_pluv,otherwise = NA)
+
+funcion_term_hig &lt;- possibly(funcion_term_hig,otherwise = NA)</code></pre>
+<p><br /> <br /></p>
+<p>Es la misma función, pero en caso de error, no devuelve un mensaje de error sino un valor <strong>NA</strong>. Esto puede ser muy util en nuestro caso, ya que, ya sabemos que term_hig3 esta vacio, pero de esta manera obtendremos el resultado esperado para el resto de sensores, independientemente de que la función no haya podido ejecutarse para ese elemento. <br /> <br /></p>
+<pre class="r"><code>Tabla_con_formato &lt;- Formatos_columna(Datos)</code></pre>
+<p><br /> <br /> De esta manera guardamos el resultado de nuestra función en una nueva variable. <br /> <br /> Este capitulo de la guía esta enfocado a que os deis cuenta de que todo lo que programamos, puede ser ejecutado dentro de una funció, obtendremos los mismos resultados y tendremos un codigo más limpio y más fácil de analizar en busca de fallos y puntos debiles. <strong>OS ANIMO A PENSAR EN UNA PROGRAMACIÓN BASADA EN FUNCIONES, NOS VA A FACILITAR MUCHO EL TRABAJO</strong>. <br /> <br /> En las funciones tambien se pueden añadir parametros modificables. o incluso parámetros modificables con un valor por defecto. Es decir, en caso de no especificar el valor de dicho parámetro, la función se ejecutará con un valor preestablecido. <br /> <br /> Otra de las cosas que van a ser útiles para nuestra herramienta serán;</p>
+<ul>
+<li><p>Función para crear una tabla unicamente con los datos horarios. Es decir, un tabla que presente el dato más cercano a las horas en punto. Para poder compararlos o calibrarlos con los datos del ERA5. Que nos ofrece datos horarios.</p></li>
+<li><p>Funcion troceadora de datos en series temporales. Una funcion que me devuelva informacion resumida de semanas, meses, dias, horas. como hicimos en el capitulo anterior con los datos pluviometricos.</p></li>
+<li><p>Funcion actualizadora de datos. Una funcion que sea capaz de descargar los datos de internet, ver cuales son los que faltan en el dataset original y meter los valores que faltan. Esto va a ser necesario porque, depende del sensor, el servidor solamente guarda datos de unos pocos meses. Por lo tanto es importante mantener un Dataset original que valla acumulando datos con cada actualización.</p></li>
+</ul>
 </div>
 
 

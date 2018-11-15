@@ -1,18 +1,27 @@
 import cdsapi
 
+
+
 c = cdsapi.Client()
 
-c.retrieve(
+for i in [
+            '2000','2001','2002',
+            '2003','2004','2005',
+            '2006','2007','2008',
+            '2009','2010','2011',
+            '2012','2013','2014',
+            '2015','2016','2017',
+            '2018' ]:
+    c.retrieve(
     'reanalysis-era5-single-levels',
     {
-        'product_type':'reanalysis',
-        'format':'netcdf',
         'variable':[
             '10m_u_component_of_neutral_wind','10m_u_component_of_wind','10m_v_component_of_neutral_wind',
             '10m_v_component_of_wind','10m_wind_direction','10m_wind_gust_since_previous_post_processing',
             '10m_wind_speed','2m_temperature','instantaneous_10m_wind_gust'
         ],
-        'year':'2000',
+        'product_type':'reanalysis',
+        'year': i,
         'month':[
             '01','02','03',
             '04','05','06',
@@ -41,6 +50,9 @@ c.retrieve(
             '15:00','16:00','17:00',
             '18:00','19:00','20:00',
             '21:00','22:00','23:00'
-        ]
+        ],
+        'format':'netcdf',
+        'area' : '45/-4/41/-1', #N/W/S/E
+        'grid' : '0.1/0.1'
     },
-    'download.nc')
+    'download{i}.nc')
