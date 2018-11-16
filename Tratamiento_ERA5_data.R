@@ -104,4 +104,21 @@
     
   }
   
+
+# Buscar todos los archivos DAta...nc -------------------------------------
+
+  filesnc<- list.files(path="python/",pattern = ".nc",recursive = TRUE)  
+  
+  anio<- vector()
+  for (i in 1:length(filesnc)) {
+    data_1<- open.nc(paste0(here::here("python/"),"/",filesnc[i]))
+  
+  data_ls<- read.nc(data_1, unpack = TRUE)$time[1]
+    fecha<- utcal.nc("hours since 1900-01-01 00:00:0.0",data_ls, type = "n")
+    anio[i]<- fecha[,1]
+  
+  }
+  tabla<- cbind(filesnc,anio)
+  
+  
   
