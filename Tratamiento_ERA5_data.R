@@ -103,3 +103,5 @@
     lista_pos[[i]]$time <- time_2
     
   }
+  
+  
