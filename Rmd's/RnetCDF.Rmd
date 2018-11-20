@@ -3,11 +3,19 @@ title: "Guía básica R"
 subtitle: "Paquete RnetCDF"
 author: "Óscar García Hernández"
 date: "20 de noviembre de 2018"
-output: html_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE,fig.align='center')
+library(mapdata)
+library(maps)
+library(RNetCDF)
+library(knitr)
+library(stringr)
 ```
 
 # Introducción
@@ -19,6 +27,7 @@ Buenas chicxs¡. Este apartado de la guía estará enfocado a trabajar con los d
 Sin más, eso es para que tengan una idea general. Comentar que ERA5 aun no está terminado, me explico: ERA5 porporcionará datos desde 1950 hasta la actualidad, a día  de hoy(20/11/2018) únicamente están disponibles desde el año 2000 hasta 2018.  
 <br />
 <br />
+
 # NetCDF
 
 <br />
@@ -32,7 +41,7 @@ Antes de nada comentar que el volumen de datos con el que vamos a trabajar es ba
 Como siempre, instalar y ejecutar. 
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
 install.packages("RNetCDF")
 
 library(RNetCDF)
@@ -66,6 +75,7 @@ print.nc(data_ERA)
 Con este print podemos ver que variables contienen el archivo, cuantas longitudes y latitudes, cuantos archivos temporales y muy importante, **las unidades de cada variables**. Es curioso remarcar que los datos temporales tienen unas unidades que no habíamos visto hata ahora: **"hours since 1900-01-01 00:00:0.0"**.*Se pueden observar factores de escala y offset, pero que veremos más adelante que no nos afectarán para nada*. Tambien vemos que en cuanto a el viento hay muchas variables. Fallo mío, he descargado todo lo referido al viento, pero igual no nos vale todo. Las variables las vamos a agrupar de la siguiente manera, luego explicaré por qué. 
 <br />
 <br />
+
 + "10 metre U wind component" y "10 metre V wind component"
 
 + "Neutral wind at 10 m u-component" y "Neutral wind at 10 m v-component"
@@ -80,7 +90,7 @@ Con este print podemos ver que variables contienen el archivo, cuantas longitude
 
 <br />
 <br />
-Es muy recurrente en datos meteorológicos ofrecer la informacion de la velocidad y dirección del viento en coponentes u y v. O lo que es lo mismo, componente horizontal y vertical. 
+Es muy recurrente en datos meteorológicos ofrecer la informacion de la velocidad y dirección del viento en coponentes U y V. O lo que es lo mismo, componente zonal y meridional.  
 <br />
 <br />
 
@@ -192,15 +202,17 @@ De esta manera nos cercioramos de que realmente tenemos datos horarios.
 Imagino que ya habrán usado en clase. pero el paquete **mapdata** ofrece la posibilidad de representar mapas ligeros de manera sencilla. 
 <br />
 <br />
-```{r}
+```{r eval=FALSE}
 install.packages("mapdata")
 install.packages("maps")
 library(mapdata)
 library(maps)
-
-
-map("worldHires")
 ```
+```{r}
+map("worldHires")
+
+```
+
 <br />
 <br />
 
@@ -269,7 +281,9 @@ for (lon in 1:length(longitud)) {
   for (lat in 1:length(latitud)) {
       x <- lon
       y <- lat 
-      tabla<- data.frame(cbind(longitud[x],latitud[y],data_ERA_ls$time,
+      tabla<- data.frame(cbind(longitud[x],
+                               latitud[y],
+                               data_ERA_ls$time,
                                data_ERA_ls$u10n[x,y,],data_ERA_ls$u10[x,y,],
                                data_ERA_ls$v10n[x,y,],data_ERA_ls$v10[x,y,],
                                data_ERA_ls$dwi[x,y,],data_ERA_ls$fg10[x,y,], 
@@ -305,3 +319,11 @@ for (i in 1:length(lista_pos)) {
 <br />
 <br />
 Este tipo de organización puede llegar a ser un poco caótica, dense cuenta que contamos con 1271 elementos (31*41). Es una idea, seguro que logramos una manera de trabajar más eficiente. 
+<br />
+<br />
+
+
+# Outro
+<br />
+<br />
+Creo que como introducción a los datos .nc es suficiente. Una vez ya hemos extraído la información de manera correcta tenemos datos en formato lista que vamos a tratar igual que los demás datos. Asi que no tiene más misterio. Como dije antes será interesante qué cree un capitulo enfocado a mapas exclusivamente. Un abrazo¡ 
