@@ -107,7 +107,8 @@
 
 # Buscar todos los archivos DAta...nc -------------------------------------
 
-  filesnc<- list.files(path="python/",pattern = ".nc",recursive = TRUE)  
+  filesnc<- list.files(path="python/",all.files = TRUE)  
+  filesnc <- filesnc[str_detect(filesnc,pattern = "Data_")]
   
   anio<- vector()
   for (i in 1:length(filesnc)) {
