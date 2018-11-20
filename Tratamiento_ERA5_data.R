@@ -133,8 +133,8 @@
   #convertir componentes a dirección y modulo
   wind_abs = sqrt(u10^2 + v10^2)
   wind_dir_rad = atan2(u10/wind_abs, v10/wind_abs) 
-  wind_dir_deg1 = wind_dir_rad * 180/pi ## -111.6 degrees
-  wind_dir_deg2 = wind_dir_deg1+ 180 ## 68.38 degrees
+  wind_dir_deg1 = wind_dir_rad * 180/pi 
+  wind_dir_deg2 = wind_dir_deg1+ 180 
   
   #convertir direccion y modulo a componentes
   u10_1<-sin(dir*pi/180)*wind
