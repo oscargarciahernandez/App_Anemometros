@@ -41,7 +41,7 @@
   
 
   
-# Lista con todos los valores ---------------------------------------------
+# Lista con todos los valores, (NO ME GUSTA) ---------------------------------------------
 
    
   #Creación de una lista con todos los valores
@@ -98,15 +98,11 @@
   hms_1<- paste(time_1[,4],time_1[,5],time_1[,6],sep = "-")
   time_2<-ymd_hms(paste0(ymd_1," ",hms_1))
   
-  # la añadimos a la lista
-  for (i in 1:length(lista_pos)) {
-    lista_pos[[i]]$time <- time_2
-    
-  }
-  
+ #sustituimos la fecha con formato weno weno 
+  data_ERA_ls$time<- time_2
 
-# Buscar todos los archivos DAta...nc -------------------------------------
-
+# Buscar todos los archivos DAta...nc  -------------------------------------
+  #esto pa' una comprobación, ignoralo¡ 
   filesnc<- list.files(path="python/",all.files = TRUE)  
   filesnc <- filesnc[str_detect(filesnc,pattern = "Data_")]
   
