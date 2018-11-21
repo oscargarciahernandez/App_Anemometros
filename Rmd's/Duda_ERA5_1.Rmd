@@ -1,0 +1,115 @@
+---
+title: "ERA5 wind variables"
+author: "Óscar García Hernández"
+date: "21 de noviembre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Variables relacionadas con el viento
+<br />
+<br />
+A la hora de descargar los datos del ERA5, utilicé el dataset de *single levels*. Y mi estrategia fue descargar todas las variables relacionadas con el viento ofrecidas por la base de datos. A continuación ejecutaré unos datos del golfo de bizkaia del año 2000, para ver las variables contenidas. 
+<br />
+<br />
+```{r}
+library(RNetCDF)
+
+data_ERA<- open.nc(here::here("python/Data_2000.nc"))
+print.nc(data_ERA)
+
+#Se supone que al extraer los datos empleando unpack=TRUE
+# los factores de escala y offset se aplican automáticamente
+
+data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
+
+  
+```
+<br />
+<br />
+Yo estaba acostumbrado a calcular velocidad y dirección del viento a partir de las componentes U y V del viento. Lo que pasa es que ERA5 porporciona:
+
++ componentes U y V a 10 m  (u10,v10)
++ U y V neutrales a 10 m  (u10n,v10n)
++ velocidad y dirección del viento a 10 m (wind,dwi)
+
+<br />
+<br />
+
+# Problemática
+<br />
+<br />
+**Simplemente pretendo decidir que variables usar para todos los cálculos y calibraciones posteriores: las componentes zonal y meridional (u10,v10) o directamente el modulo y dirección (wind,dwi).** 
+<br />
+<br />
+A fin de comprobar que mediante las componentes U y V se obtienen los mismos resultados que con el modulo y dirección, me doy cuenta de que no son tan idénticos. 
+<br />
+<br />
+
+```{r}
+u10<- data_ERA_ls$u10[1,1,]
+v10<- data_ERA_ls$v10[1,1,]
+wind<-data_ERA_ls$wind[1,1,]
+dir<- data_ERA_ls$dwi[1,1,]
+```
+<br />
+<br />
+
+Convierto el modulo y la dirección del viento a componentes zonales y meridionales. 
+<br />
+<br />
+```{r}
+u10_1<-sin((dir+180)*pi/180)*wind
+v10_1<- cos((dir+180)*pi/180)*wind
+```
+<br />
+<br />
+Comprobando el valor medio usando valor absoluto me doy cuenta de que las componentes obtenidas a través del modulo y la dirección son algo mayores
+<br />
+<br />
+```{r}
+  mean(abs(u10))
+  mean(abs(u10_1))
+  mean(abs(v10))
+  mean(abs(v10_1))
+```
+<br />
+<br />
+A continuación calculo errores. Teniendo en cuenta que cuando tienen signo distingo el error lo calculo de manera diferente. 
+<br />
+<br />
+```{r}
+  error_u<-vector()
+  for (i in 1:length(u10)) {
+    if(sign(u10[i])==sign(u10_1[i])){
+      error_u[i]<-abs(u10[i]-u10_1[i])
+    }else{
+      error_u[i]<- abs(u10[i])+abs(u10_1[i])
+    }
+    
+  }
+  
+  summary(error_u)
+```
+<br />
+<br />
+
+```{r}
+  error_v<-vector()
+  for (i in 1:length(v10)) {
+    if(sign(v10[i])==sign(v10_1[i])){
+      error_v[i]<-abs(v10[i]-v10_1[i])
+    }else{
+      error_v[i]<- abs(v10[i])+abs(v10_1[i])
+    }
+    
+  }
+  
+  summary(error_v)
+```
+<br />
+<br />
+No entiendo por qué estos datos que parten del mismo reanálisis tienen un error o diferencia (a mi parecer) tan grande. **De media,la diferencia entre componentes es de entorno a 0.25 m/s**. 

@@ -137,6 +137,43 @@
   wind_dir_deg2 = wind_dir_deg1+ 180 
   
   #convertir direccion y modulo a componentes
-  u10_1<-sin(dir*pi/180)*wind
-  v10_1<- cos(dir*pi/180)*wind
+  u10_1<-sin((dir+180)*pi/180)*wind
+  v10_1<- cos((dir+180)*pi/180)*wind
   
+  
+  
+  #mirando en valor abosuluto los modulos de los vectores tenemos que
+  # los modulos son mayores para las componentes extraídas a partir de 
+  #wind y dwi
+  mean(abs(u10))
+  mean(abs(u10_1))
+  mean(abs(v10))
+  mean(abs(v10_1))
+  
+  #errores
+  error_u<-vector()
+  for (i in 1:length(u10)) {
+    if(sign(u10[i])==sign(u10_1[i])){
+      error_u[i]<-abs(u10[i]-u10_1[i])
+    }else{
+      error_u[i]<- abs(u10[i])+abs(u10_1[i])
+    }
+    
+  }
+  
+  summary(error_u)
+  
+  
+  
+  summary(abs(v10-v10_1))
+  error_v<-vector()
+  for (i in 1:length(v10)) {
+    if(sign(v10[i])==sign(v10_1[i])){
+      error_v[i]<-abs(v10[i]-v10_1[i])
+    }else{
+      error_v[i]<- abs(v10[i])+abs(v10_1[i])
+    }
+    
+  }
+  
+  summary(error_v)
