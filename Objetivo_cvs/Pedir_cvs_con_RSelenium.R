@@ -4,10 +4,12 @@ library(here)
 #https://www.computerworld.com/article/2971265/application-development/how-to-drive-a-web-browser-with-r-and-rselenium.html
 #Para ir probando pongo por ahora solo el link del Anem Hexagono. Cuando se vea que funciona habria k generalizarlo para poder usarlo en cualquier sensor
 url="https://measurements.mobile-alerts.eu/Home/MeasurementDetails?deviceid=0B75FE3A4FB6&vendorid=f193c634-2611-475b-ba7a-27b0ead33c6f&appbundle=eu.mobile_alerts.mobilealerts"
-directorio_descarga=paste(here::here(),"/Objetivo_cvs",sep = "")
-fprof=makeFirefoxProfile(list(browser.helperApps.neverAsk.saveToDisk = 'application/zip',
-                              browser.download.dir = directorio_descarga))
-rD=rsDriver(browser = "firefox",extraCapabilities = fprof)  #No se muy bien que hace pero es necesario para crear el navegador. Firefox mejor que chrome no?
+#directorio_descarga=paste(here::here(),"/Objetivo_cvs",sep = "")
+#directorio_perfil=paste(here::here(),"/Objetivo_cvs/perfil",sep = "")
+fprof=makeFirefoxProfile(list(browser.download.dir = directorio_descarga))
+#browser.helperApps.neverAsk.saveToDisk = 'application/zip'
+rD=rsDriver(browser = "firefox")  #No se muy bien que hace pero es necesario para crear el navegador. Firefox mejor que chrome no?
+#,extraCapabilities = fprof
 #Se deberia haber creado una ventana de firefox. Si da un error tipo "noseque puerto ya esta en uso" usar las lineas de codigo de mas abajo: remDr$close() y rD$server$stop()
 remDr=rD$client      #el objeto remDr es el que nos va a hacer todo el curro de ir a las paginas, interactuar con ellas ...
 remDr$navigate(url)   #Nuestra ventana de firefox se mete en el link k le hemos puesto en la variable url
@@ -27,7 +29,10 @@ cajatexto_fechafinal$sendKeysToElement(list(fechafinal))    #Escribir fechafinal
 boton_exportar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(10)")
 boton_exportar$clickElement()
 
+#Cerrar el server y la ventana
 remDr$close()
 rD$server$stop()
 
+#De aqui para abajo pruebas que voy haciendo por si nos da por hacer Rselenium + webscrapping
+tabla=remDr$findElement(using = 'css selector', value = ".table > tbody:nth-child(2)")$getElementText()
 
