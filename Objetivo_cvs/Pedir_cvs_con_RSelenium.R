@@ -26,18 +26,21 @@ cajatexto_fechainicio$sendKeysToElement(list(fechainicio))  #Escribir fechainici
 cajatexto_fechafinal$sendKeysToElement(list(fechafinal))    #Escribir fechafinal en la segunda cajetilla
 
 #Tambien buscamos el boton de exportar
-#boton_exportar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(10)")
-#boton_exportar$clickElement()
+boton_exportar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(10)")
+boton_exportar$clickElement()
 
-<<<<<<< HEAD
 #Tambien buscamos el boton de refrescar
-boton_refrescar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(9)")
-boton_refrescar$clickElement()
+#boton_refrescar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(9)")
+#boton_refrescar$clickElement()
 
 #Cerrar el server y la ventana
 remDr$close()
 rD$server$stop()
 
 #De aqui para abajo pruebas que voy haciendo por si nos da por hacer Rselenium + webscrapping
-tabla=remDr$findElement(using = 'css selector', value = ".table > tbody:nth-child(2)")$getElementText()
+tabla=remDr$findElement(using = 'css selector', 
+                        value = ".table > tbody:nth-child(2)")$getElementText()
 
+split_newline<- str_split(tabla[[1]],pattern = "\n")
+split_newline_matrix<- t(rbind(unlist(split_newline)))
+str_split(split_newline_matrix[1,],pattern = " ")
