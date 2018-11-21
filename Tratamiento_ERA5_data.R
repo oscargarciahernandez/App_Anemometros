@@ -152,21 +152,30 @@
   
   #errores
   error_u<-vector()
+  error_u_per_1<-vector()
+  error_u_per_2<-vector()
+  
   for (i in 1:length(u10)) {
     if(sign(u10[i])==sign(u10_1[i])){
       error_u[i]<-abs(u10[i]-u10_1[i])
     }else{
       error_u[i]<- abs(u10[i])+abs(u10_1[i])
     }
+    error_u_per_1[i]<- error_u[i]/abs(u10[i])
+    error_u_per_2[i]<- error_u[i]/abs(u10_1[i])
     
   }
   
   summary(error_u)
+  summary(error_u_per_1)
+  summary(error_u_per_2)
   
   
   
-  summary(abs(v10-v10_1))
+  
   error_v<-vector()
+  error_v_per_1<- vector()
+  error_v_per_2<- vector()
   for (i in 1:length(v10)) {
     if(sign(v10[i])==sign(v10_1[i])){
       error_v[i]<-abs(v10[i]-v10_1[i])
@@ -174,6 +183,21 @@
       error_v[i]<- abs(v10[i])+abs(v10_1[i])
     }
     
+    error_v_per_1[i]<- error_v[i]/abs(v10[i])
+    error_v_per_2[i]<- error_v[i]/abs(v10_1[i])
+    
   }
   
   summary(error_v)
+  summary(error_v_per_1)
+  summary(error_v_per_2)
+  
+  # Comparando con el modulo
+  
+  error_mod<- vector()
+  for (i in 1:length(v10)) {
+    error_mod[i] <- abs(wind[i]-sqrt(u10[i]^2+v10[i]^2))
+  }
+  
+  summary(error_mod)
+ 
