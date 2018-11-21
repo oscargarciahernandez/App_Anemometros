@@ -29,6 +29,7 @@ cajatexto_fechafinal$sendKeysToElement(list(fechafinal))    #Escribir fechafinal
 #boton_exportar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(10)")
 #boton_exportar$clickElement()
 
+<<<<<<< HEAD
 #Tambien buscamos el boton de refrescar
 boton_refrescar=remDr$findElement(using = 'css selector',value = "button.btn:nth-child(9)")
 boton_refrescar$clickElement()
