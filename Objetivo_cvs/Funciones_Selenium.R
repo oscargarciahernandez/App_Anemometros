@@ -42,56 +42,58 @@ anemo_ID<- sensor_ids[str_detect(str_sub(sensor_ids,1,2), "0B")]
 
 Get_sensor_Data<- function(sensorID){
   
-  url=paste0("https://measurements.mobile-alerts.eu/Home/MeasurementDetails?deviceid=",sensorID,"&vendorid=f193c634-2611-475b-ba7a-27b0ead33c6f&appbundle=eu.mobile_alerts.mobilealerts")
+  url=paste0("https://measurements.mobile-alerts.eu/Home/MeasurementDetails?deviceid=",
+             sensorID,
+             "&vendorid=f193c634-2611-475b-ba7a-27b0ead33c6f&appbundle=eu.mobile_alerts.mobilealerts")
+ 
   rD<- rsDriver(browser = "firefox",verbose = FALSE) 
   remDr<- rD$client      
   remDr$navigate(url) 
  
   
-  #♣ Introducimos fecha en los cajetines y refresh¡ 
+  #Este es el periodo que queremos 
   fechainicio="11/08/2018 6:57 PM"
-  fechafinal="11/15/2018 6:57 PM"   
-  cajatexto_fechainicio=remDr$findElement(using = 'css selector', value = "#from")  
-  cajatexto_fechafinal=remDr$findElement(using = 'css selector', value = "#to")    
+  fechafinal="11/15/2018 6:57 PM"  
+  
+  
+  #buscamos cajetines
+  cajatexto_fechainicio=remDr$findElement(using = 'css selector', 
+                                          value = "#from")  
+  cajatexto_fechafinal=remDr$findElement(using = 'css selector',
+                                         value = "#to")    
+  
+  #limpiamos cajetines porsiaca
   cajatexto_fechainicio$clearElement()  
   cajatexto_fechafinal$clearElement()  
+  
+  #Introducimos fechas
   cajatexto_fechainicio$sendKeysToElement(list(fechainicio))  
   cajatexto_fechafinal$sendKeysToElement(list(fechafinal))   
   
  
   
+  #refresh baatonn¡
+  remDr$findElement(using = 'css selector',
+                    value = "button.btn:nth-child(9)")$clickElement()
   
-  boton_refrescar<- remDr$findElement(using = 'css selector',
-                                    value = "button.btn:nth-child(9)")$clickElement()
   
   
-  
-  #Buscamos el boton el boton de 250 elements por página y pulsamos
-  boton_page_size<- remDr$findElement(using = 'css selector',
-                                    value = "label.btn:nth-child(3)")$clickElement()
+  #Buscamos el boton de 250 elements por página y pulsamos
+  remDr$findElement(using = 'css selector',
+                    value = "label.btn:nth-child(3)")$clickElement()
   
   
   #Buscamos el boton refresh y pulsamos
-  boton_ref_pagesize<- remDr$findElement(using = 'css selector',
-                                         value = "#pagesizebutton")$clickElement()
+  remDr$findElement(using = 'css selector',
+                    value = "#pagesizebutton")$clickElement()
   
   
-  
-  
-  
-  
-  
-  
-  tabla<- remDr$findElement(using = 'css selector', 
-                          value = ".table > tbody:nth-child(2)")$getElementText() #
-  
- 
  #Buscamos última página buscando el boton de Skip-to-last
   #De esta manera podemos saber cuantas páginas 
   #habrá que recorrer con el bucle. 
   
   #Este if es capaz de diferenciar cuantas páginas hay
-  #independientemente del número de pagina. 
+  #independientemente de si existe o no el botón skip to last.
   
   text_pag<-unlist(remDr$findElement(using = "css selector", 
                                      value=".pagination")$getElementText())
@@ -105,9 +107,14 @@ Get_sensor_Data<- function(sensorID){
     numero_pags<- max(as.numeric(unlist(str_extract_all(text_pag,pattern = "[:digit:]+"))))
   }
  
-  numero_pags
+  #numero_pags es la variable a tener en cuenta a la hora de realizar
+  # el bucle para obtener los datos. 
 
-   
+  
+  
+  tabla<- remDr$findElement(using = 'css selector', 
+                            value = ".table > tbody:nth-child(2)")$getElementText() #
+  
   
   
   split_newline<- str_split(tabla[[1]],pattern = "\n")      
