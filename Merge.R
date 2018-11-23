@@ -26,6 +26,16 @@ rbind(last_1,last_2,last_3)
 #El problema que encontré es que está la hora cambiada entre data-sets
 #el cambio horario parece que afecta a todo el registro 
 #valla putada, no entiendo porqué la página web ha hecho esto
+Date_new<- lapply(Datos_1,  function(x) if(is.data.frame(x)){x[,2]<-x[,2]-hm("01:00")}else{NA})
+for (i in 1:length(Date_new)) {
+  if(is.data.frame(Datos_1[[i]])){
+    Datos_1[[i]][,2]<- Date_new[[i]]
+    
+    
+  }else{NA}
+  
+}
+
 x<- Datos_1$anem1
 y<- Datos_2$anem1
 
