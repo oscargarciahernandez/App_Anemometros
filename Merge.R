@@ -23,9 +23,18 @@ last_3<- sapply(Datos_3, function(x) if(is.data.frame(x)){ x[1,2]}else{NA})
 rbind(last_1,last_2,last_3)
 
 
-
+#El problema que encontré es que está la hora cambiada entre data-sets
+#el cambio horario parece que afecta a todo el registro 
+#valla putada, no entiendo porqué la página web ha hecho esto
 x<- Datos_1$anem1
 y<- Datos_2$anem1
+
+vector_cont<-vector()
+for (i in 1:length(x[,1])) {
+  vector_cont[i]<-is.element(x[i,1],y[,1])
+  
+}
+
 
 z<-which()
 z<-merge(x,y, by="s.since_1.1.1970")
