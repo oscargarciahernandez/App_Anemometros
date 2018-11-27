@@ -61,3 +61,19 @@ names(lista_total)<- as.character(disp[,2])
 
 path_data <- here::here(paste0("data/Merged_dataset",Sys.Date(),".rdata"))
 list.save(lista_total,path_data)
+
+
+
+
+# Maquillando la lista de los datos de los anemometros --------------------
+
+
+Datos<- list.load(here::here("data/Merged_dataset2018-11-23.rdata"))
+Datos_anemos<- Datos[str_detect(names(Datos), "0B")]
+Datos_anemos<- lapply(Datos_anemos, function(x) {
+  x<- x[,2:6] 
+colnames(x)<- c("Date","Mean","Max","Dir_ch","Dir_deg") 
+return(x)} )
+
+path_data <- here::here(paste0("data/Datos_Anemometros/Datos_anemometros.rdata"))
+list.save(Datos_anemos,path_data)

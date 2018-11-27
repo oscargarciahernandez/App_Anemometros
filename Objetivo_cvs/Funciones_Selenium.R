@@ -2,6 +2,7 @@ library(RSelenium)
 library(here)
 library(stringr)
 library(lubridate)
+library(rlist)
 phoneid<-640689911849
 
 
@@ -75,7 +76,7 @@ get_page_table<- function(){
 
 
 # Función Get_Data --------------------------------------------------------
-
+Datos_anemometros<-list.load(here::here("data/Datos_Anemometros/Datos_anemometros.rdata"))
 
 Get_sensor_Data<- function(sensorID){
   
@@ -87,10 +88,12 @@ Get_sensor_Data<- function(sensorID){
   remDr<- rD$client      
   remDr$navigate(url) 
  
+  #Buscar en la lista los datos del anemometro correspondiente
+  str_detect(names(Datos_anemometros),pattern=sensorID)
   
   #Este es el periodo que queremos 
-  fechainicio="11/08/2018 6:57 PM"
-  fechafinal="11/15/2018 6:57 PM"  
+  fechainicio= "11/08/2018 6:57 PM"
+  fechafinal= format(Sys.Date()+1,"%m/%d/%Y")  
   
   
   #buscamos cajetines
@@ -134,7 +137,7 @@ Get_sensor_Data<- function(sensorID){
   
   #Esto no creo que lo utilicemos, se puede hacer directamente 
   #con un bucle WHILE
-  #text_pag<-unlist(remDr$findElement(using = "css selector",value=".pagination")$getElementText())
+  text_pag<-unlist(remDr$findElement(using = "css selector",value=".pagination")$getElementText())
   if(str_detect(text_pag, pattern = "»»")){
     url_last<- unlist(remDr$findElement(using = "css selector", value=".PagedList-skipToLast > a:nth-child(1)")$getElementAttribute('href'))
     numero_pags<- str_remove(str_extract(url_last,
@@ -145,7 +148,6 @@ Get_sensor_Data<- function(sensorID){
   
   #E aquí el bucle while del que hablaba
   data_frame_1<-get_page_table()
-  k<-1
   data_frame<- data.frame()
   text_pag<-unlist(remDr$findElement(using = "css selector", 
                                      value=".pagination")$getElementText())
@@ -158,19 +160,14 @@ Get_sensor_Data<- function(sensorID){
     text_pag<-unlist(remDr$findElement(using = "css selector", 
                                        value=".pagination")$getElementText())
   
-    k<- k+1
     }
   
-  data_frame_anem<- data.frame()
-  for (i in 1:length(data_frame_list)) {
-    data_frame_anem<- rbind(data_frame_anem,data_frame_list[[i]])
-    
-  }
- 
-  data_frame_anem<-rbind(data_frame_anem,data_frame_1)
-  data_frame_anem<- data_frame_anem[order(data_frame_anem[,1],
-                                          decreasing = TRUE),]
   
-  return(data_frame_anem)
+ 
+  data_frame<-rbind(data_frame,data_frame_1)
+  data_frame<- data_frame[order(data_frame[,1],
+                                decreasing = TRUE),]
+  
+  return(data_frame)
   
 }
