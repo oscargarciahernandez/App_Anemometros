@@ -36,6 +36,43 @@ sensor_ids<- Get_sensor_ID(phoneid)
 anemo_ID<- sensor_ids[str_detect(str_sub(sensor_ids,1,2), "0B")]
 
 
+# Cojer informacion de la página ------------------------------------------
+
+get_page_table<- function(){
+  tabla<- remDr$findElement(using = 'css selector', 
+                            value = ".table > tbody:nth-child(2)")$getElementText() #
+  
+  split_newline<- str_split(tabla[[1]],pattern = "\n")      
+  split_newline_matrix<- t(rbind(unlist(split_newline)))    
+  lista_datos<-str_split(split_newline_matrix,pattern = " ") 
+  matriz_datos<-matrix(unlist(lista_datos),ncol = 8,byrow = TRUE)      
+  dataframe_datos<-as.data.frame(matriz_datos)                         
+  dataframe_datos[,1]<-mdy_hms(paste(dataframe_datos[,1],dataframe_datos[,2],dataframe_datos[,3],sep = " "))  
+  dataframe_datos<-dataframe_datos[,c(1,4,6,8)]                
+  dataframe_datos[,4]<-as.character(dataframe_datos[,4])
+  for (i in 1:length(dataframe_datos[,4])) {
+    yy<-dataframe_datos[,4][i]
+    dataframe_datos[i,5]<- ifelse(yy=="North", 0, ifelse(yy=="North-northeast",20,
+                                                         ifelse(yy=="Northeast",45, ifelse(yy=="East-northeast",65,
+                                                                                           ifelse(yy=="East", 90, 
+                                                                                                  ifelse(yy=="East-southeast", 110,
+                                                                                                         ifelse(yy=="Southeast", 135,
+                                                                                                                ifelse(yy=="South-Southeast", 155, 
+                                                                                                                       ifelse(yy=="South", 180, 
+                                                                                                                              ifelse(yy=="South-southwest", 200, 
+                                                                                                                                     ifelse(yy=="Southwest", 225,
+                                                                                                                                            ifelse(yy=="West-southwest", 245, 
+                                                                                                                                                   ifelse(yy=="West", 270, 
+                                                                                                                                                          ifelse(yy=="West-northwest",290,
+                                                                                                                                                                 ifelse(yy=="Northwest", 315,
+                                                                                                                                                                        ifelse(yy=="North-northwest", 335, 
+                                                                                                                                                                               ifelse(yy=='-31',NA)))))))))))))))))
+  }
+  colnames(dataframe_datos)<- c("Date","Mean","Max","Dir_ch","Dir_deg")   
+  return(dataframe_datos)
+  
+}
+
 
 # Función Get_Data --------------------------------------------------------
 
@@ -95,56 +132,45 @@ Get_sensor_Data<- function(sensorID){
   #Este if es capaz de diferenciar cuantas páginas hay
   #independientemente de si existe o no el botón skip to last.
   
-  text_pag<-unlist(remDr$findElement(using = "css selector", 
-                                     value=".pagination")$getElementText())
+  #Esto no creo que lo utilicemos, se puede hacer directamente 
+  #con un bucle WHILE
+  #text_pag<-unlist(remDr$findElement(using = "css selector",value=".pagination")$getElementText())
   if(str_detect(text_pag, pattern = "»»")){
     url_last<- unlist(remDr$findElement(using = "css selector", value=".PagedList-skipToLast > a:nth-child(1)")$getElementAttribute('href'))
     numero_pags<- str_remove(str_extract(url_last,
                                          pattern = "page=[:digit:]+"),
                              "page=")
-  }else{
-    
-    numero_pags<- max(as.numeric(unlist(str_extract_all(text_pag,pattern = "[:digit:]+"))))
-  }
- 
-  #numero_pags es la variable a tener en cuenta a la hora de realizar
-  # el bucle para obtener los datos. 
+  }else{numero_pags<- max(as.numeric(unlist(str_extract_all(text_pag,pattern = "[:digit:]+"))))}
 
   
+  #E aquí el bucle while del que hablaba
+  data_frame_1<-get_page_table()
+  k<-1
+  data_frame<- data.frame()
+  text_pag<-unlist(remDr$findElement(using = "css selector", 
+                                     value=".pagination")$getElementText())
+  while (str_detect(text_pag, pattern = "»")) {
+    remDr$findElement(using = 'css selector',
+                      value = ".PagedList-skipToNext > a:nth-child(1)")$clickElement()
+    data_frame<- rbind(data_frame,get_page_table())
+   
+    
+    text_pag<-unlist(remDr$findElement(using = "css selector", 
+                                       value=".pagination")$getElementText())
   
-  tabla<- remDr$findElement(using = 'css selector', 
-                            value = ".table > tbody:nth-child(2)")$getElementText() #
+    k<- k+1
+    }
   
-  
-  
-  split_newline<- str_split(tabla[[1]],pattern = "\n")      
-  split_newline_matrix<- t(rbind(unlist(split_newline)))    
-  lista_datos<-str_split(split_newline_matrix,pattern = " ") 
-  matriz_datos<-matrix(unlist(lista_datos),ncol = 8,byrow = TRUE)      
-  dataframe_datos<-as.data.frame(matriz_datos)                         
-  dataframe_datos[,1]<-mdy_hms(paste(dataframe_datos[,1],dataframe_datos[,2],dataframe_datos[,3],sep = " "))  
-  dataframe_datos<-dataframe_datos[,c(1,4,6,8)]                
-  dataframe_datos[,4]<-as.character(dataframe_datos[,4])
-  for (i in 1:length(dataframe_datos[,4])) {
-    yy<-dataframe_datos[,4][i]
-    dataframe_datos[i,4]<- ifelse(yy=="North", 0, ifelse(yy=="North-northeast",20,
-                                                         ifelse(yy=="Northeast",45, ifelse(yy=="East-northeast",65,
-                                                                                           ifelse(yy=="East", 90, 
-                                                                                                  ifelse(yy=="East-southeast", 110,
-                                                                                                         ifelse(yy=="Southeast", 135,
-                                                                                                                ifelse(yy=="South-Southeast", 155, 
-                                                                                                                       ifelse(yy=="South", 180, 
-                                                                                                                              ifelse(yy=="South-southwest", 200, 
-                                                                                                                                     ifelse(yy=="Southwest", 225,
-                                                                                                                                            ifelse(yy=="West-southwest", 245, 
-                                                                                                                                                   ifelse(yy=="West", 270, 
-                                                                                                                                                          ifelse(yy=="West-northwest",290,
-                                                                                                                                                                 ifelse(yy=="Northwest", 315,
-                                                                                                                                                                        ifelse(yy=="North-northwest", 335, 
-                                                                                                                                                                               ifelse(yy=='-31',NA)))))))))))))))))
+  data_frame_anem<- data.frame()
+  for (i in 1:length(data_frame_list)) {
+    data_frame_anem<- rbind(data_frame_anem,data_frame_list[[i]])
+    
   }
-  colnames(dataframe_datos)<- c("Date","Mean","Max","Dir_deg")   
+ 
+  data_frame_anem<-rbind(data_frame_anem,data_frame_1)
+  data_frame_anem<- data_frame_anem[order(data_frame_anem[,1],
+                                          decreasing = TRUE),]
   
-  return(dataframe_datos)
+  return(data_frame_anem)
   
 }
