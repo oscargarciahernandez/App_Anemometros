@@ -3,6 +3,7 @@ library(here)
 library(stringr)
 library(lubridate)
 library(rlist)
+
 phoneid<-640689911849
 
 
@@ -25,21 +26,19 @@ Get_sensor_ID<- function(phoneid){
                              function(x) x$getElementText()))
   sensor_elem<- sensor_elem[str_detect(sensor_elem,"ID")]
   sensor_elem<- str_remove(sensor_elem,"ID\n")
+  remDr$close()
   
   return(sensor_elem)
-  remDr$close()
   
 }
 
-sensor_ids<- Get_sensor_ID(phoneid)
 
-##Obtenemos Id's de los anemometros
-anemo_ID<- sensor_ids[str_detect(str_sub(sensor_ids,1,2), "0B")]
 
 
 # Cojer informacion de la página ------------------------------------------
 
-get_page_table<- function(){
+get_page_table<- function(remDR_selenium){
+  remDr<- remDR_selenium
   tabla<- remDr$findElement(using = 'css selector', 
                             value = ".table > tbody:nth-child(2)")$getElementText() #
   
@@ -76,7 +75,7 @@ get_page_table<- function(){
 
 
 # Función Get_Data --------------------------------------------------------
-Datos_anemometros<-list.load(here::here("data/Datos_Anemometros/Datos_anemometros.rdata"))
+#La función Get_Data necesita que exista Datos_anemometros
 
 Get_sensor_Data<- function(sensorID){
   
@@ -89,10 +88,12 @@ Get_sensor_Data<- function(sensorID){
   remDr$navigate(url) 
  
   #Buscar en la lista los datos del anemometro correspondiente
-  str_detect(names(Datos_anemometros),pattern=sensorID)
+  Datos_anemo<- Datos_anemometros[str_detect(names(Datos_anemometros),pattern=sensorID)]
   
   #Este es el periodo que queremos 
-  fechainicio= "11/08/2018 6:57 PM"
+  fecha_ini1<- format(max(Datos_anemo[[1]]$Date),"%m/%d/%Y %I-%M-%S" )
+  fecha_ini<- ifelse(pm(max(Datos_anemo[[1]]$Date)), paste0(fecha_ini1," PM"),paste0(fecha_ini1," AM"))
+  fechainicio= fecha_ini
   fechafinal= format(Sys.Date()+1,"%m/%d/%Y")  
   
   
@@ -147,14 +148,14 @@ Get_sensor_Data<- function(sensorID){
 
   
   #E aquí el bucle while del que hablaba
-  data_frame_1<-get_page_table()
+  data_frame_1<-get_page_table(remDr)
   data_frame<- data.frame()
   text_pag<-unlist(remDr$findElement(using = "css selector", 
                                      value=".pagination")$getElementText())
   while (str_detect(text_pag, pattern = "»")) {
     remDr$findElement(using = 'css selector',
                       value = ".PagedList-skipToNext > a:nth-child(1)")$clickElement()
-    data_frame<- rbind(data_frame,get_page_table())
+    data_frame<- rbind(data_frame,get_page_table(remDr))
    
     
     text_pag<-unlist(remDr$findElement(using = "css selector", 
@@ -165,9 +166,17 @@ Get_sensor_Data<- function(sensorID){
   
  
   data_frame<-rbind(data_frame,data_frame_1)
-  data_frame<- data_frame[order(data_frame[,1],
-                                decreasing = TRUE),]
+  data_frame<-data_frame[!data_frame$Date%in%Datos_anemo[[1]]$Date,]
+  data_frame[,2]<- as.numeric(as.character(data_frame[,2]))
+  data_frame[,3]<- as.numeric(as.character(data_frame[,3]))
   
-  return(data_frame)
+  Tabla_actualizada<- rbind(data_frame, Datos_anemo[[1]])
+  Tabla_actualizada<- Tabla_actualizada[order(Tabla_actualizada$Date,decreasing = TRUE),]
+  remDr$close()
+  
+  return(Tabla_actualizada)
   
 }
+
+
+
