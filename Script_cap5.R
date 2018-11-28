@@ -3,8 +3,6 @@ library(rlist)
 library(here)
 library(purrr)
 
-Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
-
 funcion_anemo <- function(Tabla_sf){
   library(lubridate)
   
@@ -83,4 +81,3 @@ Formatos_columna <- function(lista_datos){
   
 }
 
-Tabla_con_formato <- Formatos_columna(Datos)
