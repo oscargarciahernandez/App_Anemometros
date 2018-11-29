@@ -3,7 +3,8 @@ library(rlist)
 library(here)
 library(purrr)
 
-listas_datos<- list.files(here::here("data"))
+listas_datos<- list.files(here::here("data"))[str_detect(listas_datos,pattern = ".rdata")]
+
 for (i in 1:length(listas_datos)) {
  assign(paste0("Datos_",i),list.load(paste0(here::here("data/"),"/",listas_datos[i])))
   
