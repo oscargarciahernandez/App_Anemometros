@@ -9,13 +9,19 @@ datos=datos$`0B75FE3A4FB6`
 fechainicio<-round_date(range(datos$Date)[1],unit = "hours")
 fechafinal<-round_date(range(datos$Date)[2],unit = "hours")
 Vector_fechas<-seq(fechainicio,fechafinal, by="hours")
-a<-rep(NA,5)
-tabla<-data.frame()
+
+a<- rep(NA,5)
+a<- as.data.frame(t(a))
+names(a)<- names(datos)
+
+tabla<-as.data.frame(matrix(ncol = 7,nrow = length(Vector_fechas)))
 for (i in 1:length(Vector_fechas)) {
   diferencia<-min(abs(Vector_fechas[i]-datos$Date))
-  if (diferencia>=dminutes(7)) { tabla[i,]<-cbind(Vector_fechas[i], t(a)) } else { tabla[i, ]<-cbind(Vector_fechas[i],datos[which.min(abs(Vector_fechas[i]-datos$Date)), ])  
+  if (as.numeric(diferencia,units="secs") >= 420) { 
+    tabla[i,]<-cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i], a) }
+  else { 
+    tabla[i,]<- cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i],datos[which.min(abs(Vector_fechas[i]-datos$Date)), ])  
     
   }
 }
-
 
