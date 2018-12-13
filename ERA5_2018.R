@@ -1,3 +1,15 @@
+
+# Explicación -------------------------------------------------------------
+
+#Este script se encarga de cojer los datos del ERA5 y los datos de los 
+#sensores y juntarlos en un Dataframe, (aun por pulir). SIMPLEMENTE HAY QUE 
+# HACER UN SOURCE Y NOS DEJARÁ DOS VARIABLES EN EL ENVIROMENT PARA EL 
+#ANEMOMETRO DEL HEXÁGONO Y EL ANMÓ9METRO DE LA UNI. 
+# A PARTIR DE AQUÍ HAY QUE CENTRARSE EN LA CALIBRACIÓN COMO TAL. UN BESITO
+
+# libraries ---------------------------------------------------------------
+
+
 library(RNetCDF)
 library(stringr)
 library(lubridate)
@@ -205,6 +217,11 @@ cal_hex_3<- lapply(cal_hex_2,function(x){
 cal_uni_3<- lapply(cal_uni_2,function(x){
   return(x[complete.cases(x),])
 })
+
+
+
+# Limpiar enviroment ------------------------------------------------------
+
 
 Datos_calibracion_uni<- cal_uni_3
 Datos_calibracion_hex<- cal_hex_3
