@@ -13,3 +13,5 @@ cambio_to_UTC<-function(x){
 }
 
 a<-lapply(datos, cambio_to_UTC)
+path_data <- here::here(paste0("data/Datos_Anemometros/Datos_anemometros_UTC.rdata"))
+list.save(a,path_data)

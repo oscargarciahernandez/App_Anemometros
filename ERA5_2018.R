@@ -58,7 +58,7 @@ extract_hourly_data_1<-function(datos_anem){
   
 }
 extract_hourly_data<- function(){
-  datos<- list.load(paste0(here::here(),"/data/Datos_Anemometros/Datos_anemometros.rdata",collapse = NULL))
+  datos<- list.load(paste0(here::here(),"/data/Datos_Anemometros/Datos_anemometros_UTC.rdata",collapse = NULL))
   
   lista_anem<- list()
   for (i in 1:length(datos)) {
@@ -77,7 +77,7 @@ Datos_horarios<- extract_hourly_data()
 
 
 
-# Merging ERA5 and Anem data ----------------------------------------------
+#Obtener los puntos cercanos a los anemos ----------------------------------------------
 
 #Cojiendo los 4 puntos más cercanos a la poscion de los anemometros
 #con esto creamos una lista de 4 dataframes con fecha y componentes u y v. 
@@ -108,12 +108,56 @@ for (i in 1:length(nearest_lon)) {
 names(lista_near_ERA)<- nombres_list
 
 
+lista_calibracion<- list()
+nombres_list<- vector()
+k<-1
 for (i in 1:length(lista_near_ERA)) {
   for (j in 1:length(Datos_horarios)) {
-    Datos_ERA<- lista_near_ERA[[i]][lista_near_ERA[[i]]%in%Datos_horarios[[j]]]
-    Datos_anem<- Datos_horarios[[j]][Datos_horarios[[j]]%in%lista_near_ERA[[i]]]
+    Datos_ERA<- lista_near_ERA[[i]][lista_near_ERA[[i]]$time%in%Datos_horarios[[j]]$date_roud,]
+    Datos_anem<- Datos_horarios[[j]][Datos_horarios[[j]]$date_roud%in%lista_near_ERA[[i]]$time,]
     tabla<- as.data.frame(cbind(Datos_ERA,Datos_anem))
+    tabla$diff_sec<-NULL
+    tabla$date_roud<-NULL
+    lista_calibracion[[k]]<- tabla
+    nombres_list[k]<- paste0(names(lista_near_ERA)[i],"_",names(Datos_horarios)[j])
+    k<- k+1
   }
  
   
 }
+names(lista_calibracion)<- nombres_list
+
+
+
+
+anem_hex<- names(Datos_horarios)[1]
+anem_uni<- names(Datos_horarios)[2]
+
+cal_hex<- lista_calibracion[str_detect(names(lista_calibracion),pattern = anem_hex)]
+cal_uni<- lista_calibracion[str_detect(names(lista_calibracion),pattern = anem_uni)]
+
+
+# cambiar u y v por módulo y dirección ------------------------------------
+
+#convertir componentes a dirección y modulo
+add_wind_dir<- function(x){
+  tabla_comp<- x
+  u10<- tabla_comp$u
+  v10<- tabla_comp$v
+  
+  wind_abs <- sqrt(u10^2 + v10^2)
+  wind_dir_rad <-  atan2(u10/wind_abs, v10/wind_abs) 
+  wind_dir_deg1 <-  wind_dir_rad * 180/pi 
+  wind_dir_deg2 <-  wind_dir_deg1+ 180 
+  
+  tabla_comp<- as.data.frame(cbind(tabla_comp,wind_abs,wind_dir_deg2))
+  tabla_comp$u<- NULL
+  tabla_comp$v<- NULL
+  return(tabla_comp)
+  
+}
+
+cal_hex_1<-lapply(cal_hex, add_wind_dir)
+cal_uni_1<- lapply(cal_uni, add_wind_dir)
+
+

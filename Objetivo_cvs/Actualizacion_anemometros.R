@@ -21,3 +21,7 @@ if(object.size(new_list)>object.size(Datos_anemometros)){
   path_data <- here::here(paste0("data/Datos_Anemometros/Datos_anemometros.rdata"))
   list.save(new_list,path_data)
 }
+
+#después de haber actualizado los datos
+#ejecutamos el script para el cambio de hora a UTC
+source(here::here("Cambio a UTC.R"))
