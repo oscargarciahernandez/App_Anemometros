@@ -161,3 +161,53 @@ cal_hex_1<-lapply(cal_hex, add_wind_dir)
 cal_uni_1<- lapply(cal_uni, add_wind_dir)
 
 
+
+# tratar datos de ERA5 para asemejarlos a los sensores --------------------
+table(cut(cal_hex_1[[1]]$wind_dir_deg2,
+          breaks = c(0,seq(11.25,360,by=22.50),361),
+          labels = c("N","NNE","NE","NEE","E",
+                     "SEE","SE","SSE","S","SSW","SW",
+                     "SWW","W","NWW","NW","NNW","N")))
+
+add_dir_lab<- function(lista_cal){
+  lista_new<- list()
+  for (i in 1:length(lista_cal)) {
+    a<- cut(lista_cal[[i]]$wind_dir_deg2,
+            breaks = c(0,seq(11.25,360,by=22.50),361),
+            labels = c("N","NNE","NE","NEE","E",
+                       "SEE","SE","SSE","S","SSW","SW",
+                       "SWW","W","NWW","NW","NNW","N"))
+    tabla<- as.data.frame(cbind(lista_cal[[i]],a))
+    colnames(tabla)<- c(names(lista_cal[[i]]), "Dir_lab")
+    tabla$wind_abs<- round(tabla$wind_abs,digits = 1)
+    tabla$wind_dir_deg2<- round(tabla$wind_dir_deg2,digits = 1)
+    
+    lista_new[[i]]<- tabla
+    
+  }
+  
+  names(lista_new)<- names(lista_cal)
+  return(lista_new)
+}
+
+cal_hex_2<- add_dir_lab(cal_hex_1)
+cal_uni_2<- add_dir_lab(cal_uni_1)
+
+
+
+
+# Eliminar columnas en las que exista algún NA ----------------------------
+
+cal_hex_3<- lapply(cal_hex_2,function(x){
+  return(x[complete.cases(x),])
+})
+
+cal_uni_3<- lapply(cal_uni_2,function(x){
+  return(x[complete.cases(x),])
+})
+
+Datos_calibracion_uni<- cal_uni_3
+Datos_calibracion_hex<- cal_hex_3
+
+
+rm(list=setdiff(ls(),c("Datos_calibracion_hex","Datos_calibracion_uni")))
