@@ -6,6 +6,7 @@
   library(RNetCDF)
   library(stringr)
   library(lubridate)
+  library(here)
   
   ### Ya tenemos los datos del ERA5 para trabajar (no todos, pero alguno si)
   ## El problema es que vamos a manejar entorno a 14 gb's de datos
@@ -22,7 +23,7 @@
   
   #Pasos previos lógicos con datos tipo .nc
   
-   data_ERA<- open.nc(here::here("python/Data_2000.nc"))
+  data_ERA<- open.nc(here::here("python/Data_2000.nc"))
   print.nc(data_ERA)
   
   
@@ -125,8 +126,8 @@
 # Comprobación u y v component --------------------------------------------
   
   
-  u10<- data_ERA_ls$u10[1,1,]
-  v10<- data_ERA_ls$v10[1,1,]
+  u10<- data_ERA_ls$u10n[1,1,]
+  v10<- data_ERA_ls$v10n[1,1,]
   wind<-data_ERA_ls$wind[1,1,]
   dir<- data_ERA_ls$dwi[1,1,]
   

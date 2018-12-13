@@ -1,8 +1,7 @@
 library(rlist)
 library(here)
-library(lubridate)
+library(lubridate)#Cargar datos.
 
-#Cargar datos.
 datos=list.load(paste0(here::here(),"/data/Datos_Anemometros/Datos_anemometros.rdata",collapse = NULL))
 #Para probar cojo solo el primero de la lista
 datos=datos$`0B75FE3A4FB6`
@@ -15,6 +14,7 @@ a<- as.data.frame(t(a))
 names(a)<- names(datos)
 
 tabla<-as.data.frame(matrix(ncol = 7,nrow = length(Vector_fechas)))
+
 for (i in 1:length(Vector_fechas)) {
   diferencia<-min(abs(Vector_fechas[i]-datos$Date))
   if (as.numeric(diferencia,units="secs") >= 420) { 
@@ -25,3 +25,7 @@ for (i in 1:length(Vector_fechas)) {
   }
 }
 
+names(tabla)<- c("diff_sec","date_roud",names(datos))
+
+tabla$date_roud<- as_datetime(tabla$date_roud)
+tabla$Date<- as_datetime(tabla$Date)
