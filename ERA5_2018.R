@@ -9,7 +9,7 @@ library(here)
 
 
 data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
-print.nc(data_ERA_2018)
+#print.nc(data_ERA_2018)
 
 data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
 
@@ -73,3 +73,47 @@ extract_hourly_data<- function(){
 }
 
 Datos_horarios<- extract_hourly_data()
+
+
+
+
+# Merging ERA5 and Anem data ----------------------------------------------
+
+#Cojiendo los 4 puntos más cercanos a la poscion de los anemometros
+#con esto creamos una lista de 4 dataframes con fecha y componentes u y v. 
+pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
+
+
+nearest_lat<- data_ERA_2018_ls$latitude[order(abs(data_ERA_2018_ls$latitude - pos_anem_uni[1]))[1:2]]
+nearest_lon<- data_ERA_2018_ls$longitude[order(abs(data_ERA_2018_ls$longitude - pos_anem_uni[2]))[1:2]]
+
+lista_near_ERA<-list()
+nombres_list<- vector()
+k<-1
+
+for (i in 1:length(nearest_lon)) {
+  for (j in 1:length(nearest_lat)) {
+    u<-data_ERA_2018_ls$u10[i,j,] #[longitude,latitude,time]
+    v<-data_ERA_2018_ls$v10[i,j,] #[longitude,latitude,time]
+    time<-data_ERA_2018_ls$time #[longitude,latitude,time]
+    tabla<- as.data.frame(cbind(time,u,v))
+    tabla[,1]<- as_datetime(tabla[,1])
+    lista_near_ERA[[k]]<- tabla
+    nombres_list[k]<- paste(round(nearest_lon[i],digits = 1),"_",round(nearest_lat[j],digits = 1))
+    k<-k+1
+    
+  }
+  
+}
+names(lista_near_ERA)<- nombres_list
+
+
+for (i in 1:length(lista_near_ERA)) {
+  for (j in 1:length(Datos_horarios)) {
+    Datos_ERA<- lista_near_ERA[[i]][lista_near_ERA[[i]]%in%Datos_horarios[[j]]]
+    Datos_anem<- Datos_horarios[[j]][Datos_horarios[[j]]%in%lista_near_ERA[[i]]]
+    tabla<- as.data.frame(cbind(Datos_ERA,Datos_anem))
+  }
+ 
+  
+}
