@@ -14,13 +14,14 @@ library(RNetCDF)
 library(stringr)
 library(lubridate)
 library(here)
+library(rlist)
 
 
 # Datos ERA5 --------------------------------------------------------------
 
 
 
-data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
+data_ERA_2018<- open.nc(here::here("python/Data_2018.nc"))
 #print.nc(data_ERA_2018)
 
 data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
@@ -228,3 +229,11 @@ Datos_calibracion_hex<- cal_hex_3
 
 
 rm(list=setdiff(ls(),c("Datos_calibracion_hex","Datos_calibracion_uni")))
+
+
+# Guardar datos -----------------------------------------------------------
+
+a<- list(Datos_calibracion_hex,Datos_calibracion_uni)
+names(a)<- c("hex","uni")
+path_data <- here::here(paste0("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata"))
+list.save(a,path_data)
