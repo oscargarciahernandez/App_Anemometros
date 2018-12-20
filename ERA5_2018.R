@@ -234,6 +234,11 @@ rm(list=setdiff(ls(),c("Datos_calibracion_hex","Datos_calibracion_uni")))
 # Guardar datos -----------------------------------------------------------
 
 a<- list(Datos_calibracion_hex,Datos_calibracion_uni)
-names(a)<- c("hex","uni")
-path_data <- here::here(paste0("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata"))
-list.save(a,path_data)
+path_data <- here::here("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata")
+if (as.numeric(object.size(a))>file.info(path_data)$size) {
+  names(a)<- c("hex","uni")
+  print("xsdcghfj")
+  list.save(a,path_data,type = "rdata")
+}
+
+
