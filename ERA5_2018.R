@@ -21,7 +21,7 @@ library(rlist)
 
 
 
-data_ERA_2018<- open.nc(here::here("python/Data_2018.nc"))
+data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
 #print.nc(data_ERA_2018)
 
 data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
