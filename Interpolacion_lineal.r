@@ -25,6 +25,7 @@ for (i in 1:length(Vector_fechas)) {
     datos_antes[i,]=NA
     datos_despues[i,]=NA
   }else{
+    #En la linea de abajo  es donde se cambia el dormato de fecha
     datos_antes[i,]=datos[which(diferencias==min(diferencias[which(diferencias>0)])),]  #Guardamos la que tenga la diferencia positiva mas pequeña
     datos_despues[i,]=datos[which(diferencias==min(diferencias[which(diferencias<0)])),] # +1 porque la de despues era el dato que esta 
   }
@@ -59,8 +60,8 @@ for (i in 1:length(Vector_fechas)) {
       datos_interpolacion$Dir_ch[i]=NA #Ya no tiene sentido tener la direccion en character
     }
     #Le ponemos el instante que le corresponde
-    datos_interpolacion$Date[i]=Vector_fechas[i]
+    datos_interpolacion$Date[i]=Vector_fechas[i]  #Aqui la vuelve a liar con el formato de fecha
     }
   
 }
-
+datos_interpolacion$Date=Vector_fechas #Le ponemos las fechas originales para arreglar el formato.
