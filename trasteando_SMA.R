@@ -56,56 +56,40 @@ for (i in 1:4) {
 # smoothing all data ------------------------------------------------------
 
 library(rlist)
+library(lubridate)
 
 a<- list.load(here::here("data/Datos_Anemometros/Datos_anemometros_UTC.rdata"))
 a_uni<- a$`0B38DAE79059`
 
 
-extract_hourly_data_1<-function(a_uni){
-  datosainicio<-round_date(range(datos$Date)[1],unit = "hours")
-  fechafinal<-round_date(range(datos$Da<- a_uni
-  datos
-  fechte)[2],unit = "hours")
+extract_hourly_data_SMA<-function(a_uni,points_MA){
+  
+  a_uni_SMA<- cbind(a_uni, SMA(a_uni$Mean,n=points_MA))
+  names(a_uni_SMA)<- c(names(a_uni),"SMA")
+  
+  fechainicio<-round_date(range(datos$Date)[1],unit = "hours")
+  fechafinal<-round_date(range(datos$Date)[2],unit = "hours")
   Vector_fechas<-seq(fechainicio,fechafinal, by="hours")
   
   
-  a<- rep(NA,5)
-  a<- as.data.frame(t(a))
-  names(a)<- names(datos)
-  
-  tabla<-as.data.frame(matrix(ncol = 7,nrow = length(Vector_fechas)))
+ vector_SMA<- vector()
   
   for (i in 1:length(Vector_fechas)) {
     diferencia<-min(abs(Vector_fechas[i]-datos$Date))
     if (as.numeric(diferencia,units="secs") >= 420) { 
-      tabla[i,]<-cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i], a) }
-    else { 
-      tabla[i,]<- cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i],datos[which.min(abs(Vector_fechas[i]-datos$Date)), ])  
+      vector_SMA[i]<- NA
+      } else { 
+        vector_SMA[i]<- a_uni_SMA[which.min(abs(Vector_fechas[i]-a_uni_SMA$Date)), "SMA"]  
       
     }
   }
   
-  names(tabla)<- c("diff_sec","date_roud",names(datos))
-  
-  tabla$date_roud<- as_datetime(tabla$date_roud)
-  tabla$Date<- as_datetime(tabla$Date)
-  return(tabla)
-  
-}
-extract_hourly_data<- function(){
-  datos<- list.load(paste0(here::here(),"/data/Datos_Anemometros/Datos_anemometros_UTC.rdata",collapse = NULL))
-  
-  lista_anem<- list()
-  for (i in 1:length(datos)) {
-    lista_anem[[i]]<- extract_hourly_data_1(datos[[i]])
-    
-  }
-  
-  names(lista_anem)<- names(datos)
-  return(lista_anem)
-  
+  return(vector_SMA)
   
 }
 
-Datos_horarios<- extract_hourly_data()
 
+Datos_horarios_uni_SMA<- extract_hourly_data_SMA(a_uni_SMA)
+
+b<- list.load(here::here("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata"))
+Datos_horarios_uni_SMA$`SMA(a_uni$Mean, n = 10)`[Datos_horarios_uni_SMA$date_roud%in%b$uni$`-2.5 _ 43.2_0B38DAE79059`$time]
