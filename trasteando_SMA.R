@@ -60,36 +60,70 @@ library(lubridate)
 
 a<- list.load(here::here("data/Datos_Anemometros/Datos_anemometros_UTC.rdata"))
 a_uni<- a$`0B38DAE79059`
+a_hex<- a$`0B75FE3A4FB6`
 
+#Esta funcion lo que hace es devolver una tabla con las fechas
+# y con la moving average usando como n, points_MA. 
 
-extract_hourly_data_SMA<-function(a_uni,points_MA){
-  
+Data_SMA<-function(tabla_anem,points_MA){
+  a_uni<- tabla_anem
   a_uni_SMA<- cbind(a_uni, SMA(a_uni$Mean,n=points_MA))
   names(a_uni_SMA)<- c(names(a_uni),"SMA")
   
-  fechainicio<-round_date(range(datos$Date)[1],unit = "hours")
-  fechafinal<-round_date(range(datos$Date)[2],unit = "hours")
-  Vector_fechas<-seq(fechainicio,fechafinal, by="hours")
-  
-  
- vector_SMA<- vector()
-  
-  for (i in 1:length(Vector_fechas)) {
-    diferencia<-min(abs(Vector_fechas[i]-datos$Date))
-    if (as.numeric(diferencia,units="secs") >= 420) { 
-      vector_SMA[i]<- NA
-      } else { 
-        vector_SMA[i]<- a_uni_SMA[which.min(abs(Vector_fechas[i]-a_uni_SMA$Date)), "SMA"]  
-      
-    }
-  }
-  
-  return(vector_SMA)
+  tabla<- as.data.frame(cbind(a_uni_SMA$Date,a_uni_SMA$SMA))
+  names(tabla)<- c("Date","SMA")
+  return(tabla)
   
 }
 
 
-Datos_horarios_uni_SMA<- extract_hourly_data_SMA(a_uni_SMA)
+#Creamos un bucle que sea capaz de calcular las correlaciones variando
+# el numero de puntos empleados en la moving averagee
+#para todo: 
+# calculando moving average de todos los puntos y extrayendo los puntos horarios
+# calculando la moving average de la moving average de todos los datos
+# calculando la MA de los datos horarios
+# calculando la moving average de los datos aportados por el ERA5
+corr<- data.frame(matrix(ncol = 7))
+k<- 1
+for (sma in 1) {
+  a_uni_SMA<- Data_SMA( a$`0B38DAE79059`,sma)
+  a_hex_SMA<- Data_SMA( a$`0B75FE3A4FB6`,sma)
+  
+  for (i in 4) {
+    
+    for (j in 1:200) {
+      for (e in 1:200 ) {
+        x<- a_uni_SMA[a_uni_SMA$Date%in%Datos_calibracion_uni[[i]]$Date,"SMA"]
+        c<- SMA(x,j)
+        
+        b<- Datos_calibracion_uni[[i]]$wind_abs
+        b_1<- SMA(b,e)
+        
+        z<- Datos_calibracion_uni[[i]]$Mean
+        z_1<- SMA(z,j)
+        
+        tabla_corr_1<-as.data.frame(cbind(c,b_1))
+        tabla_corr_1<-tabla_corr_1[complete.cases(tabla_corr_1),]
+        correlacion_1<- cor(tabla_corr_1$c,tabla_corr_1$b_1)
+        
+        tabla_corr_3<-as.data.frame(cbind(b_1,x))
+        tabla_corr_3<-tabla_corr_3[complete.cases(tabla_corr_3),]
+        correlacion_3<- cor(tabla_corr_3$x,tabla_corr_3$b_1)
+        
+        tabla_corr_2<-as.data.frame(cbind(b_1,z_1))
+        tabla_corr_2<-tabla_corr_2[complete.cases(tabla_corr_2),]
+        correlacion_2<- cor(tabla_corr_2$z_1,tabla_corr_2$b_1)
+        
+        
+        corr[k,]<- data.frame(cbind(sma,i,j,e,correlacion_3,correlacion_1,correlacion_2))
+        k<- k+1
+        
+      }
+      
+    }
+    
+  }
 
-b<- list.load(here::here("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata"))
-Datos_horarios_uni_SMA$`SMA(a_uni$Mean, n = 10)`[Datos_horarios_uni_SMA$date_roud%in%b$uni$`-2.5 _ 43.2_0B38DAE79059`$time]
+}
+f

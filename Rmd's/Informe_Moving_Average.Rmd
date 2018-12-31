@@ -1,0 +1,52 @@
+---
+title: "Moving Average"
+author: "Óscar García Hernández"
+date: "31 de diciembre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Introducción 
+
+Este documento pretende explicar el problema encontrado a la hora de realizar una correlación entre los datos captados por los anemometros y los datos del ERA5. Siguiendo los pasos que Alain nos dijo primero hay que realizar una correlación entre ambos datasets, empleando unicamente los modulos de los vectores del viento. Al hacer las primeras correlaciones vimos que los resultados obtenidos son muy pobres. 
+
+
+Lo primero que se nos ocurrio fue modificar los datos obtenidos por los anemometros para mejorar la correlacion entre ambos datasets. Recordamos que un método muy utilizado para eliminar "ruidos" de señales analógicas de sensores suele ser una **"Moving Average"**, que básicamente consiste en que el dato que se presenta no es el dato medido sino, una media entre el dato medido y una serie de datos anteriores. 
+
+```{r}
+source(here::here("ERA5_2018.R"))
+
+tabla_corr_1<- data.frame(matrix(nrow = 4))
+tabla_corr_2<- data.frame(matrix(nrow = 4))
+
+
+for (j in 1:50) {
+  corr_1<- vector()
+  corr_2<- vector()
+  for (i in 1:4) {
+    a<- Datos_calibracion_uni[[i]]$Mean
+    b<- Datos_calibracion_uni[[i]]$wind_abs
+    c<- SMA(a,n=j)
+    
+    corr_1[i]<-cor(a,b)
+
+    z<-cbind(c,b)
+    z<- z[complete.cases(z),]
+    
+    corr_2[i]<- cor(z[,1],z[,2])
+    
+    
+  }
+  
+  correlacion<- cbind(corr_1,corr_2)
+  tabla_corr_1<- cbind(tabla_corr_1,correlacion[,1])
+  tabla_corr_2<- cbind(tabla_corr_2,correlacion[,2])
+  
+  
+}
+```
+
+
