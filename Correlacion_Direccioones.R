@@ -73,3 +73,51 @@ SMA_best<- function(Datos_ordenados){
   return(vuelta)
   
 }
+
+
+
+
+
+
+# equiparando dir labels --------------------------------------------------
+#funcion para que las etiquetas de direccion del viento sean iguales para los datos
+# de los anemometros y los datos del ERA5
+
+tabla_calibracion<- Datos_calibracion_uni[[1]]
+equal_dir_lab<-function(tabla_calibracion){
+  a<- tabla_calibracion$Dir_ch
+  a_1<-str_remove_all(a,"h")
+  
+  for (i in 1:length(a_1)) {
+    if(nchar(a_1[i])==4){
+      a_2[i]<- str_sub(a_1[i],1,1)
+    } else{
+      if(str_detect(a_1[i],"-")){
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],6,6),str_sub(a_1[i],10,10))
+      }else{
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],5,5))
+        
+      }
+    }
+    
+  }
+  a_3<-str_remove_all(str_to_upper(a_2)," ")
+  
+  a_4<- vector()
+  for (i in 1:length(a_1)) {
+    
+    if(nchar(a_3[i])>1){
+      x<- str_sub(a_3[i],1,1)
+      if(x=="E" || x=="W"){
+        a_4[i]<-str_remove_all(paste(str_sub(a_3[i],2,2),str_sub(a_3[i],1,1),str_sub(a_3[i],3,3))," ")
+      }else{a_4[i]<- a_3[i]}
+      
+    }else{a_4[i]<- a_3[i]}
+    
+    
+  }
+  
+  tabla_calibracion$Dir_ch<- a_4
+  
+  return(tabla_calibracion)
+}
