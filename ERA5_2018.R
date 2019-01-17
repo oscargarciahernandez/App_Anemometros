@@ -21,8 +21,8 @@ library(rlist)
 
 
 
-#data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
-data_ERA_2018<- open.nc(here::here("python/Data_2018.nc")) #Creo que este cambio elimina un bug
+data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
+#data_ERA_2018<- open.nc(here::here("python/Data_2018.nc")) #Creo que este cambio elimina un bug
 #print.nc(data_ERA_2018)
 
 data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
@@ -229,6 +229,54 @@ Datos_calibracion_uni<- cal_uni_3
 Datos_calibracion_hex<- cal_hex_3
 
 
+
+
+
+equal_dir_lab<-function(tabla_calibracion){
+  a<- tabla_calibracion$Dir_ch
+  a_1<-str_remove_all(a,"h")
+  
+  a_2<- vector()
+  
+  for (i in 1:length(a_1)) {
+    if(nchar(a_1[i])==4){
+      a_2[i]<- str_sub(a_1[i],1,1)
+    } else{
+      if(str_detect(a_1[i],"-")){
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],6,6),str_sub(a_1[i],10,10))
+      }else{
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],5,5))
+        
+      }
+    }
+    
+  }
+  a_3<-str_remove_all(str_to_upper(a_2)," ")
+  
+  a_4<- vector()
+  for (i in 1:length(a_1)) {
+    
+    if(nchar(a_3[i])>1){
+      x<- str_sub(a_3[i],1,1)
+      if(x=="E" || x=="W"){
+        a_4[i]<-str_remove_all(paste(str_sub(a_3[i],2,2),str_sub(a_3[i],1,1),str_sub(a_3[i],3,3))," ")
+      }else{a_4[i]<- a_3[i]}
+      
+    }else{a_4[i]<- a_3[i]}
+    
+    
+  }
+  
+  tabla_calibracion$Dir_ch<- a_4
+  
+  return(tabla_calibracion)
+}
+
+
+Datos_calibracion_uni<- lapply(Datos_calibracion_uni, equal_dir_lab)
+Datos_calibracion_hex<- lapply(Datos_calibracion_hex, equal_dir_lab)
+
+
 rm(list=setdiff(ls(),c("Datos_calibracion_hex","Datos_calibracion_uni")))
 
 
@@ -238,7 +286,6 @@ a<- list(Datos_calibracion_hex,Datos_calibracion_uni)
 path_data <- here::here("data/Datos_Anemometros/Datos_anemometros_calibracion.rdata")
 if (as.numeric(object.size(a))>file.info(path_data)$size) {
   names(a)<- c("hex","uni")
-  print("xsdcghfj")
   list.save(a,path_data,type = "rdata")
 }
 
