@@ -11,6 +11,13 @@
 #hacemos al reves. Al fin y al cabo, de esta manera no desperdiciamos
 #informacion.
 
+#conclusiones: parece ser que con este metodo se consiguen correlaciones de %25-30 como maximo,
+#utilizando valores de n del orden de 200-300.
+#Yo probaria a hacer dos suavidos: uno antes de selecionar los datos de los anemometros
+#que encagan con las frecuencia horaria de los ERA5. Este suavizado ulitizaria un n de alrededor de 60/7,
+#y serviria para arreglar el desfase entre frecuencias horarias.
+#Despues, un segundo suavizado
+
 #Libraries----
 library(RNetCDF)
 library(stringr)
@@ -77,15 +84,21 @@ datos<- list.load(paste0(here::here(),"/data/Datos_Anemometros/Datos_anemometros
 suavizar_datos=function(datos,n){
   for (i in 1:length(datos)) {
     datos[[i]][6]=SMA(datos[[i]]$Mean,n=n)
-    colnames(datos[[i]])[6]=paste0("SMA(Mean,n=",n,")")
+    colnames(datos[[i]])[6]=paste0("SMA(Mean,n=",n,")") #La gracia de este paste0 es que el nombre de la columna reflejara la n que se utilizo para el suavizado
   }
   return(datos)
 }
 
 #Toca elegir valor de n para el suavizado.
-#n=50 da buenos resultados, correlaciones de %61 y viendo los graficos parece que lo deja muy bien
-#n=100 es demasioado, cor=%35-40
-#n=30 tmb muy bien, cor=%70-75
+#n=1, cor=%10-15
+#n=9, cor=%15-20
+#n=30, cor=%15-20
+#n=100, cor=%20-25
+#n=200, cor=%25-30
+#n=1000 es demasiado, cor=%0,2
+#n=300, cor=%25-30
+#n=250, cor=%20-25
+n=250
 datos=suavizar_datos(datos,n)
 
 #Juntar datos del ERA5 y de anemometros en lista_calibracion----
@@ -239,14 +252,14 @@ if (as.numeric(object.size(a))>file.info(path_data)$size) {
   list.save(a,path_data,type = "rdata")
 }
 
-# Calcular correlaciones (no acaba de calcular todas, hay que arreglarlo)----
+# Calcular correlaciones (no acaba de calcular todas, hay que arreglarlo. Aunque creo que la siguiente seccion es mas util)----
 n=c()
 k=1
 for (i in 1:length(a)) {                          #i=1 -> hex ; i=2 -> uni
   i
   for (j in length(a[[i]])) {                     #j nos dice con que punto de ERA5 comparamos
   #El siete viene de la columna donde guardamos los datos suavizados.
-    n[k]=cor(a[[i]][[j]]$Mean,a[[i]][[j]][7])
+    n[k]=cor(a[[i]][[j]]$wind_abs,a[[i]][[j]][7])
     k=k+1
     }
 }
@@ -255,10 +268,10 @@ for (i in 1:length(a)) {                          #i=1 -> hex ; i=2 -> uni
 
 #INSTRUCCIONES: selecciona i (i=1 -> hex ; i=2 -> uni) y j (punto ERA 5)
 #para sacar correlacion y plotear los dos vientos (Mean y suavizado)
-i=1
-j=3
-cor_a_la_carta=cor(a[[i]][[j]]$Mean,a[[i]][[j]][7])
-plot(a[[i]][[j]]$Mean,type = "l")
+i=2
+j=4
+cor_a_la_carta=cor(a[[i]][[j]]$wind_abs,a[[i]][[j]][7])
+plot(a[[i]][[j]]$wind_abs,type = "l")
 lines(a[[i]][[j]][7],col="red")
 
 
