@@ -7,8 +7,15 @@ source(here::here("NUEVO/Libraries.R"))
 
 if(file.exists(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))){}else{ 
   
+  #Es necesario crear un loop que descarge los datos
+  # de todos los anemometros
+  #ahora mismo no lo hace
+ 
+  #listamos los archivos CSV excepto la tabla de registro 
 file_names<- list.files(here::here("NUEVO/Data_anemometros/"))
 CSV_files<-file_names[str_detect(file_names, ".csv")]
+CSV_files<- CSV_files[!str_detect(CSV_files, "TABLA")]
+
 
 Anem_ID<- str_split(file_names,"-")[[1]][1]
 
@@ -40,6 +47,7 @@ save(Anemometros,
 
 #Borramos CSV Y listo
 rm(CSV)
+
 }
 
 
@@ -50,3 +58,11 @@ load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 
 
 
+
+# Tabla de registro -------------------------------------------------
+
+#Esta tabla contiene información relevante de los anemometros
+# ubicación, descripción que nos pueda servir para orientarnos
+# ID y Fecha de inicio de adquisición de datos. 
+
+Tabla_registro<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"),sep = ";")

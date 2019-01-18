@@ -8,3 +8,4 @@
 *.rar
 *.Rdata
 *.csv
+!TABLA_REGISTRO.csv
