@@ -17,27 +17,31 @@ CSV_files<-file_names[str_detect(file_names, ".csv")]
 CSV_files<- CSV_files[!str_detect(CSV_files, "TABLA")]
 
 
-Anem_ID<- str_split(file_names,"-")[[1]][1]
-
-path_to_data<- here::here(paste0("NUEVO/Data_anemometros/",CSV_files))
-
-#Leer el CSV con las columnas que nos interesan
-CSV<- read.csv(path_to_data,sep = ";")[,c(1,2,6,10)]
-colnames(CSV)<- c("Date", "Mean","Gust", "Dir")
-
-#Cambiamos a formato POSIXCT y a horario UTC
-CSV<- cambio_to_UTC(CSV)
-
-
-#Ajustamos las etiquetas de dirección del viento
-CSV<- equal_dir_lab(CSV)
-
-
-#Guardamos el CSV en una lista con el ID del anemómetro como nombre
+Anem_ID<- str_sub(CSV_files,1,12)
 Anemometros<- list()
-Anemometros[[1]]<- CSV
-names(Anemometros)<- Anem_ID
 
+for (i in 1:length(CSV_files)) {
+  path_to_data<- here::here(paste0("NUEVO/Data_anemometros/",CSV_files[i]))
+  
+  #Leer el CSV con las columnas que nos interesan
+  CSV<- read.csv(path_to_data,sep = ";")[,c(1,2,6,10)]
+  colnames(CSV)<- c("Date", "Mean","Gust", "Dir")
+  
+  #Cambiamos a formato POSIXCT y a horario UTC
+  CSV<- cambio_to_UTC(CSV)
+  
+  
+  #Ajustamos las etiquetas de dirección del viento
+  CSV<- equal_dir_lab(CSV)
+  
+  
+  #Guardamos el CSV en una lista con el ID del anemómetro como nombre
+  
+  Anemometros[[i]]<- CSV
+  
+}
+
+names(Anemometros)<- Anem_ID
 
 
 
