@@ -25,25 +25,19 @@ rm(list = setdiff(ls(),c("ERA5_df","data_ERA_2018_ls",lsf.str())))
 #vemos el peso de  toda la información que emplearemos 
 format(object.size(ERA5_df),"Gb")
 
-
+#metemos las etiquetas de direccion y redondeamos los valores
 ERA5_df<-Dirlab_round_ERA(ERA5_df)
 
-
-
-
-
-
-
-
-
-
-
-
-    
+   
 #Guardar 
-save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
-
-
+if(dir.exists(here::here("NUEVO/Data_ERA5"))){
+  save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
+  
+}else{
+  dir.create(here::here("NUEVO/Data_ERA5"))
+  save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
+  
+}
 
 
 }
