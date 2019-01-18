@@ -2,6 +2,9 @@ library(here)
 source(here::here("NUEVO/Libraries.R"))
 
 
+# Importación de datos ----------------------------------------------------
+
+if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
 
 #Importar
 data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
@@ -23,9 +26,29 @@ rm(list = setdiff(ls(),c("ERA5_df","data_ERA_2018_ls",lsf.str())))
 format(object.size(ERA5_df),"Gb")
 
 
+ERA5_df<-Dirlab_round_ERA(ERA5_df)
+
+
+
+
+
+
+
+
+
+
+
+
     
 #Guardar 
 save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
+
+
+
+
+}
+
+# Trabajo con los datos ---------------------------------------------------
 
 
 #Para Cargar los datos. Se cargaran en el enviroment con el mismo nombre

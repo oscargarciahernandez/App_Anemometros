@@ -6,6 +6,9 @@ library(RNetCDF)
 library(dplyr)
 library(magrittr)
 library(TTR)
+library(readr)
+library(htmltools)
+library(htmlwidgets)
 
 
 # Funciones ERA5 ----------------------------------------------------------
@@ -24,7 +27,7 @@ uv_transformation<- function(tabla_comp){
   tabla_comp<- as.data.frame(cbind(tabla_comp,wind_abs,wind_dir_deg2))
   tabla_comp$u10<- NULL
   tabla_comp$v10<- NULL
-  colnames(tabla_comp)<- c("lon","lat","wind","dwi","uv_wind","uv_dwi")
+  colnames(tabla_comp)<- c("Date","lon","lat","wind","dwi","uv_wind","uv_dwi")
   return(tabla_comp)
   
 }
@@ -59,15 +62,100 @@ ls_to_df_ERA<- function(data_ERA_ls){
     
   }
   
-  colnames(tabla2)<- c("lon","lat","u10","v10","wind","dwi")
+  tabla_3<- cbind(data_ERA_ls$time,tabla2)
+  colnames(tabla_3)<- c("Date","lon","lat","u10","v10","wind","dwi")
   
   
-  ERA5_df<- uv_transformation(tabla2)
+  ERA5_df<- uv_transformation(tabla_3)
   
   return(ERA5_df)
   
 }
 
+Dirlab_round_ERA<- function(ERA_df){
+  
+  
+  a_dwi<- cut(ERA_df$dwi,
+              breaks = c(0,seq(11.25,360,by=22.50),361),
+              labels = c("N","NNE","NE","NEE","E",
+                         "SEE","SE","SSE","S","SSW","SW",
+                         "SWW","W","NWW","NW","NNW","N"))
+  
+  a_uv_dwi<- cut(ERA_df$uv_dwi,
+                 breaks = c(0,seq(11.25,360,by=22.50),361),
+                 labels = c("N","NNE","NE","NEE","E",
+                            "SEE","SE","SSE","S","SSW","SW",
+                            "SWW","W","NWW","NW","NNW","N"))
+  
+  tabla<- as.data.frame(cbind(ERA_df,a_dwi,a_uv_dwi))
+  colnames(tabla)<- c(names(ERA_df), "Dir_dwi","Dir_uv_dwi")
+  
+  
+  tabla$wind<- round(tabla$wind,digits = 1)
+  tabla$uv_wind<- round(tabla$uv_wind,digits = 1)
+  tabla$dwi<- round(tabla$dwi,digits = 1)
+  tabla$uv_dwi<- round(tabla$uv_dwi,digits = 1)
+  
+  
+  
+  
+  
+  return(tabla)
+}
+
+
 # Funciones Anemometros ---------------------------------------------------
+
+cambio_to_UTC<-function(x){
+  Fecha<- dmy_hms(x$Date)
+  a<- hour(with_tz(Sys.time(), tzone = Sys.timezone()))
+  b<- hour(with_tz(Sys.time(), tzone = "UTC"))
+  corregir_hora<- a-b
+  
+  x$Date<- Fecha-hm(paste(corregir_hora,":00"))
+  return(x)
+}
+
+equal_dir_lab<-function(Tabla_CSV){
+  a<- Tabla_CSV$Dir
+  a_1<-str_remove_all(a,"h")
+  a_2<- vector()
+  for (i in 1:length(a_1)) {
+    if(nchar(a_1[i])==4){
+      a_2[i]<- str_sub(a_1[i],1,1)
+    } else{
+      if(str_detect(a_1[i],"-")){
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],6,6),str_sub(a_1[i],10,10))
+      }else{
+        a_2[i]<- paste(str_sub(a_1[i],1,1),str_sub(a_1[i],5,5))
+        
+      }
+    }
+    
+  }
+  a_3<-str_remove_all(str_to_upper(a_2)," ")
+  
+  a_4<- vector()
+  for (i in 1:length(a_1)) {
+    
+    if(nchar(a_3[i])>1){
+      x<- str_sub(a_3[i],1,1)
+      if(x=="E" || x=="W"){
+        a_4[i]<-str_remove_all(paste(str_sub(a_3[i],2,2),str_sub(a_3[i],1,1),str_sub(a_3[i],3,3))," ")
+      }else{a_4[i]<- a_3[i]}
+      
+    }else{a_4[i]<- a_3[i]}
+    
+    
+  }
+  
+  Tabla_CSV$Dir<- a_4
+  
+  return(Tabla_CSV)
+}
+
+
+# Funciones Calibración ---------------------------------------------------
+
 
 
