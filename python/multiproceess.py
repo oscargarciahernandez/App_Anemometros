@@ -1,5 +1,6 @@
 import multiprocessing
 import cdsapi
+import numpy as np
 
 def req(year):
         
@@ -60,5 +61,5 @@ def req(year):
 from multiprocessing import Pool
 if __name__ == "__main__":
 
-    r=Pool(4)
-    r.map(req,['2011','2013','2015','2017'])
+    r=Pool(len(np.arange(1979,1999)))
+    r.map(req,str(np.arange(1979,1999)))

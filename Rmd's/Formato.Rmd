@@ -1,0 +1,137 @@
+---
+title: "Formato Definitivo"
+author: "Óscar García Hernández"
+date: "18 de enero de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(rlist)
+library(lubridate)
+library(knitr)
+library(rmarkdown)
+```
+
+# Intro 
+
+<br />
+<br />
+Este documento simplemente está enfocado a definir el formato definitivo tanto de los datos como de la carpeta de trabajo. 
+
+<br />
+<br />
+
+# Carpeta de trabajo
+
+<br />
+<br />
+Para no liarnos con todo lo hecho anteriormente he creado una carpeta llamada **"NUEVO"** dentro del repo de trabajo. Aquí solamente se ubicarán los Scripts definitivos y afinados para realizar la lectura de los datos  y la calibración. Los datos a tratar tambien se ubicarán aquí. Haciendo incapié en que los datos los guardaremos por separado. Es decir, habrá una carpeta para los datos del ERA5, una carpeta para los datos de los anemometros y otra carpeta para guardar las listas, tablas, vectores o lo que quiera que guardemos de la calibración. 
+<br />
+<br />
+
+
+## Scripts
+<br />
+<br />
+
+
+En cuanto a los Scripts, haremos la siguiente distribución. Un Script individual para el ERA y otro para los anemometros, Un script para la calibracion y otro script llamado libraries donde se encontrarán los librarys necesarios para realizar todo el trabajo y donde tambien se ubicarán las funciones que vallamos a utilizar. De este modo todos los Scripts que vallamos a emplear se comenzarán de la siguiente manera. 
+<br />
+<br />
+
+
+```{r eval=FALSE}
+library(here)
+source(here::here("NUEVO/Libraries.R"))
+```
+
+<br />
+<br />
+**El Script libraries tiene el siguiente formato**
+<br />
+<br />
+
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/Formato/libraries.PNG"))
+
+```
+
+<br />
+<br />
+
+### ERA5 
+
+<br />
+<br />
+Este Script tiene una primera secction que emplea una serie de funciones definidas para crear un super data.frame. Vamos a trabajar a partir de ahora con el paquete **dplyr**, cuya filosofía consiste exactamente en eso, *ORGANIZAR TODA LA INFORMACIÓN EN 1 ÚNICO DATA.FRAME*. 
+<br />
+<br />
+Ese super Data.frame solamente lo crearemos 1 vez, es decir, el código está pensado para crear el data.frame, guardarlo y una vez esté guardado, solamente trendemos que importarlo. **NUESTRO ORDENADOR SOLAMENTE HARÁ EL CURRO DE CREAR ESTE DATA.FRAME 1 SOLA VEZ**.
+<br />
+<br />
+
+Como para la calibración emplearemos únicamente 4 puntos, en el Script de calibración filtraremos esta información. Esto parece inútil pero hay que tener en cuenta que es posible que realizemos esta calibración con otros anemómetros, situados en otros emplazamientos. Por ello, debemos crear un código válido para el futuro. 
+
+<br />
+<br />
+El formato que emplearemos para las columnas del data.frame del ERA5 es el siguiente. *ESTO PUEDE ESTAR SUJETO A CAMBIOS PORQUE HE AÑADIDO COLUMNAS QUE NO SE SI VAN A SER ÚTILES PARA LA CALIBRACIÓN.*
+<br />
+<br />
+COLUMNAS:
+
++ *DATE*
++ *LON*
++ *LAT*
++ *wind*: variable modulo velocidad ofrecida por ERA5
++ *dwi*: variable dirección ofrecida por ERA5
++ *uv_wind*: variable calculada por nosotras a través e las componentes U y V
++ *uv_dwi*: variable calculada por nosotras a través e las componentes U y V
++ *Dir_dwi*: dwi formato character 
++ *Dir_uv_dwi*: uv_dwi formato character
+
+<br />
+<br />
+
+**En teoría, estos valores tendrían que ser idénticos, pero no lo son, por ello, los mantengo y cuando sepamos cual de los da mejor correlación podremos eliminar la pareja de datos que no nos interesa. **
+
+<br />
+<br />
+
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/Formato/ERA5_df.PNG"))
+
+```
+<br />
+<br />
+
+### Anemómetros
+
+<br />
+<br />
+Andoni ya ha conseguido hacer la descarga de los datos en CSV empleando un Script en python, lo cual alivia el trabajo que haremos en R para los anemometros, ya que la lectura de los datos a partir de un CSV es 1 línea, **LITERAL**.
+<br />
+<br />
+
+```{r eval=FALSE}
+#Hace falta poner la ubicación del archivo
+#Como se separan las columnas de dicho CSV, en nuestro caso ";"
+#Y la parte final es las columnas que queremos
+
+CSV<- read.csv("path_to_CSV",sep = ";")[,c(1,2,6,10)]
+```
+
+<br />
+<br />
+
+El formato de los datos de los anemometros quedará así. 
+
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/Formato/Anems.PNG"))
+
+```
+
+
+<br />
+<br />

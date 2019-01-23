@@ -3,4 +3,9 @@
 .RData
 .Ruserdata
 *.nc
-
+*.html
+*.zip
+*.rar
+*.Rdata
+*.csv
+!TABLA_REGISTRO.csv
