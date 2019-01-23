@@ -1,0 +1,14 @@
+-FORMATO PARA DATA.FRAMES DE LOS DATOS DE LOS ANEMOMETROS
+
+Deberán tener estas columnas:
+
+Date:Debera ser "POSIXct POSIXt"
+Mean:Debera ser numérico
+Max:Debera ser numérico
+Dir_ch:Debera ser character
+Dir_deg:Debera ser numérico
+
+Columnas adicionales:
+
+
+-FORMATO PARA DATA.FRAMES PARACALIBRACION
