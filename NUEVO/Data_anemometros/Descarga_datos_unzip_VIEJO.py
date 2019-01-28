@@ -10,7 +10,7 @@ import os
 import numpy as np
 import zipfile
 
-path_registro= 'C:\Users\Oscar\Documents\App_Anemometros\NUEVO\Data_anemometros\TABLA_REGISTRO.csv'
+path_registro='C:\Users\Oscar\Documents\App_Anemometros\NUEVO\Data_anemometros\TABLA_REGISTRO.csv'
 with open(path_registro,'rb') as csvfile:
     data= list(csv.reader(csvfile,delimiter=';'))
 
