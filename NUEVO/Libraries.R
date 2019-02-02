@@ -157,5 +157,115 @@ equal_dir_lab<-function(Tabla_CSV){
 
 # Funciones Calibración ---------------------------------------------------
 
+#!!!!!!. Filtrar_datos no esta del todo adaptado por que nuestros datos de anemos no tienen $dir en numerico, sino en character.
+filtrar_datos=function(datos_anemos,vel_max,dif_max){
+  #Esta funcion hace lo mismo que el script FiltroObservaciones.r de Sheilla, pero
+  #adaptandolo a nuestros formatos y pudiendo definir vel_max, dif_max.
+  
+  #Valores originales de Sheila:
+  #vel_max=50 m/s
+  #dif_max=
+
+  #Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
+  #nuestro formato estandar. Si en vez de eso recibe una lista, se llama a si mismo
+  #para cada elemento de la lista.
+  if (class(datos_anemos)!="data.frame") {
+    #Fitros de viento medio
+    #Nivel 1 -- limites
+    #Velocidad [0,vel_max] (m/s)
+    N<-which(datos_anemos$Mean<=0)
+    if (length(N)!=0){
+      datos_anemos$Mean[N]<-NA
+    }
+    N<-which(datos_anemos$Mean>vel_max)
+    if (length(N)!=0){
+      datos_anemos$Mean[N]<-NA
+    }
+    
+    #Direccion [0,360]
+    N<-which(Datosdf$dir>360 | Datosdf$dir<0)
+    if (length(N)!=0){
+      Datosdf$dir[N]<-NA
+    }
+    
+    #Nivel 2 -- coherencia temporal del dato 
+    #Step test:
+    #Velocidad diferencia con el dato anterior de 30 m/s tanto si la diferencia es + como si es -
+    i2<-NULL
+    for (i in 2:dim(Datosdf)[1]){
+      difer<-Datosdf[c(c(i-1)),2]-Datosdf[c(c(i)),2]
+      if (is.na(difer)==FALSE & abs(difer)>30){
+        #datos_anemos$Mean[i]<-NA
+        print(i)
+        i2<-cbind(i,i2)
+      }
+    }
+    
+    #Nivel 4 -- coherencia temporal de la serie
+    # Velocidad 
+    # En 1 horas (6 tomas) que la velocidad no varie en 0.1
+    N2<-c()
+    for (i in 6:c(dim(Datosdf)[1])){
+      if(is.na(datos_anemos$Mean[i])==FALSE){
+        difer<-max(Datosdf[c((i-5):i),2],na.rm=TRUE)-min(Datosdf[c((i-5):i),2],na.rm=TRUE)
+        if (is.na(difer)==FALSE & abs(difer)<=0.1){
+          #datos_anemos$Mean[i]<-NA
+          N2<-c(N2,i)
+        }
+      }
+    }
+    
+    # Direcci?n
+    # En 1 hora que la direcci?n no varie en 1
+    N3<-c()
+    for (i in 6:c(dim(Datosdf)[1])){
+      if(is.na(Datosdf$dir[i])==FALSE){
+        difer<-max(Datosdf$dir[(i-5):i],na.rm=TRUE)-min(Datosdf$dir[(i-5):i],na.rm=TRUE)
+        if (is.na(difer)==FALSE & abs(difer)<=1){
+          N3<-c(N3,i)
+        }
+      }
+    }
+    
+    
+    # Direcci?n
+    # En 1 hora no varia nada si no tenemos en cuenta los 0s
+    N4<-c()
+    for (i in 6:c(dim(Datosdf)[1])){
+      if(is.na(Datosdf$dir[i])==FALSE){
+        data<-Datosdf$dir[(i-5):i]
+        n_data<-which(data==0)
+        data<-data[-n_data]
+        if(is.na(data)==FALSE){
+          difer<-max(data,na.rm=TRUE)-min(data,na.rm=TRUE)
+          if (is.na(difer)==FALSE & abs(difer)<=1){
+            N4<-c(N4,i)
+          }
+        }
+      }
+    }
+    
+  }else{
+  if (class(datos_anemos)!="list") {
+    for (i in 1:length(datos_anemos)) {
+      datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]],vel_max,dif_max)
+    }
+    
+  }else{
+    print("ERROR. El input datos_anemos que ha recibido la funcion filtrar_datos no es ni data.frame ni list")
+  }
+  }
+  
+  
+}
+  
+suavizar_vector_viento=function(vector_viento,n){
+  #Esta funcion recibe un vector de valores de viento y un valor de n y devuelve otro 
+  #vector que es el resultado de aplicarle un SMA de valor n al primero.
+  for (i in 1:length(vector_viento)) {
+    vector_viento[i]=SMA(vector_viento[i],n=n)
+  }
+  return(vector_viento)
+}
 
 
