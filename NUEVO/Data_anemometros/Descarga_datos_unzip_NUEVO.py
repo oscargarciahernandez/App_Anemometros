@@ -1,4 +1,4 @@
-#EXPLICACI0N
+﻿#EXPLICACI0N
 #Este script contiene las funciones necesarias para bajar los cvs
 
 
@@ -179,22 +179,3 @@ for i in np.arange(0,len(x),step=1):
   else:
     path=os.path.abspath(y)
     os.remove(path)
-
-def crear_registro_sensor(id_sensor):
-       #Esta funcion se debera ejecutar cada vez que queramos empezar de cero
-       #el registro de un sensor, ya sea por que acabamos de instalar el sensor
-       #o porque la hayamos liado con elregistro y haya que empezar de cero.
-       
-       #Asegurarse de que no existe ya elregistro
-       
-       #Definir nombre del archivo & crearlo
-       
-       #Mirar si tenemos algo en los cvs que estén por ahi
-       
-       #Mirar si podemos pillar algun dato que falte de la página web
-       
-def actualizar_registro_sensor(id_sensor):
-       #Esta funcion debera actualizar el registro de un sensor ya existente.
-       #Debera buscar si hay datos disponibles en los cvs ya bajados, y si es
-       #asi integrarlos. Luego, debera mirar si en la pagina web hay algun
-       #dato que falte y añadirlo tambien.

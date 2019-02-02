@@ -1,9 +1,9 @@
+#Script para filtrar las mediciones de anemometros tal y como lo mando Sheilla.
+
+#Detecci?n de valores erroneos 
 
 
-#Detección de valores erroneos 
-
-
-#Definición de valores perdidos
+#Definici?n de valores perdidos
 
 #Formato fichero
 names(Datosdf)<-c("Fecha","vel","dir")
@@ -53,8 +53,8 @@ for (i in 6:c(dim(Datosdf)[1])){
  }
 }
 
-# Dirección
-# En 1 hora que la dirección no varie en 1
+# Direcci?n
+# En 1 hora que la direcci?n no varie en 1
 N3<-c()
 for (i in 6:c(dim(Datosdf)[1])){
  if(is.na(Datosdf$dir[i])==FALSE){
@@ -66,7 +66,7 @@ for (i in 6:c(dim(Datosdf)[1])){
 }
 
 
-# Dirección
+# Direcci?n
 # En 1 hora no varia nada si no tenemos en cuenta los 0s
 N4<-c()
 for (i in 6:c(dim(Datosdf)[1])){
