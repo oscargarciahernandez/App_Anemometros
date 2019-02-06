@@ -7,6 +7,7 @@ load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
 
 
+<<<<<<< HEAD
 #Esta funcion hace lo mismo que el script FiltroObservaciones.r de Sheilla, pero
 #adaptandolo a nuestros formatos y pudiendo definir vel_max, dif_max.
 
@@ -150,3 +151,14 @@ for (i in 2:(dim(datos_anemos)[1]-1)) {
     i=i-1
   }
 }
+=======
+#Obtenemos puntos del ERA cercanos al Anemo
+pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
+
+
+nearest_lat<- data_ERA_2018_ls$latitude[order(abs(data_ERA_2018_ls$latitude - pos_anem_uni[1]))[1:2]]
+nearest_lon<- data_ERA_2018_ls$longitude[order(abs(data_ERA_2018_ls$longitude - pos_anem_uni[2]))[1:2]]
+
+
+
+>>>>>>> 68911d0779a38aeef5a6551927a5b64d13237138
