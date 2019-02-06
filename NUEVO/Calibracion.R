@@ -19,6 +19,7 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #vel_max(racha)=200 km/h
 #dif_max=30 km/h
 
+datos_anemos=Anemometros$`0B38DAE79059`
 
 mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]
@@ -116,19 +117,24 @@ points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd
 
 
 #Encontrar una manera de reponer los datos filtrados por ellos, poniendo Na----
-for (i in 2:(dim(datos_anemos)[1]-1)) {
-  diff=as.numeric(datos_anemos$Date[i-1]-datos_anemos$Date[i])
+i=1
+while(i+2<dim(datos_anemos)[1] && !is.na(datos_anemos$Date[dim(datos_anemos)[1]])){  #No nos vale el tipico for porque segun vayamos añadiendo lineas dim(datos_anemos)[1] va cambiando
+  print(i)
+  diff=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
   if (class(diff)!="numeric") {
-    print(paste0("ERROR!  class(diff)",class(diff)))
-    datos_anemos=datos_anemos[-c(i,i-1),]
-    i=i-1
+    print(paste0("ERROR!  class(diff)=",class(diff)))
   }
   if (diff<=0) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff),"minutos"))
+    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
   }
   if (diff>7*1.5) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff),"minutos"))
-  }
+    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+    nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
+    colnames(nueva_linea)=colnames(datos_anemos)
+    datos_anemos=rbind(datos_anemos[1:i,],nueva_linea,datos_anemos[i+1:dim(datos_anemos)[1],]) #Hacer rbinds tan tochos noes muy eficiente
+    print(dim(datos_anemos)[1])
+    }
+  i=i+1
 }
 
 #Obtenemos puntos del ERA cercanos al Anemo----
