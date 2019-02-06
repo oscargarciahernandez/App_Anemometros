@@ -159,135 +159,14 @@ equal_dir_lab<-function(Tabla_CSV){
 
 #!!!!!!. Filtrar_datos no esta del todo adaptado por que nuestros datos de anemos no tienen $dir en numerico, sino en character.
 filtrar_datos=function(datos_anemos){
-  #Esta funcion hace lo mismo que el script FiltroObservaciones.r de Sheilla, pero
-  #adaptandolo a nuestros formatos y pudiendo definir vel_max, dif_max.
-  
-  #Valores originales de Sheila:
-  #vel_max(media)=50 km/h
-  #dif_max=30 km/h
-  
-  #Valores nuevos propuestos por Sheila:
-  #vel_max(media)=90 km/h
-  #vel_max(racha)=200 km/h
-  #dif_max=30 km/h
-  
-  #Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
-  #nuestro formato estandar. Si en vez de eso recibe una lista, se llama a si mismo
-  #para cada elemento de la lista.
-
   if (class(datos_anemos)!="data.frame") {
-    #Plotear racha con todos los datos
-    plot(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
-    #Plotear media con todos los datos
-    lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
-    #Fitros de viento medio
-    #Nivel 1 -- limites
-    #Para mean, Velocidad [0,50/3.6] (m/s)
-    N<-which(datos_anemos$Mean>50/3.6 | datos_anemos$Mean<=0)
-    points(x = datos_anemos$Date[N],y = datos_anemos$Mean[N],col="red",lwd=5)
-    if (length(N)!=0){
-      datos_anemos$Mean[N]<-NA
-    }
-    
-    #Para gust, Velocidad [0,200/3.6] (m/s)
-    N<-which(datos_anemos$Gust>50/3.6 | datos_anemos$Gust<=0)
-    points(x = datos_anemos$Date[N],y = datos_anemos$Gust[N],col="green",lwd=5)
-    if (length(N)!=0){
-      datos_anemos$Mean[N]<-NA
-    }
-    
-    #Direccion [0,360]
-    #N<-which(Datosdf$dir>360 | Datosdf$dir<0)
-    #if (length(N)!=0){
-    #  Datosdf$dir[N]<-NA
-    #}
-    
-    #Nivel 2 -- coherencia temporal del dato 
-    #Step test:
-    #Velocidad diferencia con el dato anterior de 30 m/s tanto si la diferencia es + como si es -
-    #Este filtro solo se lo pasamos al mean
-    i2<-NULL
-    for (i in 2:length(datos_anemos$Mean)){
-      difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
-      if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-        i2<-cbind(i,i2)
-      }
-    }
-    points(x = datos_anemos$Date[i2],y = datos_anemos$Mean[i2],col="red",lwd=5)
-    datos_anemos$Mean[i2]<-NA
-    
-    
-    #Ahora al gust
-    i2<-NULL
-    for (i in 2:length(datos_anemos$Gust)){
-      difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
-      if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-        
-        i2<-cbind(i,i2)
-      }
-    }
-    points(x = datos_anemos$Date[i2],y = datos_anemos$Gust[i2],col="green",lwd=5)
-    datos_anemos$Gust[i2]<-NA
-    
-    
-    
-    #Nivel 4 -- coherencia temporal de la serie
-    # Velocidad 
-    # En 1 horas (6 tomas) que la velocidad no varie en 0.1
-    N2<-c()
-    for (i in 6:c(dim(Datosdf)[1])){
-      if(is.na(datos_anemos$Mean[i])==FALSE){
-        difer<-max(Datosdf[c((i-5):i),2],na.rm=TRUE)-min(Datosdf[c((i-5):i),2],na.rm=TRUE)
-        if (is.na(difer)==FALSE & abs(difer)<=0.1){
-          #datos_anemos$Mean[i]<-NA
-          N2<-c(N2,i)
-        }
-      }
-    }
-    
-    # Direcci?n
-    # En 1 hora que la direcci?n no varie en 1
-    N3<-c()
-    for (i in 6:c(dim(Datosdf)[1])){
-      if(is.na(Datosdf$dir[i])==FALSE){
-        difer<-max(Datosdf$dir[(i-5):i],na.rm=TRUE)-min(Datosdf$dir[(i-5):i],na.rm=TRUE)
-        if (is.na(difer)==FALSE & abs(difer)<=1){
-          N3<-c(N3,i)
-        }
-      }
-    }
-    
-    
-    # Direcci?n
-    # En 1 hora no varia nada si no tenemos en cuenta los 0s
-    N4<-c()
-    for (i in 6:c(dim(Datosdf)[1])){
-      if(is.na(Datosdf$dir[i])==FALSE){
-        data<-Datosdf$dir[(i-5):i]
-        n_data<-which(data==0)
-        data<-data[-n_data]
-        if(is.na(data)==FALSE){
-          difer<-max(data,na.rm=TRUE)-min(data,na.rm=TRUE)
-          if (is.na(difer)==FALSE & abs(difer)<=1){
-            N4<-c(N4,i)
-          }
-        }
-      }
-    }
-    
-  }else{
-  if (class(datos_anemos)!="list") {
-    for (i in 1:length(datos_anemos)) {
-      datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
-    }
-    
+    #En desarrollo en Calibracion.r
   }else{
     print("ERROR. El input datos_anemos que ha recibido la funcion filtrar_datos no es ni data.frame ni list")
   }
-  }
-  
-  
 }
+
+  
   
 suavizar_vector_viento=function(vector_viento,n){
   #Esta funcion recibe un vector de valores de viento y un valor de n y devuelve otro 
