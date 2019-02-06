@@ -159,13 +159,28 @@ equal_dir_lab<-function(Tabla_CSV){
 
 #!!!!!!. Filtrar_datos no esta del todo adaptado por que nuestros datos de anemos no tienen $dir en numerico, sino en character.
 filtrar_datos=function(datos_anemos){
-  if (class(datos_anemos)!="data.frame") {
+  #Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
+  #nuestro formato estandar. Si en vez de eso recibe una lista, se llama a si mismo
+  #para cada elemento de la lista.
+  if (class(datos_anemos)=="data.frame") {
     #En desarrollo en Calibracion.r
+  }else{
+    if (class(datos_anemos)=="list") {
+      for (i in 1:length(datos_anemos)) {
+        datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
+      }
+    }
   }else{
     print("ERROR. El input datos_anemos que ha recibido la funcion filtrar_datos no es ni data.frame ni list")
   }
+  }
+  
 }
-
+if (class(datos_anemos)!="list") {
+  for (i in 1:length(datos_anemos)) {
+    datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
+  }
+}
   
   
 suavizar_vector_viento=function(vector_viento,n){

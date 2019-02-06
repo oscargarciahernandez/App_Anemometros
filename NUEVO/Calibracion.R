@@ -1,13 +1,12 @@
 library(here)
 source(here::here("NUEVO/Libraries.R"))
 
-#Cargamos la mega tabla ERA5_df y la lista Anemometros
+#Cargamos la mega tabla ERA5_df y la lista Anemometros----
 
 load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
 
-
-<<<<<<< HEAD
+#Encontrar errores y registrar su posicion----
 #Esta funcion hace lo mismo que el script FiltroObservaciones.r de Sheilla, pero
 #adaptandolo a nuestros formatos y pudiendo definir vel_max, dif_max.
 
@@ -20,11 +19,13 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #vel_max(racha)=200 km/h
 #dif_max=30 km/h
 
-#Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
-#nuestro formato estandar. Si en vez de eso recibe una lista, se llama a si mismo
-#para cada elemento de la lista.
 
-datos_anemos=
+mean_max=50/3.6   #[m/s]
+gust_max=200/3.6  #[m/s]
+dif_max=30/3.6    #[m/s]
+
+N_mean=c()
+N_gust=c()
 
 #Plotear racha con todos los datos
 plot(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
@@ -33,19 +34,12 @@ lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
 #Fitros de viento medio
 #Nivel 1 -- limites
 #Para mean, Velocidad [0,50/3.6] (m/s)
-N<-which(datos_anemos$Mean>50/3.6 | datos_anemos$Mean<=0)
-points(x = datos_anemos$Date[N],y = datos_anemos$Mean[N],col="red",lwd=5)
-if (length(N)!=0){
-  datos_anemos$Mean[N]<-NA
-}
+N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<=0 ))
 
 #Para gust, Velocidad [0,200/3.6] (m/s)
-N<-which(datos_anemos$Gust>50/3.6 | datos_anemos$Gust<=0)
-points(x = datos_anemos$Date[N],y = datos_anemos$Gust[N],col="green",lwd=5)
-if (length(N)!=0){
-  datos_anemos$Mean[N]<-NA
-}
+N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<=0))
 
+#Por ahora no hacemos con la direccion por que parece que esta bien
 #Direccion [0,360]
 #N<-which(Datosdf$dir>360 | Datosdf$dir<0)
 #if (length(N)!=0){
@@ -56,30 +50,20 @@ if (length(N)!=0){
 #Step test:
 #Velocidad diferencia con el dato anterior de 30 m/s tanto si la diferencia es + como si es -
 #Este filtro solo se lo pasamos al mean
-i2<-NULL
 for (i in 2:length(datos_anemos$Mean)){
   difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
   if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-    i2<-cbind(i,i2)
+    N_mean=cbind(N_mean,i)
   }
 }
-points(x = datos_anemos$Date[i2],y = datos_anemos$Mean[i2],col="red",lwd=5)
-datos_anemos$Mean[i2]<-NA
-
 
 #Ahora al gust
-i2<-NULL
 for (i in 2:length(datos_anemos$Gust)){
   difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
   if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-    
-    i2<-cbind(i,i2)
+    N_gust=cbind(N_gust,i)
   }
 }
-points(x = datos_anemos$Date[i2],y = datos_anemos$Gust[i2],col="green",lwd=5)
-datos_anemos$Gust[i2]<-NA
-
-
 
 #Nivel 4 -- coherencia temporal de la serie
 # Velocidad 
@@ -125,15 +109,13 @@ for (i in 6:c(dim(Datosdf)[1])){
   }
 }
 
-if (class(datos_anemos)!="list") {
-  for (i in 1:length(datos_anemos)) {
-    datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
-  }
-}
+
+#Plotear mediciones consideradas erroneas
+points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=5)   #Los errores de mean en rojo
+points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=5)   #Los errores de mean en rojo
 
 
-
-#Encontrar una manera de reponer los datos filtrados por ellos, poniendo Na
+#Encontrar una manera de reponer los datos filtrados por ellos, poniendo Na----
 for (i in 2:(dim(datos_anemos)[1]-1)) {
   diff=as.numeric(datos_anemos$Date[i-1]-datos_anemos$Date[i])
   if (class(diff)!="numeric") {
@@ -143,22 +125,16 @@ for (i in 2:(dim(datos_anemos)[1]-1)) {
   }
   if (diff<=0) {
     print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff),"minutos"))
-    datos_anemos=datos_anemos[-c(i,i-1),]
-    i=i-1
   }
   if (diff>7*1.5) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff),"minutos"))
-    i=i-1
+    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff),"minutos"))
   }
 }
-=======
-#Obtenemos puntos del ERA cercanos al Anemo
+
+#Obtenemos puntos del ERA cercanos al Anemo----
 pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
 
 
 nearest_lat<- data_ERA_2018_ls$latitude[order(abs(data_ERA_2018_ls$latitude - pos_anem_uni[1]))[1:2]]
 nearest_lon<- data_ERA_2018_ls$longitude[order(abs(data_ERA_2018_ls$longitude - pos_anem_uni[2]))[1:2]]
 
-
-
->>>>>>> 68911d0779a38aeef5a6551927a5b64d13237138
