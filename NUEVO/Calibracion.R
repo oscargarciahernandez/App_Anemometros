@@ -131,11 +131,37 @@ while(i+2<dim(datos_anemos)[1] && !is.na(datos_anemos$Date[dim(datos_anemos)[1]]
     print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
     nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
     colnames(nueva_linea)=colnames(datos_anemos)
-    datos_anemos=rbind(datos_anemos[1:i,],nueva_linea,datos_anemos[i+1:dim(datos_anemos)[1],]) #Hacer rbinds tan tochos noes muy eficiente
+    datos_anemos=rbind(datos_anemos[1:i,],nueva_linea,datos_anemos[i+1:dim(datos_anemos)[1],]) #Hacer rbinds tan tochos no es muy eficiente
     print(dim(datos_anemos)[1])
     }
   i=i+1
 }
+
+buscar_huecos_anemos=function(datos_anemos){
+  #Esta funcion busca que huecos tenemos en las mediciones.
+  #No sobreescribe nada, solo imprime en la consola y devuelve el vector N_huecos.
+  #N_huecos muestra cual es la posicion de la medicion posterior (en el tiempo) al hueco.
+  N_huecos=c()
+  for(i in 1:(dim(datos_anemos)[1])-1){
+    diff=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
+    if (class(diff)!="numeric") {
+      print(paste0("ERROR!  class(diff)=",class(diff)))
+    }
+    if (isTRUE(diff<=0)){
+      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+    }
+    if (isTRUE(diff>7*1.5)){
+      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+      nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
+      colnames(nueva_linea)=colnames(datos_anemos)
+      N_huecos=cbind(N_huecos,i)
+    }
+  }
+  return(N_huecos)
+}
+
+#Marcar en morado a una altura de 20 alli donde haya huecos
+points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)   #Los errores de mean en rojo
 
 #Obtenemos puntos del ERA cercanos al Anemo----
 pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
