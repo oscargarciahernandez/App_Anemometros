@@ -169,19 +169,14 @@ filtrar_datos=function(datos_anemos){
       for (i in 1:length(datos_anemos)) {
         datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
       }
-    }
-  }else{
+    
+    }else{
     print("ERROR. El input datos_anemos que ha recibido la funcion filtrar_datos no es ni data.frame ni list")
-  }
+    }
   }
   
 }
-if (class(datos_anemos)!="list") {
-  for (i in 1:length(datos_anemos)) {
-    datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
-  }
-}
-  
+
   
 suavizar_vector_viento=function(vector_viento,n){
   #Esta funcion recibe un vector de valores de viento y un valor de n y devuelve otro 

@@ -120,15 +120,15 @@ points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd
 i=1
 while(i+2<dim(datos_anemos)[1] && !is.na(datos_anemos$Date[dim(datos_anemos)[1]])){  #No nos vale el tipico for porque segun vayamos añadiendo lineas dim(datos_anemos)[1] va cambiando
   print(i)
-  diff=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
-  if (class(diff)!="numeric") {
-    print(paste0("ERROR!  class(diff)=",class(diff)))
+  diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
+  if (class(diferencia)!="numeric") {
+    print(paste0("ERROR!  class(diferencia)=",class(diferencia)))
   }
-  if (diff<=0) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+  if (diferencia<=0) {
+    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
   }
-  if (diff>7*1.5) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+  if (diferencia>7*1.5) {
+    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
     nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
     colnames(nueva_linea)=colnames(datos_anemos)
     datos_anemos=rbind(datos_anemos[1:i,],nueva_linea,datos_anemos[i+1:dim(datos_anemos)[1],]) #Hacer rbinds tan tochos no es muy eficiente
@@ -141,23 +141,24 @@ buscar_huecos_anemos=function(datos_anemos){
   #Esta funcion busca que huecos tenemos en las mediciones.
   #No sobreescribe nada, solo imprime en la consola y devuelve el vector N_huecos.
   #N_huecos muestra cual es la posicion de la medicion posterior (en el tiempo) al hueco.
-  N_huecos=c()
+  huecos=data.frame(matrix(ncol=2))
+  colnames(huecos)=c(colnames(datos_anemos)[1],"Date[i]-Date[i+1]")
+  cont=1
   for(i in 1:(dim(datos_anemos)[1])-1){
-    diff=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
-    if (class(diff)!="numeric") {
-      print(paste0("ERROR!  class(diff)=",class(diff)))
+    diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
+    if (class(diferencia)!="numeric") {
+      print(paste0("ERROR!  class(diferencia)=",class(diferencia)))
     }
-    if (isTRUE(diff<=0)){
-      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
+    if (isTRUE(diferencia<=0)){
+      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
     }
-    if (isTRUE(diff>7*1.5)){
-      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diff)," minutos"))
-      nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
-      colnames(nueva_linea)=colnames(datos_anemos)
-      N_huecos=cbind(N_huecos,i)
+    if (isTRUE(diferencia>7*1.5)){
+      huecos[cont,1]=datos_anemos$Date[i]
+      huecos[cont,2]=diferencia     #No hace falta +1 porque la linea de arriba ya ha añadido una fila nueva.
+      cont=cont+1
     }
   }
-  return(N_huecos)
+  return(huecos)
 }
 
 #Marcar en morado a una altura de 20 alli donde haya huecos
