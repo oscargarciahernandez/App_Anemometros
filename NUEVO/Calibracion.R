@@ -117,52 +117,57 @@ points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd
 
 
 #Encontrar una manera de reponer los datos filtrados por ellos, poniendo Na----
-i=1
-while(i+2<dim(datos_anemos)[1] && !is.na(datos_anemos$Date[dim(datos_anemos)[1]])){  #No nos vale el tipico for porque segun vayamos añadiendo lineas dim(datos_anemos)[1] va cambiando
-  print(i)
-  diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
-  if (class(diferencia)!="numeric") {
-    print(paste0("ERROR!  class(diferencia)=",class(diferencia)))
-  }
-  if (diferencia<=0) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
-  }
-  if (diferencia>7*1.5) {
-    print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]su-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
-    nueva_linea=data.frame(datos_anemos$Date[i]-dminutes(7),NA,NA,NA)
-    colnames(nueva_linea)=colnames(datos_anemos)
-    datos_anemos=rbind(datos_anemos[1:i,],nueva_linea,datos_anemos[i+1:dim(datos_anemos)[1],]) #Hacer rbinds tan tochos no es muy eficiente
-    print(dim(datos_anemos)[1])
-    }
-  i=i+1
-}
 
 buscar_huecos_anemos=function(datos_anemos){
   #Esta funcion busca que huecos tenemos en las mediciones.
-  #No sobreescribe nada, solo imprime en la consola y devuelve el vector N_huecos.
-  #N_huecos muestra cual es la posicion de la medicion posterior (en el tiempo) al hueco.
-  huecos=data.frame(matrix(ncol=2))
+  #No sobreescribe nada, solo devuelve el dataframe huecos.
+  #huecos[1] muestra cual es la medicion posterior (en el tiempo) al hueco.
+  #huecos[2] muestra cual es la medicion anterior (en el tiempo) al hueco.
+  #Las fechas estan en numerico (segundos desde 1970-01-01)
+  huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
   colnames(huecos)=c(colnames(datos_anemos)[1],"Date[i]-Date[i+1]")
   cont=1
   for(i in 1:(dim(datos_anemos)[1])-1){
-    diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1])
-    if (class(diferencia)!="numeric") {
-      print(paste0("ERROR!  class(diferencia)=",class(diferencia)))
-    }
+    diferencia=datos_anemos$Date[i]-datos_anemos$Date[i+1]  #En minutos
     if (isTRUE(diferencia<=0)){
       print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
     }
     if (isTRUE(diferencia>7*1.5)){
       huecos[cont,1]=datos_anemos$Date[i]
-      huecos[cont,2]=diferencia     #No hace falta +1 porque la linea de arriba ya ha añadido una fila nueva.
+      huecos[cont,2]=datos_anemos$Date[i+1]
       cont=cont+1
     }
   }
   return(huecos)
 }
 
+rellenar_huecos_anemos=function(datos_anemos){
+  huecos=buscar_huecos_anemos(datos_anemos)
+  lista=list()  #Vamos a crear un a lista que contega dataframes. Estos seran los cachitos que van a conformar datos_anemos_rellenado.
+  lista[[1]]=datos_anemos[1:which(datos_anemos$Date==huecos[1,1]),]
+  for (i in 1:(nrow(huecos)))
+  #Por cada hueco hay que crear un data.frame con los datos anteriores (anteriores en el data.frame, posteriores en el tiempo) y otro con las mediciones vacias (el relleno).
+  {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
+  relleno=data.frame(a=as.POSIXct(character(),tz="UTC"), b=numeric(), c=numeric(), d=numeric())  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
+    for (j in 1:(as.numeric(round((huecos[i,1]-huecos[i,2]))/7)-1)) #Cuantas mediciones faltan? Solo una si huecos[i,2] ~= 2*7*60 mins, 2 si huecos[i,2] ~= 3*7*60 ...
+    {relleno[j,1]=datos_anemos$Date[which(datos_anemos$Date==huecos[i,1])]-j*(huecos[i,1]-huecos[i,2])/(as.numeric(round((huecos[i,1]-huecos[i,2]))/7))
+    #relleno[j,1]=la fecha posterior en el tiempo al hueco - j*(tamaño del hueco)/(el numero de mediciones que faltan en este hueco)
+    }
+  colnames(relleno)=colnames(datos_anemos)
+  lista[[2*i]]=relleno
+  if (i==(nrow(huecos))) {
+  lista[[length(lista)+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):nrow(datos_anemos),] #Si estamos con el ultimo hueco, hay que coger todo hasta el final de datos_anemos
+  }else{
+  lista[[2*i+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):which(datos_anemos$Date==huecos[i+1,1]),] #Las mediciones entre el principio del hueco y el final del siguiente hueco
+  }
+  }
+  datos_anemos_rellenado=do.call("rbind", lista) #Juntar todos los cachitos. Haciendo esto en vez de monton de rbins usamos menos recursos del pc.
+  colnames(datos_anemos_rellenado)=colnames(datos_anemos)
+  return(datos_anemos_rellenado)
+}
+
 #Marcar en morado a una altura de 20 alli donde haya huecos
-points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)   #Los errores de mean en rojo
+points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
 
 #Obtenemos puntos del ERA cercanos al Anemo----
 pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
