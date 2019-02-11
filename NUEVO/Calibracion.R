@@ -19,7 +19,24 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #vel_max(racha)=200 km/h
 #dif_max=30 km/h
 
-datos_anemos=Anemometros$`0B38DAE79059`
+datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
+
+
+poner_dir_en_numerico=function(datos_anemos){
+  #Esta funcion recibe un data.frame de mediciones de anemos y pone $Dir en grados
+  if (is.character(datos_anemos$Dir)){
+    #Aqui es importante sustituir primero NWW, despues NW y luego N.
+    #Si no gsub() podria sustituirnos por 0 la N de NWW.
+    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "N",replacement = 0)
+    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "W",replacement = 270)
+  }else{
+    if (is.numeric(datos_anemos$Dir)){
+      print("Parece que tus mediciones ya tienen la direccion en numerico")
+    }else{
+      print("ERROR. Parece que tus mediciones no tienen la direccion ni en numerico ni en character ")
+    }
+  }
+}
 
 mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]
@@ -32,6 +49,7 @@ N_gust=c()
 plot(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
 #Plotear media con todos los datos
 lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
+
 #Fitros de viento medio
 #Nivel 1 -- limites
 #Para mean, Velocidad [0,50/3.6] (m/s)
