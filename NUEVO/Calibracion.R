@@ -19,6 +19,7 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #vel_max(racha)=200 km/h
 #dif_max=30 km/h
 
+
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 
 
@@ -28,27 +29,24 @@ mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]
 dif_max=30/3.6    #[m/s]
 
-N_mean=c()
+N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
-
-#Plotear racha con todos los datos
-plot(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
-#Plotear media con todos los datos
-lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
+#N_dir=c()
 
 #Fitros de viento medio
 #Nivel 1 -- limites
 #Para mean, Velocidad [0,50/3.6] (m/s)
-N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<=0 ))
+#N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<=0 ))   #<=0
+N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<0 ))     #<0
 
 #Para gust, Velocidad [0,200/3.6] (m/s)
 N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<=0))
 
 #Por ahora no hacemos con la direccion por que parece que esta bien
 #Direccion [0,360]
-#N<-which(Datosdf$dir>360 | Datosdf$dir<0)
+#N<-which(datos_anemos$Dir>360 | datos_anemos$Dir<0)
 #if (length(N)!=0){
-#  Datosdf$dir[N]<-NA
+#  datos_anemos$Dir[N]<-NA
 #}
 
 #Nivel 2 -- coherencia temporal del dato 
@@ -73,25 +71,26 @@ for (i in 2:length(datos_anemos$Gust)){
 #Nivel 4 -- coherencia temporal de la serie
 # Velocidad 
 # En 1 horas (6 tomas) que la velocidad no varie en 0.1
-N2<-c()
-for (i in 6:c(dim(Datosdf)[1])){
+for (i in 6:nrow(datos_anemos)){
   if(is.na(datos_anemos$Mean[i])==FALSE){
-    difer<-max(Datosdf[c((i-5):i),2],na.rm=TRUE)-min(Datosdf[c((i-5):i),2],na.rm=TRUE)
+    difer<-max(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)-min(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)
     if (is.na(difer)==FALSE & abs(difer)<=0.1){
       #datos_anemos$Mean[i]<-NA
-      N2<-c(N2,i)
+      N_mean[length(N_mean)+1]=i
     }
   }
 }
 
 # Direcci?n
 # En 1 hora que la direcci?n no varie en 1
-N3<-c()
-for (i in 6:c(dim(Datosdf)[1])){
-  if(is.na(Datosdf$dir[i])==FALSE){
-    difer<-max(Datosdf$dir[(i-5):i],na.rm=TRUE)-min(Datosdf$dir[(i-5):i],na.rm=TRUE)
-    if (is.na(difer)==FALSE & abs(difer)<=1){
-      N3<-c(N3,i)
+#Esto no creo que nos sirva porque tenemos poca resolucion en $Dir (22,5>>1)
+#Por eso meto los filtros de direccion en un if que nunca se va a ejecutar
+if (FALSE) {
+for (i in 6:c(nrow(datos_anemos))){
+  if(is.na(datos_anemos$Dir[i])==FALSE){
+    difer<-max(datos_anemos$Dir[(i-5):i],na.rm=TRUE)-min(datos_anemos$Dir[(i-5):i],na.rm=TRUE)
+    if (!is.na(difer) & abs(difer)<=1){
+      N_dir[length(N_dir)+1]=i
     }
   }
 }
@@ -100,9 +99,9 @@ for (i in 6:c(dim(Datosdf)[1])){
 # Direcci?n
 # En 1 hora no varia nada si no tenemos en cuenta los 0s
 N4<-c()
-for (i in 6:c(dim(Datosdf)[1])){
-  if(is.na(Datosdf$dir[i])==FALSE){
-    data<-Datosdf$dir[(i-5):i]
+for (i in 6:c(nrow(datos_anemos))){
+  if(is.na(datos_anemos$Dir[i])==FALSE){
+    data<-datos_anemos$Dir[(i-5):i]
     n_data<-which(data==0)
     data<-data[-n_data]
     if(is.na(data)==FALSE){
@@ -113,24 +112,35 @@ for (i in 6:c(dim(Datosdf)[1])){
     }
   }
 }
+}
 
+#Plotear racha con todos los datos
+plot(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
+#Plotear media con todos los datos
+lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
 
 #Plotear mediciones consideradas erroneas
-points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=5)   #Los errores de mean en rojo
-points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=5)   #Los errores de mean en rojo
-
-
-#Encontrar una manera de reponer los datos filtrados por ellos, poniendo Na----
-
-
-
+points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)   #Los errores de gust en verde
+points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
+points(x = datos_anemos$Date[N_dir],y = datos_anemos$Mean[N_dir],col="brown",lwd=1)   #Los errores de dir en marron
 #Marcar en morado a una altura de 20 alli donde haya huecos
-points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
+#points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
 
-#Obtenemos puntos del ERA cercanos al Anemo----
-pos_anem_uni<-c(43.179361, -2.488510)#lat,lon
+#Plotear mean de n en n
+n=2000
+for (i in seq(1,nrow(datos_anemos),n)) {
+  plot(datos_anemos$Mean[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p")
+  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
+  
+}
+rm(n)
 
+#Llenar de NAs las mediciones consideradas erroneas. No eliminamos la fila; queremos mantener la fechas de los NAs.
+datos_anemos[N_mean,c(2,3,4)]=NA
+datos_anemos[N_gust,c(2,3,4)]=NA
 
-nearest_lat<- data_ERA_2018_ls$latitude[order(abs(data_ERA_2018_ls$latitude - pos_anem_uni[1]))[1:2]]
-nearest_lon<- data_ERA_2018_ls$longitude[order(abs(data_ERA_2018_ls$longitude - pos_anem_uni[2]))[1:2]]
+#Rosa de los vientos
+windRose(datos_anemos,ws = "Mean",wd="Dir")
+
+#Guardar los resultados
 

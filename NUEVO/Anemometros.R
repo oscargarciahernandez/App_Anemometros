@@ -32,7 +32,7 @@ for (i in 1:length(CSV_files)) {
   
   
   #Ajustamos las etiquetas de dirección del viento
-  CSV=poner_dir_en_numerico(CSV)
+  CSV=direccion_en_numerico(CSV)
   
   
   #Guardamos el CSV en una lista con el ID del anemómetro como nombre
