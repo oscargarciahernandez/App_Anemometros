@@ -192,6 +192,7 @@ direccion_en_numerico=function(datos_anemos){
       print("ERROR. Parece que tus mediciones no tienen la direccion ni en numerico ni en character ")
     }
   }
+  datos_anemos$Dir=as.numeric(datos_anemos$Dir)
   return(datos_anemos)
 }
 
@@ -207,8 +208,8 @@ buscar_huecos_anemos=function(datos_anemos){
   huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
   colnames(huecos)=c(colnames(datos_anemos)[1],"Date[i]-Date[i+1]")
   cont=1
-  for(i in 1:(dim(datos_anemos)[1])-1){
-    diferencia=datos_anemos$Date[i]-datos_anemos$Date[i+1]  #En minutos
+  for(i in 1:(dim(datos_anemos)[1]-1)){
+    diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1]) #En minutos
     if (isTRUE(diferencia<=0)){
       print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
     }
