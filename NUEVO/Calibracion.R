@@ -31,7 +31,11 @@ dif_max=30/3.6    #[m/s]
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
+<<<<<<< HEAD
 #N_dir=c()
+=======
+N_dir=c()
+>>>>>>> afcaa0d1860577d3abffaeea0e3709fddeebfdf3
 
 #Fitros de viento medio
 #Nivel 1 -- limites
@@ -71,6 +75,10 @@ for (i in 2:length(datos_anemos$Gust)){
 #Nivel 4 -- coherencia temporal de la serie
 # Velocidad 
 # En 1 horas (6 tomas) que la velocidad no varie en 0.1
+<<<<<<< HEAD
+=======
+
+>>>>>>> afcaa0d1860577d3abffaeea0e3709fddeebfdf3
 for (i in 6:nrow(datos_anemos)){
   if(is.na(datos_anemos$Mean[i])==FALSE){
     difer<-max(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)-min(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)
@@ -123,6 +131,7 @@ lines(datos_anemos$Mean,x = datos_anemos$Date,type="p")
 points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)   #Los errores de gust en verde
 points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
 points(x = datos_anemos$Date[N_dir],y = datos_anemos$Mean[N_dir],col="brown",lwd=1)   #Los errores de dir en marron
+<<<<<<< HEAD
 #Marcar en morado a una altura de 20 alli donde haya huecos
 #points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
 
@@ -134,6 +143,12 @@ for (i in seq(1,nrow(datos_anemos),n)) {
   
 }
 rm(n)
+=======
+
+#
+#Marcar en morado a una altura de 20 alli donde haya huecos
+#points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
+>>>>>>> afcaa0d1860577d3abffaeea0e3709fddeebfdf3
 
 #Llenar de NAs las mediciones consideradas erroneas. No eliminamos la fila; queremos mantener la fechas de los NAs.
 datos_anemos[N_mean,c(2,3,4)]=NA
