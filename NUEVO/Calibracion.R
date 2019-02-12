@@ -22,45 +22,7 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 
 
-poner_dir_en_numerico=function(datos_anemos){
-  #Esta funcion recibe un data.frame de mediciones de anemos y pone $Dir en grados
-  if (is.factor(datos_anemos$Dir)){
-    datos_anemos$Dir=as.character(datos_anemos$Dir)
-    print("La columna $Dir de tus datos ha pasado de estar en factor a estar en character")
-  }
-  if (is.character(datos_anemos$Dir)){
-    #Es importante que se sustituyan por numeros primero los string de tipo "North-northeast" luego "Northeast" y luego "North"
-    #Asi no evitamos que salgan cosas tipo "0-northeast".(Originalmente pondria "North-northeast")
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "North-northeast",replacement = 22.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "East-northeast",replacement = 67.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "East-southeast",replacement = 112.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "South-Southeast",replacement = 155)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "South-southwest",replacement = 202.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "West-southwest",replacement = 247.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "West-northwest",replacement = 292.5)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "North-northwest",replacement = 337.5)
-    
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "Northeast",replacement = 45)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "Southeast",replacement = 135)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "Southwest",replacement = 225)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "Northwest",replacement = 315)
-    
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "North",replacement = 0)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "East",replacement = 90)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "South",replacement = 180)
-    datos_anemos$Dir=gsub(x = datos_anemos$Dir,pattern = "West",replacement = 270)
-    
-    
-    
-  }else{
-    if (is.numeric(datos_anemos$Dir)){
-      print("Parece que tus mediciones ya tienen la direccion en numerico")
-    }else{
-      print("ERROR. Parece que tus mediciones no tienen la direccion ni en numerico ni en character ")
-    }
-  }
-  return(datos_anemos)
-}
+
 
 mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]

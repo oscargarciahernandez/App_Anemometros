@@ -32,7 +32,7 @@ for (i in 1:length(CSV_files)) {
   
   
   #Ajustamos las etiquetas de dirección del viento
-  CSV<- equal_dir_lab(CSV)
+  CSV=poner_dir_en_numerico(CSV)
   
   
   #Guardamos el CSV en una lista con el ID del anemómetro como nombre
@@ -43,7 +43,7 @@ for (i in 1:length(CSV_files)) {
 
 names(Anemometros)<- Anem_ID
 
-
+#Si lo de rellenar los huecos de los dataframes acaba siedo algo permanente lo implantamos aqui.
 
 #Guardar
 
