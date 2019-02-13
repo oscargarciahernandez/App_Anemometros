@@ -10,3 +10,4 @@
 *.Rdata
 *.csv
 !TABLA_REGISTRO.csv
+!Anemometros.Rdata
