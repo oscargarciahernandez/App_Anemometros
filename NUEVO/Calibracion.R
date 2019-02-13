@@ -162,8 +162,12 @@ save(datos_anemos,
 
 #Cargarlos
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+<<<<<<< HEAD
 
 #Comparar anemos con ERA5----
 
 #Añadir en el mapa los puntos de ERA5 y la uni
+=======
+>>>>>>> 74160cb8ca0c73525bfd4ff00d0de5f41fa7e1e4
 
+#Comparar anemos con ERA5----
