@@ -54,7 +54,7 @@ N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0))     
 for (i in 2:length(datos_anemos$Mean)){
   difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
   if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-    N_mean=cbind(N_mean,i)
+    N_mean[length(N_mean)+1]=i
   }
 }
 
@@ -62,7 +62,7 @@ for (i in 2:length(datos_anemos$Mean)){
 for (i in 2:length(datos_anemos$Gust)){
   difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
   if (is.na(difer)==FALSE & abs(difer)>30/3.6){
-    N_gust=cbind(N_gust,i)
+    N_gust[length(N_gust)+1]=i
   }
 }
 
@@ -162,5 +162,12 @@ save(datos_anemos,
 
 #Cargarlos
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+<<<<<<< HEAD
+
+#Comparar anemos con ERA5----
+
+#Añadir en el mapa los puntos de ERA5 y la uni
+=======
+>>>>>>> 74160cb8ca0c73525bfd4ff00d0de5f41fa7e1e4
 
 #Comparar anemos con ERA5----
