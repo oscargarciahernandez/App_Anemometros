@@ -10,21 +10,14 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #Esta seccion de script hace lo mismo que el script FiltroObservaciones.r de Sheilla, pero
 #adaptandolo a nuestros formatos y pudiendo definir vel_max, dif_max.
 
-#Valores originales de Sheila:
-#vel_max(media)=50 km/h
-#dif_max=30 km/h
-
-#Valores nuevos propuestos por Sheila:
-#vel_max(media)=90 km/h
-#vel_max(racha)=200 km/h
-#dif_max=30 km/h
-
 
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 
 mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]
 dif_max=30/3.6    #[m/s]
+dif_min=0/3.6     #[m/s]
+tomas_dif_min=10  #[-]
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
@@ -50,7 +43,7 @@ N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0))     
 #Nivel 2 -- coherencia temporal del dato 
 #Step test:
 #Velocidad diferencia con el dato anterior de 30 m/s tanto si la diferencia es + como si es -
-#Este filtro solo se lo pasamos al mean
+#Se lo pasamos al mean
 for (i in 2:length(datos_anemos$Mean)){
   difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
   if (is.na(difer)==FALSE & abs(difer)>30/3.6){
@@ -68,16 +61,16 @@ for (i in 2:length(datos_anemos$Gust)){
 
 #Nivel 4 -- coherencia temporal de la serie
 # Velocidad 
-# En 1 horas (6 tomas) que la velocidad no varie en 0.1 (Mean)
-for (i in 6:nrow(datos_anemos)){
+# En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
+for (i in 1:(nrow(datos_anemos)-tomas_dif_min+1)){
   if(is.na(datos_anemos$Mean[i])==FALSE){
-    difer<-max(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)-min(datos_anemos$Mean[c((i-5):i)],na.rm=TRUE)
-    if (is.na(difer)==FALSE & abs(difer)<=0.1){
+    difer<-max(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)
+    if (is.na(difer)==FALSE & abs(difer)<=dif_min){
       N_mean[length(N_mean)+1]=i
     }
   }
 }
-# En 1 horas (6 tomas) que la velocidad no varie en 0.1 (Gust)
+# En tomas_dif_min tomas que la velocidad no varie en dif_min (Gust)
 for (i in 6:nrow(datos_anemos)){
   if(is.na(datos_anemos$Gust[i])==FALSE){
     difer<-max(datos_anemos$Gust[c((i-5):i)],na.rm=TRUE)-min(datos_anemos$Gust[c((i-5):i)],na.rm=TRUE)
@@ -121,27 +114,33 @@ for (i in 6:c(nrow(datos_anemos))){
 }
 
 #Plotear media con todos los datos
-plot(datos_anemos$Mean,x = datos_anemos$Date,type="p")
+#plot(datos_anemos$Mean,x = datos_anemos$Date,type="p")
 #Plotear racha con todos los datos
-lines(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
+#lines(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
 
 #Plotear mediciones consideradas erroneas
-points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)   #Los errores de gust en verde
-points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
+#points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)   #Los errores de gust en verde
+#points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
 #points(x = datos_anemos$Date[N_dir],y = datos_anemos$Mean[N_dir],col="brown",lwd=1)   #Los errores de dir en marron
 #Marcar en morado a una altura de 20 alli donde haya huecos
 #points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
 
+#Donde hay NAs? Marcar en morado
+N_na=which(is.na(datos_anemos[,c(2,3,4)]))
 #Plotear de n en n
-n=2000
+dev.off()
+n=500
+#n=nrow(datos_anemos)   #Para plotear todo junto
 for (i in seq(1,nrow(datos_anemos),n)) {
+  layout(mat = c(1,2))
   #Mean
   plot(datos_anemos$Mean[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p")
   points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
-  
+  points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="purple",lwd=1)
   #Gust
-  lines(datos_anemos$Gust[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p",col="blue")
+  plot(datos_anemos$Gust[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p",col="blue")
   points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)
+  points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="purple",lwd=1)
 }
 rm(n)
 
@@ -161,13 +160,11 @@ save(datos_anemos,
      file=here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 #Cargarlos
-load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
-<<<<<<< HEAD
+load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))tect
 
 #Comparar anemos con ERA5----
 
-#Añadir en el mapa los puntos de ERA5 y la uni
-=======
->>>>>>> 74160cb8ca0c73525bfd4ff00d0de5f41fa7e1e4
+#Añadir en el mapa los puntos de ERA5 y la uni----
+library(ggmap)
 
 #Comparar anemos con ERA5----
