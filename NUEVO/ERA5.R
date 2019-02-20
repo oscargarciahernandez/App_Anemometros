@@ -7,7 +7,8 @@ source(here::here("NUEVO/Libraries.R"))
 if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
 
 #Importar
-data_ERA_2018<- open.nc(here::here("python/Data_ERA5/Data_2018.nc"))
+data_ERA_2018<- open.nc(here::here("python/Data_2018.nc"))
+#ARREGLO:cambiar "python/Data_ERA5/Data_2018.nc" por "python/Data_2018.nc"
 
 #Crear lista
 data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
@@ -31,13 +32,12 @@ ERA5_df<-Dirlab_round_ERA(ERA5_df)
    
 #Guardar 
 if(dir.exists(here::here("NUEVO/Data_ERA5"))){
-  save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
+    
   
 }else{
   dir.create(here::here("NUEVO/Data_ERA5"))
-  save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
-  
 }
+save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 
 }

@@ -1,4 +1,4 @@
-#EXPLICACI0N
+﻿#EXPLICACI0N
 #Este script contiene las funciones necesarias para bajar los cvs
 
 
@@ -72,10 +72,8 @@ def bajar_cvs(fechainicio,fechafinal,id_sensor,driver):
        #id_sensor puede ser tanto la id en si, o el numero del sensor (el que
        #marca la funcion conseguir_ids())
        
-       from selenium import webdriver
        import re
        import requests
-       import os
        
        #Vamos a mirar el codigo html de la pagina web donde nos salen todos los
        #sensores, y ver que url le corressponde a id_sensor
@@ -144,6 +142,7 @@ with open(path_registro,'rt') as csvfile:        #He cambiado 'rb' por 'rt'. Dab
 
 
 path_data_anemometros=conseguir_path_app_anemometros() + '\\NUEVO\Data_anemometros'
+os.chdir(path_data_anemometros)
 driver=crear_driver()
 
 for x in [1,2,3]:
@@ -159,8 +158,9 @@ for x in [1,2,3]:
     
 driver.close()
 
-x=os.listdir(path_data_anemometros)
+x=os.listdir(path_data_anemometros)       
 
+#Descomprimir todos los zips
 for i in np.arange(0,len(x),step=1):
   y=x[i]
   if '.zip' not in y:
@@ -171,7 +171,7 @@ for i in np.arange(0,len(x),step=1):
     zip_ref.extractall(os.getcwd())
     zip_ref.close()
       
-
+#Borrar los zips
 for i in np.arange(0,len(x),step=1):
   y=x[i]
   if '.zip' not in y:
@@ -179,4 +179,3 @@ for i in np.arange(0,len(x),step=1):
   else:
     path=os.path.abspath(y)
     os.remove(path)
-       
