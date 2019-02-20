@@ -17,7 +17,7 @@ mean_max=50/3.6   #[m/s]
 gust_max=200/3.6  #[m/s]
 dif_max=30/3.6    #[m/s]
 dif_min=0/3.6     #[m/s]
-tomas_dif_min=10  #[-]
+tomas_dif_min=10  #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
@@ -60,25 +60,33 @@ for (i in 2:length(datos_anemos$Gust)){
 }
 
 #Nivel 4 -- coherencia temporal de la serie
-# Velocidad 
 # En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
-for (i in 1:(nrow(datos_anemos)-tomas_dif_min+1)){
+i=1
+while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
   if(is.na(datos_anemos$Mean[i])==FALSE){
     difer<-max(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)
     if (is.na(difer)==FALSE & abs(difer)<=dif_min){
-      N_mean[length(N_mean)+1]=i
+      N_mean[(length(N_mean)+1):(length(N_mean)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
+      i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va haver al final del while
     }
   }
+  i=i+1
 }
+rm(i)
+
 # En tomas_dif_min tomas que la velocidad no varie en dif_min (Gust)
-for (i in 6:nrow(datos_anemos)){
+i=1
+while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
   if(is.na(datos_anemos$Gust[i])==FALSE){
-    difer<-max(datos_anemos$Gust[c((i-5):i)],na.rm=TRUE)-min(datos_anemos$Gust[c((i-5):i)],na.rm=TRUE)
-    if (is.na(difer)==FALSE & abs(difer)<=0.1){
-      N_gust[length(N_gust)+1]=i
+    difer<-max(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)
+    if (is.na(difer)==FALSE & abs(difer)<=dif_min){
+      N_gust[(length(N_gust)+1):(length(N_gust)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
+      i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va haver al final del while
     }
   }
+  i=i+1
 }
+rm(i)
 
 # Direcci?n
 # En 1 hora que la direcci?n no varie en 1
@@ -113,32 +121,29 @@ for (i in 6:c(nrow(datos_anemos))){
 }
 }
 
-#Plotear media con todos los datos
-#plot(datos_anemos$Mean,x = datos_anemos$Date,type="p")
-#Plotear racha con todos los datos
-#lines(datos_anemos$Gust,x = datos_anemos$Date,type="p",col="blue")
+points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
 
-#Plotear mediciones consideradas erroneas
-#points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)   #Los errores de gust en verde
-#points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
-#points(x = datos_anemos$Date[N_dir],y = datos_anemos$Mean[N_dir],col="brown",lwd=1)   #Los errores de dir en marron
-#Marcar en morado a una altura de 20 alli donde haya huecos
-#points(x = datos_anemos$Date[N_huecos],y = seq(20,20,length.out = length(datos_anemos$Date[N_huecos]) ),col="purple",lwd=5)
-
-#Donde hay NAs? Marcar en morado
+#Donde hay NAs? Marcar en morado mas tarde
 N_na=which(is.na(datos_anemos[,c(2,3,4)]))
+N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
+
+
 #Plotear de n en n
-dev.off()
-n=500
+graphics.off()      #Una frma de borrar los plots anteriores menos problemaica que dev.off()
+n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
-for (i in seq(1,nrow(datos_anemos),n)) {
+#NUestros datos estan al reves! (Primero los mas nuevos). Asi que los vamos a plotar del reves:
+#Ultimo plot=datos mas nuevos (el primero que vemos en la ventana de plots)
+#En cada plot los datos del reves
+for (i in seq(nrow(datos_anemos),1,-n)) {
   layout(mat = c(1,2))
   #Mean
-  plot(datos_anemos$Mean[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p")
+  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",xlab="",ylab="Mean [m/s]")
   points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="red",lwd=1)   #Los errores de mean en rojo
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="purple",lwd=1)
+  title(main = paste0(datos_anemos$Date[i]," - ",datos_anemos$Date[i-n+1]))
   #Gust
-  plot(datos_anemos$Gust[i:(i+n)],x = datos_anemos$Date[i:(i+n)],type="p",col="blue")
+  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",col="blue",xlab="",ylab="Gust [m/s]")
   points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="purple",lwd=1)
 }
@@ -151,6 +156,8 @@ windRose(datos_anemos,ws = "Gust",wd="Dir")
 #Llenar de NAs las mediciones consideradas erroneas. No eliminamos la fila; queremos mantener la fechas de los NAs.
 datos_anemos[N_mean,c(2,3,4)]=NA
 datos_anemos[N_gust,c(2,3,4)]=NA
+datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
+
 
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
@@ -160,7 +167,7 @@ save(datos_anemos,
      file=here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 #Cargarlos
-load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))tect
+load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 #Comparar anemos con ERA5----
 
