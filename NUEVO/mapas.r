@@ -53,7 +53,7 @@ nm = c("osm", "maptoolkit-topo",
        "nps", "apple-iphoto", "skobbler",
        "opencyclemap", "osm-transport",
        "osm-public-transport", "osm-bbike", "osm-bbike-german")
-map <- openmap(ul,lr, minNumTiles=30,type="bing",zoom=NULL) #minNumTiles es proporcional a la resolucion del mapa. Muy pequeño: no se ve una mierda. Muy grande: da error
+map <- openmap(ul,lr, minNumTiles=6,type="stamen-terrain",zoom=NULL)  #minNumTiles es proporcional a la resolucion del mapa. Muy pequeño: no se ve una mierda. Muy grande: da error
 graphics.off()
 plot(map)
 #Esto abre una interfaz de Java que te permite navegar por el mapa del mundo
