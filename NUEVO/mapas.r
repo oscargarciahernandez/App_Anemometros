@@ -1,13 +1,10 @@
-# these are packages you will need, but probably already have.
-# Don't bother installing if you already have them
-install.packages(c("ggplot2", "devtools", "dplyr", "stringr"))
-
-# some standard map packages.
-install.packages(c("maps", "mapdata"))
-
 # the github version of ggmap, which recently pulled in a small fix I had
 # for a bug 
-devtools::install_github("dkahle/ggmap")
+#devtools::install_github("dkahle/ggmap")
+
+if (!exists("ERA5_df")) {
+  source(here::here("/NUEVO/ERA5.R"))
+}
 
 library(ggplot2)
 library(ggmap)
@@ -17,42 +14,52 @@ library(OpenStreetMap)
 library(rJava)
 
 #Coordenadas que queremos representar----
-Coordenadas=list()
-Coordenadas_anemos=data.frame(c(NA),c(NA))
+Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
 colnames(Coordenadas_anemos)=c("lat","lon")
-Coordenadas_anemos[1,]=c(43.179389,2.488504)
+Coordenadas_anemos[1,]=c(43.179389,-2.488504)
+#Coordenadas=list(Coordenadas_anemos,Coordendas_era)   #Por si algun dia queremos tener todas las coordenadas en un solo sitio
 
-
-#View(table(paste0(ERA5_df$lat," - ",ERA5_df$lon)))  #Ver todas las coordenadas
-#View(table(ERA5_df$lat))                            #Ver todas las latitudes
-#View(table(ERA5_df$lon))                            #Ver todas las latitudes
-#Si nos fijamos en la longitud de estas tablas, veremos que los puntos de ERA5 que tenemos en ERA5_df
-#forman una matriz perfecta, sin huecos (31*41=1271). Es decir, los puntos son todas las conbinaciones
-#posibles de todas las latitdes y longitudes que aparecen.
-
-#Encontrar los n puntos de ERA5 mas cercanos al anemo
-#Si el cacho de grid de ERA5 que usamos tuviese algun hueco, este metodo podria
-#dar coordenadas que no aparecen en ERA5_df, ya que busca la lon y la lat mas
-#cercanas, y supone que las dos forman una coordenada valida
+#Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
+if (!exists("coordenadas_era")) {
+  Coordenadas_era=unique(ERA5_df[,c(2,3)])
+}
+#Ordenarlos de cercanos a lejanos
+Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
+#Coger los n mas cercanos
 n=4
-Coordenadas_era=data.frame(a=as.numeric(),b=as.numeric())
-colnames(Coordenadas_era)=c("lat","lon")
-latitudes=table(ERA5_df$lat) %>% rownames %>% as.numeric
-longitudes=table(ERA5_df$lon) %>% rownames %>% as.numeric
-Coordenadas_era[1:4,1]=latitudes[((latitudes-Coordenadas_anemos$lat[1]) %>% abs %>% order)[1:n]]
-Coordenadas_era[1:4,2]=longitudes[((longitudes-Coordenadas_anemos$lon[1]) %>% abs %>% order)[1:n]]
+Coordenadas_era=Coordenadas_era[1:n,]
 
-#EIbar
-#Longitude
-lon=-2.466667
-#Latitude
-lat=43.183333
+#De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
+datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
 
-ul <- c(43.2,-2.52)  #Upper Left
-lr <- c(43.15,-2.4)  #Lower Right
+#Vamos a representar marcar en el mapa el anemo y os n puntos mas cercanos a este
+n=max(c(Coordenadas_era$lat),Coordenadas_anemos$lat)    #De todos los puntos a representar, cual esta mas al norte?
+s=min(c(Coordenadas_era$lat),Coordenadas_anemos$lat)    #Mas al sur?
+e=max(c(Coordenadas_era$lon),Coordenadas_anemos$lon)    #Mas al este?
+w=min(c(Coordenadas_era$lon),Coordenadas_anemos$lon)    #Mas al oeste?
+
+ul <- c(n,w)  #Upper Left
+lr <- c(s,e)  #Lower Right
 par(mfrow=c(2,3))
 url <- "https://a.tiles.mapbox.com/v4/mapquest.streets-mb/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwcXVlc3QiLCJhIjoiY2Q2N2RlMmNhY2NiZTRkMzlmZjJmZDk0NWU0ZGJlNTMifQ.mPRiEubbajc6a5y9ISgydg"
-map <- openmap(ul,lr, minNumTiles=6,type="osm",zoom=NULL)
+#nm contiene todos los ppsibles atributos de type del comando openmap
+#"osm" es el mapa estandar de OpenStreetMap, "stamen-terrain" es mas limpio y se la orografia muy bien.
+#https://www.r-bloggers.com/the-openstreetmap-package-opens-up/
+nm = c("osm", "maptoolkit-topo",
+       "waze", "mapquest", "mapquest-aerial",
+       "bing", "stamen-toner", "stamen-terrain",
+       "stamen-watercolor", "osm-german", "osm-wanderreitkarte",
+       "mapbox", "esri", "esri-topo",
+       "nps", "apple-iphoto", "skobbler",
+       "opencyclemap", "osm-transport",
+       "osm-public-transport", "osm-bbike", "osm-bbike-german")
+map <- openmap(ul,lr, minNumTiles=6,type="stamen-terrain",zoom=NULL)
+graphics.off()
 plot(map)
-
+#Esto abre una interfaz de Java que te permite navegar por el mapa del mundo
+#Sirve para ver como quedarian los mapas y para conseguir coordendas, nada mas
+launchMapHelper()
+#Intento de marcar puntos en el mapa
+points(x=Coordenadas_anemos$lon,y=Coordenadas_anemos$lat,col="blue",lwd=98)
+points(-2.5,43.15,lwd=1000000)
 
