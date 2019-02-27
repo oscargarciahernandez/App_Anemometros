@@ -13,24 +13,12 @@ library(mapdata)
 library(OpenStreetMap)
 library(rJava)
 
-#Coordenadas que queremos representar----
 Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
 colnames(Coordenadas_anemos)=c("lat","lon")
 Coordenadas_anemos[1,]=c(43.179389,-2.488504)
 #Coordenadas=list(Coordenadas_anemos,Coordendas_era)   #Por si algun dia queremos tener todas las coordenadas en un solo sitio
 
-#Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
-if (!exists("coordenadas_era")) {
-  Coordenadas_era=unique(ERA5_df[,c(2,3)])
-}
-#Ordenarlos de cercanos a lejanos
-Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
-#Coger los n mas cercanos
-n=4
-Coordenadas_era=Coordenadas_era[1:n,]
 
-#De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
-datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
 
 #Vamos a representar marcar en el mapa el anemo y os n puntos mas cercanos a este
 n=max(c(Coordenadas_era$lat),Coordenadas_anemos$lat)    #De todos los puntos a representar, cual esta mas al norte?
