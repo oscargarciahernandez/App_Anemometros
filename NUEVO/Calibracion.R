@@ -8,8 +8,9 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 #Encontrar errores datos anemos----
 
-datos_anemos=rellenar_huecos_anemos(Anemometros$`0B75FE3A4FB6`)
+
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
+
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
 mean_max=50/3.6   #[m/s]
@@ -206,3 +207,4 @@ Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
+
