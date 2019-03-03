@@ -12,6 +12,7 @@ library(maps)
 library(mapdata)
 library(OpenStreetMap)
 library(rJava)
+library(rgdal)
 
 Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
 colnames(Coordenadas_anemos)=c("lat","lon")
@@ -47,7 +48,17 @@ plot(map)
 #Esto abre una interfaz de Java que te permite navegar por el mapa del mundo
 #Sirve para ver como quedarian los mapas y para conseguir coordendas, nada mas
 launchMapHelper()
-#Intento de marcar puntos en el mapa
-points(x=0,y=0,col="blue",lwd=98)
-points(-2.5,43.15,lwd=1000000)
+#Marcar puntos anemos en rojo
+Coordenadas_anemos_spt=Coordenadas_anemos     #Vamos a crear un objeto espacial (_spt) sin sobrescribir el orginal (el dataframe)
+coordinates(Coordenadas_anemos_spt)<-~lon+lat
+proj4string(Coordenadas_anemos_spt)<-CRS("+init=epsg:4326")
+points(spTransform(Coordenadas_anemos_spt,osm()),lwd=5,col="red")
+#Marcar puntos era en morado
+Coordenadas_era_spt=Coordenadas_era     #Vamos a crear un objeto espacial (_spt) sin sobrescribir el orginal (el dataframe)
+coordinates(Coordenadas_era_spt)<-~lon+lat
+proj4string(Coordenadas_era_spt)<-CRS("+init=epsg:4326")
+points(spTransform(Coordenadas_era_spt,osm()),lwd=5,col="purple")
 
+#Si vemos que puntos tiene plot, nos hacemos una idea de como funciona esto
+axis(side = 1)
+axis(side = 2)
