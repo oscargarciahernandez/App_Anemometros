@@ -206,7 +206,7 @@ buscar_huecos_anemos=function(datos_anemos){
   #huecos[2] muestra cual es la medicion anterior (en el tiempo) al hueco.
   #Las fechas estan en numerico (segundos desde 1970-01-01)
   huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
-  colnames(huecos)=c(colnames(datos_anemos)[1],"Date[i]-Date[i+1]")
+  colnames(huecos)=c("despues","antes")
   cont=1
   for(i in 1:(dim(datos_anemos)[1]-1)){
     diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1]) #En minutos
@@ -222,6 +222,7 @@ buscar_huecos_anemos=function(datos_anemos){
   return(huecos)
 }
 
+#Esto ahora mismo no funciona bien
 rellenar_huecos_anemos=function(datos_anemos){
   #Esta funcion recoge un data.frame de formato estandar de anemos
   #Devuelve un data.frame parecido, pero con las mediciones filtradas por MobileAlerts.
@@ -232,18 +233,19 @@ rellenar_huecos_anemos=function(datos_anemos){
   lista[[1]]=datos_anemos[1:which(datos_anemos$Date==huecos[1,1]),]
   for (i in 1:(nrow(huecos)))
     #Por cada hueco hay que crear un data.frame con los datos anteriores (anteriores en el data.frame, posteriores en el tiempo) y otro con las mediciones vacias (el relleno).
-  {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
+    {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
     relleno=data.frame(a=as.POSIXct(character(),tz="UTC"), b=numeric(), c=numeric(), d=numeric())  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
-    for (j in 1:(as.numeric(round((huecos[i,1]-huecos[i,2]))/7)-1)) #Cuantas mediciones faltan? Solo una si huecos[i,2] ~= 2*7*60 mins, 2 si huecos[i,2] ~= 3*7*60 ...
-    {relleno[j,1]=datos_anemos$Date[which(datos_anemos$Date==huecos[i,1])]-j*(huecos[i,1]-huecos[i,2])/(as.numeric(round((huecos[i,1]-huecos[i,2]))/7))
+    difer=time_length((huecos$despues[i]-huecos$antes[i]))/60     #La duracion del hueco en minutos, formato numeric
+    for (j in 1:(round(difer/7)-1)) #Cuantas mediciones faltan? Solo una si difer ~= 2*7 mins, 2 si difer ~= 3*7 ...
+    {relleno[j,1]=datos_anemos$Date[which(datos_anemos$Date==huecos$despues[i])]-j*(huecos$despues[i]-huecos$antes[i])/(as.numeric(round((huecos$despues[i]-huecos$antes[i]))/7))
     #relleno[j,1]=la fecha posterior en el tiempo al hueco - j*(tamaño del hueco)/(el numero de mediciones que faltan en este hueco)
     }
     colnames(relleno)=colnames(datos_anemos)
     lista[[2*i]]=relleno
     if (i==(nrow(huecos))) {
-      lista[[length(lista)+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):nrow(datos_anemos),] #Si estamos con el ultimo hueco, hay que coger todo hasta el final de datos_anemos
+      lista[[length(lista)+1]]=datos_anemos[which(datos_anemos$Date==huecos$antes[i]):nrow(datos_anemos),] #Si estamos con el ultimo hueco, hay que coger todo hasta el final de datos_anemos
     }else{
-      lista[[2*i+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):which(datos_anemos$Date==huecos[i+1,1]),] #Las mediciones entre el principio del hueco y el final del siguiente hueco
+      lista[[2*i+1]]=datos_anemos[which(datos_anemos$Date==huecos$antes[i]):which(datos_anemos$Date==huecos[i+1,1]),] #Las mediciones entre el principio del hueco y el final del siguiente hueco
     }
   }
   datos_anemos_rellenado=do.call("rbind", lista) #Juntar todos los cachitos. Haciendo esto en vez de monton de rbins usamos menos recursos del pc, y tarda mucho menos.
