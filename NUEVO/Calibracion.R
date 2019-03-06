@@ -13,11 +13,12 @@ datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
-mean_max=50/3.6   #[m/s]
-gust_max=200/3.6  #[m/s]
-dif_max=30/3.6    #[m/s]
-dif_min=0/3.6     #[m/s]
-tomas_dif_min=10  #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
+mean_max=50/3.6     #[m/s]
+gust_max=200/3.6    #[m/s]
+dif_max_gust=40/3.6 #[m/s]
+dif_max_mean=20/3.6 #[m/s]
+dif_min=0/3.6       #[m/s]
+tomas_dif_min=10    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
@@ -35,7 +36,7 @@ N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0))     
 #Se lo pasamos al mean
 for (i in 2:length(datos_anemos$Mean)){
   difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
-  if (is.na(difer)==FALSE & abs(difer)>30/3.6){
+  if (is.na(difer)==FALSE & abs(difer)>dif_max_mean){
     N_mean[length(N_mean)+1]=i
   }
 }
@@ -43,7 +44,7 @@ for (i in 2:length(datos_anemos$Mean)){
 #Ahora al gust
 for (i in 2:length(datos_anemos$Gust)){
   difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
-  if (is.na(difer)==FALSE & abs(difer)>30/3.6){
+  if (is.na(difer)==FALSE & abs(difer)>dif_max_gust){
     N_gust[length(N_gust)+1]=i
   }
 }
@@ -125,13 +126,13 @@ n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean s
 for (i in seq(nrow(datos_anemos),1,-n)) {
   layout(mat = c(1,2))  #Separar la ventana de plts en dos, una para mean, otro para gust
   #Mean
-  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",xlab="",ylab="Mean [m/s]")
-  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="green",lwd=1)   #Los errores de mean en rojo
+  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Mean [m/s]")
+  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="blue",lwd=1)   #Los errores de mean en rojo
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
   title(main = paste0(datos_anemos$Date[i]," - ",datos_anemos$Date[i-n+1]))
   #Gust
-  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",col="blue",xlab="",ylab="Gust [m/s]")
-  points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)
+  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Gust [m/s]")
+  points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="blue",lwd=1)
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
 }
 rm(n)
