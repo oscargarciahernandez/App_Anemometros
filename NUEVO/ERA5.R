@@ -7,7 +7,7 @@ source(here::here("NUEVO/Libraries.R"))
 if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
 
 #Importar
-data_ERA_2018<- open.nc(here::here("python/Data_2018.nc"))
+data_ERA_2018<- open.nc(here::here("NUEVO/Data_ERA5/Data_2018.nc"))
 #ARREGLO:cambiar "python/Data_ERA5/Data_2018.nc" por "python/Data_2018.nc"
 
 #Crear lista
