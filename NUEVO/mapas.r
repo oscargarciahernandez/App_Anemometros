@@ -17,7 +17,19 @@ library(rgdal)
 Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
 colnames(Coordenadas_anemos)=c("lat","lon")
 Coordenadas_anemos[1,]=c(43.179389,-2.488504)
-#Coordenadas=list(Coordenadas_anemos,Coordendas_era)   #Por si algun dia queremos tener todas las coordenadas en un solo sitio
+
+#Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
+if (!exists("coordenadas_era")) {
+  Coordenadas_era=unique(ERA5_df[,c(2,3)])
+}
+#Ordenarlos de cercanos a lejanos
+Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
+#Coger los n mas cercanos
+n=6
+Coordenadas_era=Coordenadas_era[1:n,]
+
+
+#Coordenadas=list(Coordenadas_anemos,Coordenadas_era)   #Por si algun dia queremos tener todas las coordenadas en un solo sitio
 
 
 
@@ -42,23 +54,32 @@ url <- "https://a.tiles.mapbox.com/v4/mapquest.streets-mb/{z}/{x}/{y}.png?access
   #stamen-terrain: mapa con los relieves marcados con sombras, de un vistazo se ve bien la forma del terreno
   #stamen-watercolor: tipo acuarela, solo valor artistico, mola si haces mucho zoom en una ciudad
   #esri-topo: parecido a mapquest
+
 nm = c("osm", "mapquest",
        "bing", "stamen-toner", "stamen-terrain",
        "stamen-watercolor", "osm-german", "osm-wanderreitkarte",
        "esri", "esri-topo",
        "opencyclemap", "osm-transport",
        "osm-public-transport", "osm-bbike", "osm-bbike-german")
-map <- openmap(ul,lr, minNumTiles=2,type="apple-iphoto",zoom=NULL)  #minNumTiles es proporcional a la resolucion del mapa. Muy pequeño: no se ve una mierda. Muy grande: da error
+
+map <- openmap(ul,lr, minNumTiles=2,type="stamen-terrain",zoom=NULL)  #minNumTiles es proporcional a la resolucion del mapa. Muy pequeño: no se ve una mierda. Muy grande: da error
 graphics.off()
 plot(map)
+
+
 #Esto abre una interfaz de Java que te permite navegar por el mapa del mundo
 #Sirve para ver como quedarian los mapas y para conseguir coordendas, nada mas
 launchMapHelper()
+
+
+
 #Marcar puntos anemos en rojo
 Coordenadas_anemos_spt=Coordenadas_anemos     #Vamos a crear un objeto espacial (_spt) sin sobrescribir el orginal (el dataframe)
 coordinates(Coordenadas_anemos_spt)<-~lon+lat
 proj4string(Coordenadas_anemos_spt)<-CRS("+init=epsg:4326")
 points(spTransform(Coordenadas_anemos_spt,osm()),lwd=5,col="red")
+
+
 #Marcar puntos era en morado
 Coordenadas_era_spt=Coordenadas_era     #Vamos a crear un objeto espacial (_spt) sin sobrescribir el orginal (el dataframe)
 coordinates(Coordenadas_era_spt)<-~lon+lat
