@@ -149,6 +149,9 @@ datos_anemos[N_mean,c(2,3,4)]=NA
 datos_anemos[N_gust,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
+#Quitar los ultimos (cronologicamnete los primeros) datos de los anemos de la uni, que no sirven de nada
+datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 21:15:04"):nrow(datos_anemos)),]
+
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
   dir.create(here::here("NUEVO/Data_calibracion"))
@@ -162,6 +165,10 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 #Tratar datos era----
 #Coordenadas que queremos representar
 
+Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
+colnames(Coordenadas_anemos)=c("lat","lon")
+Coordenadas_anemos[1,]=c(43.179389,-2.488504)
+
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
@@ -169,27 +176,39 @@ if (!exists("coordenadas_era")) {
 #Ordenarlos de cercanos a lejanos
 Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
 #Coger los n mas cercanos
-n=4
+n=1
 Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
 
+#Guardar datos_era
+if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
+  dir.create(here::here("NUEVO/Data_calibracion"))
+}
+save(datos_era,
+     file=here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+
+#Cargarlos
+load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+
 #Plotear datos_era----
 #Plotear de n en n
 graphics.off()
-n=nrow(datos_era)/5   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+n=nrow(datos_era)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_era)   #Para plotear todo junto
 #NUestros datos estan ordenados cronologicamente! 
 for (i in seq(1,nrow(datos_era),n)) {
-  layout(c(1,2))
+  #layout(c(1,2))
   #uv
   plot(datos_era$uv_wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="uv_wind")
   title(main = paste0(datos_era$Date[i]," - ",datos_era$Date[i+n-1]))
   #wind
-  plot(datos_era$wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="wind")
+  #plot(datos_era$wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="wind")
 }
 rm(n)
+
+#Si da error "Error in plot.window(...) : need finite 'ylim' values", probar ploteando con n=nrow(datos_era).
 
 #Rosas de los vientos
 windRose(datos_era,ws = "uv_wind",wd="uv_dwi",paddle = F,key.header = "uv_wind")
@@ -208,3 +227,5 @@ Coordenadas_era=Coordenadas_era[1:n,]
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
 
+
+#Comparar anemos con era----
