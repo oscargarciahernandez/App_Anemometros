@@ -209,11 +209,11 @@ buscar_huecos_anemos=function(datos_anemos){
   colnames(huecos)=c("despues","antes")
   cont=1
   for(i in 1:(dim(datos_anemos)[1]-1)){
-    diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1]) #En minutos
-    if (isTRUE(diferencia<=0)){
-      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
+    difer=time_length((datos_anemos$Date[i]-datos_anemos$Date[i+1]))     #La duracion del hueco en segundos, formato numeric
+    if (isTRUE(difer<=0)){
+      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(difer/60)," minutos"))
     }
-    if (isTRUE(diferencia>7*1.5)){
+    if (isTRUE(difer>7*1.5*60)){
       huecos[cont,1]=datos_anemos$Date[i]
       huecos[cont,2]=datos_anemos$Date[i+1]
       cont=cont+1
@@ -235,9 +235,9 @@ rellenar_huecos_anemos=function(datos_anemos){
     #Por cada hueco hay que crear un data.frame con los datos anteriores (anteriores en el data.frame, posteriores en el tiempo) y otro con las mediciones vacias (el relleno).
     {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
     relleno=data.frame(a=as.POSIXct(character(),tz="UTC"), b=numeric(), c=numeric(), d=numeric())  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
-    difer=time_length((huecos$despues[i]-huecos$antes[i]))/60     #La duracion del hueco en minutos, formato numeric
-    for (j in 1:(round(difer/7)-1)) #Cuantas mediciones faltan? Solo una si difer ~= 2*7 mins, 2 si difer ~= 3*7 ...
-    {relleno[j,1]=datos_anemos$Date[which(datos_anemos$Date==huecos$despues[i])]-j*(huecos$despues[i]-huecos$antes[i])/(as.numeric(round((huecos$despues[i]-huecos$antes[i]))/7))
+    difer=time_length((huecos$despues[i]-huecos$antes[i]))     #La duracion del hueco en segundos, formato numeric
+    for (j in 1:(round(difer/(7*60))-2)) #Cuantas mediciones faltan? Solo una si difer ~= 2*7*60 segs, 2 si difer ~= 3*7*60 ...
+    {relleno[j,1]=huecos$despues[i]-j*(difer)/(round(difer/(7*60))-1)
     #relleno[j,1]=la fecha posterior en el tiempo al hueco - j*(tamaño del hueco)/(el numero de mediciones que faltan en este hueco)
     }
     colnames(relleno)=colnames(datos_anemos)
