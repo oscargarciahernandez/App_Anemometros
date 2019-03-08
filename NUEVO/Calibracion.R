@@ -15,10 +15,10 @@ datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 
 mean_max=50/3.6     #[m/s]
 gust_max=200/3.6    #[m/s]
-dif_max_gust=40/3.6 #[m/s]
+dif_max_gust=30/3.6 #[m/s]
 dif_max_mean=20/3.6 #[m/s]
 dif_min=0/3.6       #[m/s]
-tomas_dif_min=10    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
+tomas_dif_min=20    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
@@ -50,6 +50,7 @@ for (i in 2:length(datos_anemos$Gust)){
 }
 
 #Nivel 4 -- coherencia temporal de la serie
+#Idea para calibrar este filtro: fijarse si vuando detecta errores en mean tambien lo hace en gust. Solo mean=puedes ser un perido e calma. Ambos:el anemo esta totalmente quieto durante decenas de minutos. 
 # En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
 i=1
 while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
@@ -118,7 +119,8 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
 
 #Plotear de n en n
 graphics.off()
-n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+dev.off()
+n=nrow(datos_anemos)/20   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
 #NUestros datos estan al reves! (Primero los mas nuevos). Asi que los vamos a plotar del reves:
 #Ultimo plot=datos mas nuevos (el primero que vemos en la ventana de plots)
@@ -151,7 +153,7 @@ datos_anemos[N_gust,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
 #Quitar los ultimos (cronologicamnete los primeros) datos de los anemos de la uni, que no sirven de nada
-datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 21:15:04"):nrow(datos_anemos)),]
+datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42"):nrow(datos_anemos)),]
 
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
@@ -196,6 +198,7 @@ load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
 #Plotear datos_era----
 #Plotear de n en n
 graphics.off()
+dev.off()
 n=nrow(datos_era)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_era)   #Para plotear todo junto
 #NUestros datos estan ordenados cronologicamente! 
