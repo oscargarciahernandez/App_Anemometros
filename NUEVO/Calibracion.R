@@ -205,7 +205,7 @@ n=nrow(datos_era)/1   #No hace falta redondear, los corchetes [] redondean siemp
 for (i in seq(1,nrow(datos_era),n)) {
   #layout(c(1,2))
   #uv
-  plot(datos_era$uv_wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="uv_wind")
+  plot(datos_era$uv_wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",col="grey",xlab="",ylab="uv_wind")
   title(main = paste0(datos_era$Date[i]," - ",datos_era$Date[i+n-1]))
   #wind
   #plot(datos_era$wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="wind")
@@ -233,3 +233,14 @@ datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coorden
 
 
 #Comparar anemos con era----
+
+#Para ejecutar esta seccion datos_era y datos_anemos deberian existir en el environment
+load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+
+#Antes de nada vamos recortar datosera y datos_anemos, para solo tener que andar trabajando con las partes que se superponen en el tiempo.
+fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))   #Vamos a quitar los datos anteriores a esta fecha.
+fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))   #Vamos a quitar los datos anteriores a esta fecha.        
+print(fechamax-fechamin)  #Aproximadamente con cuanto tiempo calibramos?
+
+Calibracion_uni=list(datos_anemos,datos_era)  #En esta lista vamos guardando todo lo relevante para la calibracion de un lugar.
