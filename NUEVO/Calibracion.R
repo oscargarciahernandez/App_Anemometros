@@ -252,4 +252,3 @@ if (fechamax<range(datos_anemos$Date)[2]) {
 
 Calibracion_uni=list(datos_anemos,datos_era)  #En esta lista vamos guardando todo lo relevante para la calibracion de un lugar.
 names(Calibracion_uni)=c("datos_anemos","datos_era")
-
