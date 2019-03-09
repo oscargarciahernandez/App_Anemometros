@@ -240,14 +240,22 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 #Antes de nada vamos recortar datosera y datos_anemos, para solo tener que andar trabajando con las partes que se superponen en el tiempo.
 fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))   #Vamos a quitar los datos anteriores a esta fecha.
-fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))   #Vamos a quitar los datos anteriores a esta fecha.        
+fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))   #Vamos a quitar los datos posteriores a esta fecha.        
+#AVISO. el comando max cambia las horas de UTC a CET, seguramente este puesto para detectar la zona geografica del pc.
 print(fechamax-fechamin)  #Aproximadamente con cuanto tiempo calibramos?
 #Cortar datos_anemos
 if (fechamin>range(datos_anemos$Date)[1]) {#Si se ejecutasen estos ifs sin cumplirse las condiciones, which devolveria integer(0), y la liamos.
-  datos_anemos=datos_anemos[-(which.min(datos_anemos$Date<fechamin):nrow(datos_anemos)),]   #whichMIN en vez de MAX por que los datos_anemos estan en orden contrario al cronologico
+  datos_anemos=datos_anemos[-(which.max(datos_anemos$Date<fechamin):nrow(datos_anemos)),]   #whichMIN en vez de MAX por que los datos_anemos estan en orden contrario al cronologico
 }
 if (fechamax<range(datos_anemos$Date)[2]) {
-  datos_anemos=datos_anemos[-(1:which.max(datos_anemos$Date<fechamax)),]  #whichMAX en vez de MIN por que los datos_anemos estan en orden contrario al cronologico
+  datos_anemos=datos_anemos[-(1:which.min(datos_anemos$Date>fechamax)),]  #whichMAX en vez de MIN por que los datos_anemos estan en orden contrario al cronologico
+}
+#Cortar datos_era
+if (fechamin>range(datos_era$Date)[1]) {
+  datos_era=datos_era[-(1:which.min(datos_era$Date<fechamin)),]   #whichMAX por que los datos_era estan en orden cronologico
+}
+if (fechamax<range(datos_era$Date)[2]) {
+  datos_era=datos_era[-(which.max(datos_era$Date>fechamax):nrow(datos_era)),]  #whichMAX por que los datos_era estan en orden cronologico
 }
 
 Calibracion_uni=list(datos_anemos,datos_era)  #En esta lista vamos guardando todo lo relevante para la calibracion de un lugar.
