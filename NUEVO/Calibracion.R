@@ -142,7 +142,6 @@ rm(n)
 #Rosas de los vientos
 windRose(datos_anemos,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
 windRose(datos_anemos,ws = "Gust",wd="Dir",paddle = F,key.header = "Gust [m/s]")
-windRose(a,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
 
 windRose(Anemometros$`0B75FE3A4FB6`,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
 

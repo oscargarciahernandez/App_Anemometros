@@ -285,9 +285,44 @@ suavizar_vector_viento=function(vector_viento,n){
 
 cor_y_plot=function(vector_viento_anemos,vector_viento_ER5){
   #Esto necesita una vuelta
-  cor=cor(vector_viento_anemos,vector_viento_ER5)
+  cor=cor(vector_viento_anemos,vector_viento_ER5,"na")
   print(cor)
-  plot(vector_viento_anemos,type = "l")
+  plot(vector_viento_anemos,col="black",type="l")
   lines(vector_viento_ER5,col="red")
 }
 
+extract_hourly_data_2=function(datos_anemos){
+  #Primero definimos las horas en punto
+  #fechainicio<-round_date(range(datos_anemos$Date)[1],unit = "hours")
+  fechainicio<-floor_date(range(datos_anemos$Date)[1],unit = "hours")+3600
+  #fechafinal<-round_date(range(datos_anemos$Date)[2],unit = "hours")
+  fechafinal<-floor_date(range(datos_anemos$Date)[2],unit = "hours")
+  
+  #Creamos el dataframe que devolveremos. En vez de crearlo de cero, hacemos esto para quitarnos problemas de formatos.
+  datos_anemos_horario=datos_anemos[1,]   #Copiar la primea linea
+  datos_anemos_horario[1,]=NA             #Vaciarla
+  datos_anemos_horario=cbind(datos_anemos_horario,Date_roud=seq(fechainicio,fechafinal, by="hours"))  #Añadir una columna extra con las hora en punto. Asi mantenemos la hora original en $Date
+  
+  #Para cada hora en punto, buscamos el dato de anemo mas cercano y rellenamos datos_anemos_horario
+  for (i in 1:nrow(datos_anemos_horario)) {
+    n=(datos_anemos$Date-datos_anemos_horario$Date_roud[i]) %>% as.numeric %>% abs %>% which.min
+    datos_anemos_horario[i,1:4]=datos_anemos[n,]
+  }
+  return(datos_anemos_horario)
+  
+}
+
+juntar_anemos_y_era=function(datos_anemos,datos_era){
+  #De donde a donde van nuestros datos?
+  fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))
+  fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))
+  
+  #Cuales son las fechas de era mas cercanas a los limites de nuestros datos?
+  if (fechamin==range(datos_era$Date)[2]) {
+    fechainicio
+  }else{
+    
+  }
+  n=(datos_anemos$Date-datos_anemos_horario$Date_roud[i]) %>% as.numeric %>% abs %>% which.min
+  
+}

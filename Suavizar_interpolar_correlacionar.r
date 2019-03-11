@@ -106,36 +106,26 @@ datos=suavizar_datos(datos,n)
 #de ERA5_2018.R en un par de pequeños cambios para que no se ralle con la columna extra
 #que le hemos metido a datos al suavizar. Si esto va en serio estraia bien hacer una 
 #version que pueda trabajar con el nuero de columnas que sea
-extract_hourly_data_2<-function(datos_anem){
-  datos<- datos_anem
-  fechainicio<-round_date(range(datos$Date)[1],unit = "hours")
-  fechafinal<-round_date(range(datos$Date)[2],unit = "hours")
-  Vector_fechas<-seq(fechainicio,fechafinal, by="hours")
+extract_hourly_data_2=function(datos_anemos){
+  #Primero definimos las horas en punto
+  #fechainicio<-round_date(range(datos_anemos$Date)[1],unit = "hours")
+  fechainicio<-floor_date(range(datos_anemos$Date)[1],unit = "hours")+3600
+  #fechafinal<-round_date(range(datos_anemos$Date)[2],unit = "hours")
+  fechafinal<-floor_date(range(datos_anemos$Date)[2],unit = "hours")
   
-  
-  a<- rep(NA,6)
-  a<- as.data.frame(t(a))
-  names(a)<- names(datos)
-  
-  tabla<-as.data.frame(matrix(ncol = 8,nrow = length(Vector_fechas)))
-  
-  for (i in 1:length(Vector_fechas)) {
-    diferencia<-min(abs(Vector_fechas[i]-datos$Date))
-    if (as.numeric(diferencia,units="secs") >= 420) { 
-      tabla[i,]<-cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i], a) }
-    else { 
-      tabla[i,]<- cbind(as.numeric(diferencia,units="secs"),Vector_fechas[i],datos[which.min(abs(Vector_fechas[i]-datos$Date)), ])  
-      
-    }
+  #Creamos el dataframe que devolveremos. En vez de crearlo de cero, hacemos esto para quitarnos problemas de formatos.
+  datos_anemos_horario=datos_anemos[1,]   #Copiar la primea linea
+  datos_anemos_horario[1,]=NA             #Vaciarla
+  datos_anemos_horario=cbind(datos_anemos_horario,Date_roud=seq(fechainicio,fechafinal, by="hours"))  #Añadir una columna extra con las hora en punto. Asi mantenemos la hora original en $Date
+
+  for (i in 1:nrow(datos_anemos_horario)) {
+    n=(datos_anemos$Date-datos_anemos_horario$Date_roud[i]) %>% as.numeric %>% abs %>% which.min
+    datos_anemos_horario[i,1:4]=datos_anemos[n,]
   }
-  
-  names(tabla)<- c("diff_sec","date_roud",names(datos))
-  
-  tabla$date_roud<- as_datetime(tabla$date_roud)
-  tabla$Date<- as_datetime(tabla$Date)
-  return(tabla)
+  return(datos_anemos_horario)
   
 }
+
 Datos_horarios<- list()
 for (i in 1:length(datos)) {
   Datos_horarios[[i]]<- extract_hourly_data_2(datos[[i]])
