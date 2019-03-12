@@ -54,28 +54,59 @@ if(e > 0){e<- e + incr}else{e<- e- incr}
 if(w > 0){w<- w + incr}else{w<- w- incr}
   
   
-  
-  ul <- c(n,w)  #Upper Left
-  lr <- c(s,e)  #Lower Right
-  
-  library(OpenStreetMap)
-  #minNumTiles mayor, mayor resolución 
-  map <- openmap(ul,lr, minNumTiles=25,
-                 type="stamen-terrain",
-                 zoom=NULL)  
-  
-  graphics.off()
-  
-  #Cambiamos las coordenadas del mapa
-  #para trabajar con lon, lat
-  map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
-  
-  autoplot(map.latlon)+
-    geom_point(data = Coordenadas_era, aes(lon,lat), size=3, colour = "black", alpha=0.7)+
-    geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
-  
-  ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
+ul <- c(n,w)  #Upper Left
+lr <- c(s,e)  #Lower Right
+
+
+
+###Metodo 1. GGmap, mierda, need of API Key
+
+library(ggmap)
+
+p<- get_navermap(bbox = c(s,w,n,e), maptype = "terrain")
+ggmap(p)
+
+
+
+
+
+
+
+##OSMDATA probando aun
+library(osmdata)
+library(sp)
+
+q1 <- opq(bbox = c(s,w,n,e))  %>%
+  add_osm_feature("residential")
+cway_sev <- osmdata_sp(q1)
+sp::plot(cway_sev$osm_points)
+
+
+
+
+
+
+
+#Sys.setenv(JAVA_HOME='C:/Program Files/MATLAB/R2016a/sys/java/jre/win64/jre')
+library(OpenStreetMap)
+#minNumTiles mayor, mayor resolución 
+map <- openmap(ul,lr, minNumTiles=25,
+               type="stamen-terrain",
+               zoom=NULL)  
+
+graphics.off()
+
+#Cambiamos las coordenadas del mapa
+#para trabajar con lon, lat
+map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+
+
+autoplot(map.latlon)+
+  geom_point(data = Coordenadas_era, aes(lon,lat), size=3, colour = "black", alpha=0.7)+
+  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
+
+ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
   
@@ -112,7 +143,7 @@ if(w > 0){w<- w + incr}else{w<- w- incr}
   
   
   
-}
+
 ploteo_rosas_individual<- function(){
   
   library(here)
@@ -160,7 +191,7 @@ ploteo_rosas_individual<- function(){
     
   }
 }
-=======
+
   
   
   funcion_mapas<- function(opacidad, zoom_in){

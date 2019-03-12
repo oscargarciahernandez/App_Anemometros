@@ -6,6 +6,14 @@ source(here::here("NUEVO/Libraries.R"))
 
 if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
 
+#Guardar 
+if(dir.exists(here::here("NUEVO/Data_ERA5"))){
+  
+  
+}else{
+  dir.create(here::here("NUEVO/Data_ERA5"))
+}
+
 #Importar
 data_ERA_2018<- open.nc(here::here("NUEVO/Data_ERA5/Data_2018.nc"))
 
@@ -28,14 +36,7 @@ format(object.size(ERA5_df),"Gb")
 #metemos las etiquetas de direccion y redondeamos los valores
 ERA5_df<-Dirlab_round_ERA(ERA5_df)
 
-   
-#Guardar 
-if(dir.exists(here::here("NUEVO/Data_ERA5"))){
-    
   
-}else{
-  dir.create(here::here("NUEVO/Data_ERA5"))
-}
 save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 
