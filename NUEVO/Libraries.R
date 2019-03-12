@@ -293,9 +293,8 @@ cor_y_plot=function(vector_viento_anemos,vector_viento_ER5){
 
 extract_hourly_data_2=function(datos_anemos){
   #Primero definimos las horas en punto
-  #fechainicio<-round_date(range(datos_anemos$Date)[1],unit = "hours")
+  #No cogemos las mas cercanas (round_date) sino las que estan "dentro"
   fechainicio<-floor_date(range(datos_anemos$Date)[1],unit = "hours")+3600
-  #fechafinal<-round_date(range(datos_anemos$Date)[2],unit = "hours")
   fechafinal<-floor_date(range(datos_anemos$Date)[2],unit = "hours")
   
   #Creamos el dataframe que devolveremos. En vez de crearlo de cero, hacemos esto para quitarnos problemas de formatos.
@@ -312,17 +311,32 @@ extract_hourly_data_2=function(datos_anemos){
   
 }
 
-juntar_anemos_y_era=function(datos_anemos,datos_era){
+juntar_datos=function(datos_anemos,datos_era){
   #De donde a donde van nuestros datos?
   fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))
   fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))
   
   #Cuales son las fechas de era mas cercanas a los limites de nuestros datos?
-  if (fechamin==range(datos_era$Date)[2]) {
-    fechainicio
+  #Fechainicio?
+  if (fechamin==range(datos_era$Date)[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechainicio=fechamin
   }else{
-    
+    pos=(datos_era$Date-fechamin) %>% as.numeric %>% abs %>% which.min
+    fechainicio=datos_era$Date[pos]
   }
-  n=(datos_anemos$Date-datos_anemos_horario$Date_roud[i]) %>% as.numeric %>% abs %>% which.min
+  #Fechafinal?
+  if (fechamax==range(datos_era$Date)[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechafinal=fechamax
+  }else{
+    pos=(datos_era$Date-fechamax) %>% as.numeric %>% abs %>% which.min
+    fechafinal=datos_era$Date[pos]
+  }
+  
+  #Ahora que tenemos las fechas podemos a crear datos_juntos
+  datos_juntos=cbind(datos_anemos[1,],datos_era[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
+  datos_juntos[1,]=NA   #Vaciamos porseaca
+  colnames(datos_juntos)[c(1,5)]=c("Date_anemo","Date_era")   #Diferenciar entre el $Date de anemos y $Date de era
+  datos_era=datos_era$Date[which(datos_era$Date==fechainicio):which(datos_era$Date==fechafinal)]  #Coger las fechas de era que estan en la parte solapada
+  datos_juntos[1:length(vector_fechas),5]=vector_fechas #Nuestra quinta columna (aka $Date_era)
   
 }
