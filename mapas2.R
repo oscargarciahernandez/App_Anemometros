@@ -17,10 +17,14 @@ if (!exists("t_reg")) {
 }
 
 
-#Sacar todas las coordenadas ERA5
-if (!exists("coordenadas_era")) {
+#Sacar todas las coordenadas ERA5 y guardarlas en un Rdata
+if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))) { 
+  load(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))}else{
   Coordenadas_era<- unique(ERA5_df[,c("lon","lat")])
-}
+  save(Coordenadas_era, file=here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))
+  }
+  
+
 
 #Sacar coordenadas anemos de la tabla de registro
 Coordenadas_anemos<- as.data.frame(cbind(as.numeric(sub(",",".",as.character(t_reg$LON))),
@@ -32,26 +36,26 @@ Coord_anemo<- Coordenadas_anemos[1,]
 
 
 #Ordenarlos puntos del ERA de cercanos a lejanos
-Coordenadas_era<- Coordenadas_era[order((Coordenadas_era$lon-Coord_anemo$lon)^2+(Coordenadas_era$lat-Coord_anemo$lat)^2),]
+Coord_era<- Coordenadas_era[order((Coordenadas_era$lon-Coord_anemo$lon)^2+(Coordenadas_era$lat-Coord_anemo$lat)^2),]
 
 
 #Coger los n mas cercanos
-n=4
-Coordenadas_era=Coordenadas_era[1:n,]
+n=9
+Coord_era=Coord_era[1:n,]
 
 
 #Seteamos el tamaño del mapa, para ello habrá que elegir 
-n=max(c(Coordenadas_era$lat),Coord_anemo$lat)    
-s=min(c(Coordenadas_era$lat),Coord_anemo$lat)    
-e=max(c(Coordenadas_era$lon),Coord_anemo$lon)    
-w=min(c(Coordenadas_era$lon),Coord_anemo$lon)    
+n=max(c(Coord_era$lat),Coord_anemo$lat)    
+s=min(c(Coord_era$lat),Coord_anemo$lat)    
+e=max(c(Coord_era$lon),Coord_anemo$lon)    
+w=min(c(Coord_era$lon),Coord_anemo$lon)    
 
-incr<- 0.05
+incr<- 0.03
 
-if(n > 0){n<- n + incr}else{n<- n- incr}
-if(s > 0){s<- s + incr}else{s<- s- incr}
-if(e > 0){e<- e + incr}else{e<- e- incr}
-if(w > 0){w<- w + incr}else{w<- w- incr}
+if(n > 0){n<- n + incr}else{n<- n + incr}
+if(s > 0){s<- s - incr}else{s<- s- incr}
+if(e > 0){e<- e + incr}else{e<- e + incr}
+if(w > 0){w<- w - incr}else{w<- w- incr}
   
   
 
@@ -60,39 +64,16 @@ lr <- c(s,e)  #Lower Right
 
 
 
-###Metodo 1. GGmap, mierda, need of API Key
-
-library(ggmap)
-
-p<- get_navermap(bbox = c(s,w,n,e), maptype = "terrain")
-ggmap(p)
 
 
 
 
 
-
-
-##OSMDATA probando aun
-library(osmdata)
-library(sp)
-
-q1 <- opq(bbox = c(s,w,n,e))  %>%
-  add_osm_feature("residential")
-cway_sev <- osmdata_sp(q1)
-sp::plot(cway_sev$osm_points)
-
-
-
-
-
-
-
-#Sys.setenv(JAVA_HOME='C:/Program Files/MATLAB/R2016a/sys/java/jre/win64/jre')
 library(OpenStreetMap)
 #minNumTiles mayor, mayor resolución 
-map <- openmap(ul,lr, minNumTiles=25,
-               type="stamen-terrain",
+
+map <- openmap(ul,lr, minNumTiles=40,
+               type='bing',
                zoom=NULL)  
 
 graphics.off()
@@ -102,9 +83,21 @@ graphics.off()
 map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
 
 
-autoplot(map.latlon)+
-  geom_point(data = Coordenadas_era, aes(lon,lat), size=3, colour = "black", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
+pmap<-autoplot(map.latlon)+
+  geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "black", alpha=0.7)+
+  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)+
+  scale_x_continuous(expand=c(0,0)) + 
+  scale_y_continuous(expand=c(0,0))  
+
+
+
+pmap + theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+
 
 ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
