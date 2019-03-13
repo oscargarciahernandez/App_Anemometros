@@ -5,6 +5,10 @@ library(mapdata)
 library(OpenStreetMap)
 library(rJava)
 library(rgdal)
+
+
+# Importar datos necesarios -----------------------------------------------
+
   
 #Importar ERA5_df
 if (!exists("ERA5_df")) {
@@ -24,6 +28,9 @@ if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))) {
   save(Coordenadas_era, file=here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))
   }
   
+
+
+# Seleccionar coordenadas -------------------------------------------------
 
 
 #Sacar coordenadas anemos de la tabla de registro
@@ -69,7 +76,9 @@ lr <- c(s,e)  #Lower Right
 
 
 
-library(OpenStreetMap)
+# Mapeo -------------------------------------------------------------------
+
+
 #minNumTiles mayor, mayor resolución 
 
 map <- openmap(ul,lr, minNumTiles=40,
@@ -85,9 +94,7 @@ map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS8
 
 pmap<-autoplot(map.latlon)+
   geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "black", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)+
-  scale_x_continuous(expand=c(0,0)) + 
-  scale_y_continuous(expand=c(0,0))  
+  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
 
 
 
@@ -98,7 +105,18 @@ pmap + theme(axis.line=element_blank(),axis.text.x=element_blank(),
           panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
           panel.grid.minor=element_blank(),plot.background=element_blank())
 
+prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
+source(here::here('windrose_sin_nada.R'))
 
+p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",dir="uv_dwi",dirres = 22.5,spdres = 2,spdseq = c(0,1,2,3,5,7,10,15), palette = "PuRd"))%>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = lon-0.07,      # change from 1 to other 
+                                           y = lat-0.07,      # values if necessary,
+                                           xmax = lon+0.07,   # depending on the map's
+                                           ymax = lat+0.07))) # resolution.
+
+pmap+p_ros$subgrobs
+  
 ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
