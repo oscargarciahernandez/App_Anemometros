@@ -8,14 +8,17 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 #Encontrar errores datos anemos----
 
+
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
+
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
-mean_max=50/3.6   #[m/s]
-gust_max=200/3.6  #[m/s]
-dif_max=30/3.6    #[m/s]
-dif_min=0/3.6     #[m/s]
-tomas_dif_min=10  #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
+mean_max=50/3.6     #[m/s]
+gust_max=200/3.6    #[m/s]
+dif_max_gust=30/3.6 #[m/s]
+dif_max_mean=20/3.6 #[m/s]
+dif_min=0/3.6       #[m/s]
+tomas_dif_min=20    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
 
 N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
 N_gust=c()
@@ -33,7 +36,7 @@ N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0))     
 #Se lo pasamos al mean
 for (i in 2:length(datos_anemos$Mean)){
   difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
-  if (is.na(difer)==FALSE & abs(difer)>30/3.6){
+  if (is.na(difer)==FALSE & abs(difer)>dif_max_mean){
     N_mean[length(N_mean)+1]=i
   }
 }
@@ -41,12 +44,13 @@ for (i in 2:length(datos_anemos$Mean)){
 #Ahora al gust
 for (i in 2:length(datos_anemos$Gust)){
   difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
-  if (is.na(difer)==FALSE & abs(difer)>30/3.6){
+  if (is.na(difer)==FALSE & abs(difer)>dif_max_gust){
     N_gust[length(N_gust)+1]=i
   }
 }
 
 #Nivel 4 -- coherencia temporal de la serie
+#Idea para calibrar este filtro: fijarse si vuando detecta errores en mean tambien lo hace en gust. Solo mean=puedes ser un perido e calma. Ambos:el anemo esta totalmente quieto durante decenas de minutos. 
 # En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
 i=1
 while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
@@ -115,7 +119,8 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
 
 #Plotear de n en n
 graphics.off()
-n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+dev.off()
+n=nrow(datos_anemos)/20   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
 #NUestros datos estan al reves! (Primero los mas nuevos). Asi que los vamos a plotar del reves:
 #Ultimo plot=datos mas nuevos (el primero que vemos en la ventana de plots)
@@ -123,13 +128,13 @@ n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean s
 for (i in seq(nrow(datos_anemos),1,-n)) {
   layout(mat = c(1,2))  #Separar la ventana de plts en dos, una para mean, otro para gust
   #Mean
-  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",xlab="",ylab="Mean [m/s]")
-  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="green",lwd=1)   #Los errores de mean en rojo
+  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Mean [m/s]")
+  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="blue",lwd=1)   #Los errores de mean en rojo
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
   title(main = paste0(datos_anemos$Date[i]," - ",datos_anemos$Date[i-n+1]))
   #Gust
-  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],type="p",col="blue",xlab="",ylab="Gust [m/s]")
-  points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="green",lwd=1)
+  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Gust [m/s]")
+  points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="blue",lwd=1)
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
 }
 rm(n)
@@ -138,11 +143,16 @@ rm(n)
 windRose(datos_anemos,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
 windRose(datos_anemos,ws = "Gust",wd="Dir",paddle = F,key.header = "Gust [m/s]")
 
+windRose(Anemometros$`0B75FE3A4FB6`,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
+
 #Quitar mediciones erroneas, guardar, cargar----
 #Llenar de NAs las mediciones consideradas erroneas. No eliminamos la fila; queremos mantener la fechas de los NAs.
 datos_anemos[N_mean,c(2,3,4)]=NA
 datos_anemos[N_gust,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
+
+#Quitar los ultimos (cronologicamnete los primeros) datos de los anemos de la uni, que no sirven de nada
+datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42"):nrow(datos_anemos)),]
 
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
@@ -157,6 +167,56 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 #Tratar datos era----
 #Coordenadas que queremos representar
 
+Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
+colnames(Coordenadas_anemos)=c("lat","lon")
+Coordenadas_anemos[1,]=c(43.179389,-2.488504)
+
+#Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
+if (!exists("coordenadas_era")) {
+  Coordenadas_era=unique(ERA5_df[,c(2,3)])
+}
+#Ordenarlos de cercanos a lejanos
+Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
+#Coger los n mas cercanos
+n=1
+Coordenadas_era=Coordenadas_era[1:n,]
+
+#De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
+datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
+
+#Guardar datos_era
+if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
+  dir.create(here::here("NUEVO/Data_calibracion"))
+}
+save(datos_era,
+     file=here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+
+#Cargarlos
+load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+
+#Plotear datos_era----
+#Plotear de n en n
+graphics.off()
+dev.off()
+n=nrow(datos_era)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+#n=nrow(datos_era)   #Para plotear todo junto
+#NUestros datos estan ordenados cronologicamente! 
+for (i in seq(1,nrow(datos_era),n)) {
+  #layout(c(1,2))
+  #uv
+  plot(datos_era$uv_wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",col="grey",xlab="",ylab="uv_wind")
+  title(main = paste0(datos_era$Date[i]," - ",datos_era$Date[i+n-1]))
+  #wind
+  #plot(datos_era$wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="wind")
+}
+rm(n)
+
+#Si da error "Error in plot.window(...) : need finite 'ylim' values", probar ploteando con n=nrow(datos_era).
+
+#Rosas de los vientos
+windRose(datos_era,ws = "uv_wind",wd="uv_dwi",paddle = F,key.header = "uv_wind")
+windRose(datos_era,ws = "wind",wd="dwi",paddle = F,key.header = "wind")
+
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
@@ -169,3 +229,33 @@ Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
+
+
+#Comparar anemos con era----
+
+#Para ejecutar esta seccion datos_era y datos_anemos deberian existir en el environment
+load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
+load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+
+#Antes de nada vamos recortar datosera y datos_anemos, para solo tener que andar trabajando con las partes que se superponen en el tiempo.
+fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))   #Vamos a quitar los datos anteriores a esta fecha.
+fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))   #Vamos a quitar los datos posteriores a esta fecha.        
+#AVISO. el comando max cambia las horas de UTC a CET, seguramente este puesto para detectar la zona geografica del pc.
+print(fechamax-fechamin)  #Aproximadamente con cuanto tiempo calibramos?
+#Cortar datos_anemos
+if (fechamin>range(datos_anemos$Date)[1]) {#Si se ejecutasen estos ifs sin cumplirse las condiciones, which devolveria integer(0), y la liamos.
+  datos_anemos=datos_anemos[-(which.max(datos_anemos$Date<fechamin):nrow(datos_anemos)),]   #whichMIN en vez de MAX por que los datos_anemos estan en orden contrario al cronologico
+}
+if (fechamax<range(datos_anemos$Date)[2]) {
+  datos_anemos=datos_anemos[-(1:which.min(datos_anemos$Date>fechamax)),]  #whichMAX en vez de MIN por que los datos_anemos estan en orden contrario al cronologico
+}
+#Cortar datos_era
+if (fechamin>range(datos_era$Date)[1]) {
+  datos_era=datos_era[-(1:which.min(datos_era$Date<fechamin)),]   #whichMAX por que los datos_era estan en orden cronologico
+}
+if (fechamax<range(datos_era$Date)[2]) {
+  datos_era=datos_era[-(which.max(datos_era$Date>fechamax):nrow(datos_era)),]  #whichMAX por que los datos_era estan en orden cronologico
+}
+
+Calibracion_uni=list(datos_anemos,datos_era)  #En esta lista vamos guardando todo lo relevante para la calibracion de un lugar.
+names(Calibracion_uni)=c("datos_anemos","datos_era")

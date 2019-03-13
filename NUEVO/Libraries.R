@@ -206,14 +206,14 @@ buscar_huecos_anemos=function(datos_anemos){
   #huecos[2] muestra cual es la medicion anterior (en el tiempo) al hueco.
   #Las fechas estan en numerico (segundos desde 1970-01-01)
   huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
-  colnames(huecos)=c(colnames(datos_anemos)[1],"Date[i]-Date[i+1]")
+  colnames(huecos)=c("despues","antes")
   cont=1
   for(i in 1:(dim(datos_anemos)[1]-1)){
-    diferencia=as.numeric(datos_anemos$Date[i]-datos_anemos$Date[i+1]) #En minutos
-    if (isTRUE(diferencia<=0)){
-      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(diferencia)," minutos"))
+    difer=time_length((datos_anemos$Date[i]-datos_anemos$Date[i+1]))     #La duracion del hueco en segundos, formato numeric
+    if (isTRUE(difer<=0)){
+      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(difer/60)," minutos"))
     }
-    if (isTRUE(diferencia>7*1.5)){
+    if (isTRUE(difer>7*1.5*60)){
       huecos[cont,1]=datos_anemos$Date[i]
       huecos[cont,2]=datos_anemos$Date[i+1]
       cont=cont+1
@@ -222,6 +222,7 @@ buscar_huecos_anemos=function(datos_anemos){
   return(huecos)
 }
 
+#Esto ahora mismo no funciona bien
 rellenar_huecos_anemos=function(datos_anemos){
   #Esta funcion recoge un data.frame de formato estandar de anemos
   #Devuelve un data.frame parecido, pero con las mediciones filtradas por MobileAlerts.
@@ -232,18 +233,19 @@ rellenar_huecos_anemos=function(datos_anemos){
   lista[[1]]=datos_anemos[1:which(datos_anemos$Date==huecos[1,1]),]
   for (i in 1:(nrow(huecos)))
     #Por cada hueco hay que crear un data.frame con los datos anteriores (anteriores en el data.frame, posteriores en el tiempo) y otro con las mediciones vacias (el relleno).
-  {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
+    {#Primero el relleno, las lineas que parece que MobileAlerts nos ha filtrado, con NAs en vez de mediciones.
     relleno=data.frame(a=as.POSIXct(character(),tz="UTC"), b=numeric(), c=numeric(), d=numeric())  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
-    for (j in 1:(as.numeric(round((huecos[i,1]-huecos[i,2]))/7)-1)) #Cuantas mediciones faltan? Solo una si huecos[i,2] ~= 2*7*60 mins, 2 si huecos[i,2] ~= 3*7*60 ...
-    {relleno[j,1]=datos_anemos$Date[which(datos_anemos$Date==huecos[i,1])]-j*(huecos[i,1]-huecos[i,2])/(as.numeric(round((huecos[i,1]-huecos[i,2]))/7))
+    difer=time_length((huecos$despues[i]-huecos$antes[i]))     #La duracion del hueco en segundos, formato numeric
+    for (j in 1:(round(difer/(7*60))-2)) #Cuantas mediciones faltan? Solo una si difer ~= 2*7*60 segs, 2 si difer ~= 3*7*60 ...
+    {relleno[j,1]=huecos$despues[i]-j*(difer)/(round(difer/(7*60))-1)
     #relleno[j,1]=la fecha posterior en el tiempo al hueco - j*(tamaño del hueco)/(el numero de mediciones que faltan en este hueco)
     }
     colnames(relleno)=colnames(datos_anemos)
     lista[[2*i]]=relleno
     if (i==(nrow(huecos))) {
-      lista[[length(lista)+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):nrow(datos_anemos),] #Si estamos con el ultimo hueco, hay que coger todo hasta el final de datos_anemos
+      lista[[length(lista)+1]]=datos_anemos[which(datos_anemos$Date==huecos$antes[i]):nrow(datos_anemos),] #Si estamos con el ultimo hueco, hay que coger todo hasta el final de datos_anemos
     }else{
-      lista[[2*i+1]]=datos_anemos[which(datos_anemos$Date==huecos[i,2]):which(datos_anemos$Date==huecos[i+1,1]),] #Las mediciones entre el principio del hueco y el final del siguiente hueco
+      lista[[2*i+1]]=datos_anemos[which(datos_anemos$Date==huecos$antes[i]):which(datos_anemos$Date==huecos[i+1,1]),] #Las mediciones entre el principio del hueco y el final del siguiente hueco
     }
   }
   datos_anemos_rellenado=do.call("rbind", lista) #Juntar todos los cachitos. Haciendo esto en vez de monton de rbins usamos menos recursos del pc, y tarda mucho menos.
@@ -283,9 +285,58 @@ suavizar_vector_viento=function(vector_viento,n){
 
 cor_y_plot=function(vector_viento_anemos,vector_viento_ER5){
   #Esto necesita una vuelta
-  cor=cor(vector_viento_anemos,vector_viento_ER5)
+  cor=cor(vector_viento_anemos,vector_viento_ER5,"na")
   print(cor)
-  plot(vector_viento_anemos,type = "l")
+  plot(vector_viento_anemos,col="black",type="l")
   lines(vector_viento_ER5,col="red")
 }
 
+extract_hourly_data_2=function(datos_anemos){
+  #Primero definimos las horas en punto
+  #No cogemos las mas cercanas (round_date) sino las que estan "dentro"
+  fechainicio<-floor_date(range(datos_anemos$Date)[1],unit = "hours")+3600
+  fechafinal<-floor_date(range(datos_anemos$Date)[2],unit = "hours")
+  
+  #Creamos el dataframe que devolveremos. En vez de crearlo de cero, hacemos esto para quitarnos problemas de formatos.
+  datos_anemos_horario=datos_anemos[1,]   #Copiar la primea linea
+  datos_anemos_horario[1,]=NA             #Vaciarla
+  datos_anemos_horario=cbind(datos_anemos_horario,Date_roud=seq(fechainicio,fechafinal, by="hours"))  #Añadir una columna extra con las hora en punto. Asi mantenemos la hora original en $Date
+  
+  #Para cada hora en punto, buscamos el dato de anemo mas cercano y rellenamos datos_anemos_horario
+  for (i in 1:nrow(datos_anemos_horario)) {
+    n=(datos_anemos$Date-datos_anemos_horario$Date_roud[i]) %>% as.numeric %>% abs %>% which.min
+    datos_anemos_horario[i,1:4]=datos_anemos[n,]
+  }
+  return(datos_anemos_horario)
+  
+}
+
+juntar_datos=function(datos_anemos,datos_era){
+  #De donde a donde van nuestros datos?
+  fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))
+  fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))
+  
+  #Cuales son las fechas de era mas cercanas a los limites de nuestros datos?
+  #Fechainicio?
+  if (fechamin==range(datos_era$Date)[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechainicio=fechamin
+  }else{
+    pos=(datos_era$Date-fechamin) %>% as.numeric %>% abs %>% which.min
+    fechainicio=datos_era$Date[pos]
+  }
+  #Fechafinal?
+  if (fechamax==range(datos_era$Date)[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechafinal=fechamax
+  }else{
+    pos=(datos_era$Date-fechamax) %>% as.numeric %>% abs %>% which.min
+    fechafinal=datos_era$Date[pos]
+  }
+  
+  #Ahora que tenemos las fechas podemos a crear datos_juntos
+  datos_juntos=cbind(datos_anemos[1,],datos_era[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
+  datos_juntos[1,]=NA   #Vaciamos porseaca
+  colnames(datos_juntos)[c(1,5)]=c("Date_anemo","Date_era")   #Diferenciar entre el $Date de anemos y $Date de era
+  datos_era=datos_era$Date[which(datos_era$Date==fechainicio):which(datos_era$Date==fechafinal)]  #Coger las fechas de era que estan en la parte solapada
+  datos_juntos[1:length(vector_fechas),5]=vector_fechas #Nuestra quinta columna (aka $Date_era)
+  
+}

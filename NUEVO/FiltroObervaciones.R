@@ -1,4 +1,5 @@
 #Script para filtrar las mediciones de anemometros tal y como lo mando Sheilla.
+#ATENCION! Todos los (m/s) deberian ser (km/h). Aun asi, no lo he modificado aqui.
 
 #Detecci?n de valores erroneos 
 
