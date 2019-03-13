@@ -308,7 +308,6 @@ extract_hourly_data_2=function(datos_anemos){
     datos_anemos_horario[i,1:4]=datos_anemos[n,]
   }
   return(datos_anemos_horario)
-  
 }
 
 juntar_datos=function(datos_anemos,datos_era){
@@ -336,7 +335,65 @@ juntar_datos=function(datos_anemos,datos_era){
   datos_juntos=cbind(datos_anemos[1,],datos_era[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
   datos_juntos[1,]=NA   #Vaciamos porseaca
   colnames(datos_juntos)[c(1,5)]=c("Date_anemo","Date_era")   #Diferenciar entre el $Date de anemos y $Date de era
-  datos_era=datos_era$Date[which(datos_era$Date==fechainicio):which(datos_era$Date==fechafinal)]  #Coger las fechas de era que estan en la parte solapada
-  datos_juntos[1:length(vector_fechas),5]=vector_fechas #Nuestra quinta columna (aka $Date_era)
+  datos_era=datos_era[which(datos_era$Date==fechainicio):which(datos_era$Date==fechafinal),]  #Coger las fechas de era que estan en la parte solapada
+  datos_juntos[1:length(vector_fechas),5:13]=datos_era #Nuestra quinta columna (aka $Date_era)
   
+  #Para cada hora en punto, buscamos el dato de anemo mas cercano y rellenamos datos_anemos_horario
+  for (i in 1:nrow(datos_juntos)) {
+    n=(datos_anemos$Date-datos_juntos$Date_era[i]) %>% as.numeric %>% abs %>% which.min
+    datos_juntos[i,1:4]=datos_anemos[n,]
+  }
+  return(datos_juntos)
+}
+
+juntar_datos2=function(datos1,datos2){
+  #Esta funcion recoge dos dataframes de datos (1 y 2), y devuelve otro (3)
+  #(3) contiene informacion de la epoca en la que se solapan (1) y (2)
+  #(1) marca las fechas a usar. A cada fecha de (1) se le asigna la mas cercana de (2)
+  
+  #Analizar los inputs.Errores?
+  if (!is.data.frame(datos1)) {stop("El primer input no es un dataframe")}
+  if (!is.data.frame(datos2)) {stop("El segundo input no es un dataframe")}
+  if (nrow(datos1)==0) {stop("El primer input tiene 0 lineas")}
+  if (nrow(datos2)==0) {stop("El segundo input tiene 0 lineas")}
+  #Donde estan las fechas en cada uno? (Estaria bien algun dia mirar el tipo de cada columna, no el nombre, pero ahora se me atraganta)
+  col_fechas1=which(colnames(datos1)=="Date")
+  if (!is.numeric(col_fechas1)) {stop("El primer input no tiene ninguna columna llamada \"Date\"")}
+  col_fechas2=which(colnames(datos2)=="Date")
+  if (!is.numeric(col_fechas2)) {stop("El segundo input no tiene ninguna columna llamada \"Date\"")}
+  
+  #De donde a donde van nuestros datos?
+  fechamin=max(c(range(datos1$Date)[1],range(datos2$Date)[1]))
+  fechamax=min(c(range(datos1$Date)[2],range(datos2$Date)[2]))
+  if (fechamin>=fechamax) {stop("Los datos no se solapan en el tiempo")}
+  
+  #Cuales son las fechas del primer input mas cercanas a los limites de nuestros datos?
+  #Fechainicio?
+  if (fechamin==range(datos1$Date)[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechainicio=fechamin
+  }else{
+    pos=(datos1$Date-fechamin) %>% as.numeric %>% abs %>% which.min
+    fechainicio=datos1$Date[pos]
+  }
+  #Fechafinal?
+  if (fechamax==range(datos1$Date)[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+    fechafinal=fechamax
+  }else{
+    pos=(datos1$Date-fechamax) %>% as.numeric %>% abs %>% which.min
+    fechafinal=datos1$Date[pos]
+  }
+  
+  #Ahora que tenemos las fechas podemos a crear datos3
+  datos3=cbind(datos1[1,],datos2[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
+  datos3[1,]=NA   #Vaciamos porseaca
+  colnames(datos3)[c(col_fechas1,ncol(datos1)+col_fechas2)]=c("Date","Date2")   #Diferenciar entre el $Date de datos1 y $Date de datos2
+  datos1=datos1[which(datos1$Date==fechainicio):which(datos1$Date==fechafinal),]  #Coger las fechas de datos1 que esten en la parte solapada
+  datos3[1:nrow(datos1),1:ncol(datos1)]=datos1  #Rellenar la mitad izquierda de datos3, la relativa a la aprte solapada de datos1
+  
+  #Para cada fecha de datos1, buscamos el dato de datos2 mas cercano, y asi vamos rellenando datos3
+  for (i in 1:nrow(datos3)) {
+    n=(datos2$Date-datos3$Date[i]) %>% as.numeric %>% abs %>% which.min
+    datos3[i,(ncol(datos1)+1):ncol(datos3)]=datos2[n,]
+  }
+  return(datos3)
 }
