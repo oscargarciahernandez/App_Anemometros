@@ -81,16 +81,29 @@ lr <- c(s,e)  #Lower Right
 
 #minNumTiles mayor, mayor resolución 
 
-map <- openmap(ul,lr, minNumTiles=40,
-               type='bing',
-               zoom=NULL)  
+#Importar a crear mapa con alta resolución... 40 minNumtiles y guardarlo
+#Tarda mogollón en hacerlo... asi que mejor guardarlo
+while(TRUE){
+  if(dir.exists(here::here("NUEVO/Mapas"))){
+    if (!file.exists(here::here("NUEVO/Mapas/mapa1.Rdata"))) {
+      map <- openmap(ul,lr, minNumTiles=40,
+                     type='bing',
+                     zoom=NULL)  
+      map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+      save(map.latlon, file=here::here("NUEVO/Mapas/mapa1.Rdata"))
+    }else{
+      load(here::here("NUEVO/Mapas/mapa1.Rdata"))
+      break}
+    
+  }else{
+    dir.create(here::here("NUEVO/Mapas"))
+  }
+  
+}
+
+
 
 graphics.off()
-
-#Cambiamos las coordenadas del mapa
-#para trabajar con lon, lat
-map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-
 
 pmap<-autoplot(map.latlon)+
   geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "white", alpha=0.7)+
@@ -108,6 +121,18 @@ pmap2<- pmap + theme(axis.line=element_blank(),axis.text.x=element_blank(),
 
 prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
 source(here::here('windrose_sin_nada.R'))
+
+#hay más paletas pero estas son las secuenciales...
+#ideales para representar valores progresivos
+# las otras paletas estan preparadas para representar mediante colores
+#diferentes categorías o señalar valores críticos en el mid-range
+
+Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
+            "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
+            "YlGnBu" ,"YlOrBr" ,"YlOrRd")
+
+
+
 
 p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",dir="uv_dwi",dirres = 22.5,spdres = 2,spdseq = c(0,1,2,3,5,7,10,15), palette = "PuRd"))%>%
   mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
