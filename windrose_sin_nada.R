@@ -9,7 +9,7 @@ plot.windrose <- function(data,
                           spdmin = 0,
                           spdmax = 15,
                           spdseq = NULL,
-                          palette = "YlGnBu",
+                          palette,
                           countmax = NA,
                           opacity=0.6,
                           border_color="white"){
@@ -107,7 +107,10 @@ plot.windrose <- function(data,
           axis.ticks.y = element_blank(), 
           axis.text.x = element_blank()) +
     xlab("")+ ylab("") +
-    coord_polar(start = -((dirres/2)/360) * 2*pi) 
+    coord_polar(start = -((dirres/2)/360) * 2*pi)+
+    scale_fill_manual(name = "Wind Speed (m/s)", 
+                      values = spd.colors,
+                      drop = FALSE)
   
   # adjust axes if required
   if (!is.na(countmax)){

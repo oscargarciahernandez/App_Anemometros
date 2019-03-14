@@ -125,13 +125,10 @@ source(here::here('windrose_sin_nada.R'))
 # las otras paletas estan preparadas para representar mediante colores
 #diferentes categorías o señalar valores críticos en el mid-range
 
-Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
-            "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
-            "YlGnBu" ,"YlOrBr" ,"YlOrRd")
-
 
 
 prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
+
 
 p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
                                                                     dir="uv_dwi",
@@ -149,11 +146,72 @@ pmap2+p_ros$subgrobs
 ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
+
+# Mejorando calidad de las gráficas ---------------------------------------
+
  
 
-prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
-                                                            dir="uv_dwi",
-                                                            dirres = 22.5,
-                                                            spdseq = c(0,0.3,1,2,3,5,7,10,15), 
-                                                            palette = "PuRd"))
+WR_parameters<- function(data,anchura=0.06, opacidad=0.5, paleta){
+  p_ros<- data%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
+                                                                      dir="uv_dwi",
+                                                                      dirres = 22.5,
+                                                                      spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                                                      palette = paleta,
+                                                                      opacity = opacidad))%>%
+    mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                             x = lon-anchura,      # change from 1 to other 
+                                             y = lat-anchura,      # values if necessary,
+                                             xmax = lon+anchura,   # depending on the map's
+                                             ymax = lat+anchura))) # resolution.
   
+  
+  return(p_ros)
+}
+
+######Cambiando paletas
+Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
+            "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
+            "YlGnBu" ,"YlOrBr" ,"YlOrRd")
+
+for (i in 1:length(Paletas)) {
+  p_ros<- WR_parameters(data = prueba[1:5839,], paleta = Paletas[i])
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(here::here("NUEVO/Mapas//"),"paleta",i,".tiff"),
+         device = "tiff", dpi=200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}
+
+######Cambiando opacidad
+opacidad_vec<- seq(0,1, 0.05)
+
+for (i in 1:length(opacidad_vec)) {
+  p_ros<- WR_parameters(data = prueba[1:11640,], opacidad = opacidad_vec)
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(here::here("NUEVO/Mapas//"),"opacidad",i,".tiff"),
+         device = "tiff", dpi=200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}
+
+
+######Cambiando opacidad
+anchura_vec<- seq(0,0.1, 0.0005)
+
+for (i in 1:length(opacidad_vec)) {
+  p_ros<- WR_parameters(data = prueba[1:11640,], anchura = anchura_vec )
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(here::here("NUEVO/Mapas//"),"anchura",i,".tiff"),
+         device = "tiff", dpi=200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}
