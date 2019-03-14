@@ -4,14 +4,16 @@ library(RColorBrewer)
 plot.windrose <- function(data,
                           spd,
                           dir,
-                          spdres = 2,
-                          dirres = 30,
-                          spdmin = 2,
-                          spdmax = 20,
+                          spdres = 0.5,
+                          dirres = 22.5,
+                          spdmin = 0,
+                          spdmax = 15,
                           spdseq = NULL,
                           palette = "YlGnBu",
                           countmax = NA,
-                          debug = 0){
+                          debug = 0,
+                          opacity=0.6,
+                          border_color="white"){
   
   
   # Look to see what data was passed in to the function
@@ -25,7 +27,8 @@ plot.windrose <- function(data,
     # Assume that we've been given a data frame, and the name of the speed 
     # and direction columns. This is the format we want for later use.    
   }  
-  
+  spd = "spd"
+  dir = "dir"
   # Tidy up input data ----
   n.in <- NROW(data)
   dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
@@ -45,7 +48,9 @@ plot.windrose <- function(data,
   n.colors.in.range <- n.spd.seq - 1
   
   # create the color map
-  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),min(9,n.colors.in.range)),palette ))(n.colors.in.range)
+  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),
+                                                min(9,n.colors.in.range)),
+                                            palette ))(n.colors.in.range)
   
   if (max(data[[spd]],na.rm = TRUE) > spdmax){    
     spd.breaks <- c(spdseq,
@@ -68,7 +73,7 @@ plot.windrose <- function(data,
                          labels = spd.labels,
                          ordered_result = TRUE)
   # clean up the data
-  data. <- na.omit(data)
+  data <- na.omit(data)
   
   # figure out the wind direction bins
   dir.breaks <- c(-dirres/2,
@@ -86,16 +91,11 @@ plot.windrose <- function(data,
   levels(dir.binned) <- dir.labels
   data$dir.binned <- dir.binned
   
-  # Run debug if required ----
-  if (debug>0){    
-    cat(dir.breaks,"\n")
-    cat(dir.labels,"\n")
-    cat(levels(dir.binned),"\n")       
-  }  
+
   
   # deal with change in ordering introduced somewhere around version 2.2
   if(packageVersion("ggplot2") > "2.2"){    
-    cat("Hadley broke my code\n")
+    cat("ggplot2 version > V2.2")
     data$spd.binned = with(data, factor(spd.binned, levels = rev(levels(spd.binned))))
     spd.colors = rev(spd.colors)
   }
@@ -104,17 +104,19 @@ plot.windrose <- function(data,
   p.windrose <- ggplot(data = data,
                        aes(x = dir.binned,
                            fill = spd.binned)) +
-    geom_bar(width = 1,color="black", size=0.07, alpha=0.5) + 
+    geom_bar(width = 1,color=border_color, size=0.001, alpha=opacity) + 
     scale_x_discrete(drop = FALSE,
-                     labels = waiver()) +
-    coord_polar(start = -((dirres/2)/360) * 2*pi) +
-    scale_fill_manual(name = "Wind Speed (m/s)", 
-                      values = spd.colors,
-                      drop = FALSE) +
-    theme(panel.grid.major = element_line(colour = "NA"), axis.line = element_line(colour = NA), plot.background = element_rect(fill= "transparent", colour= NA), panel.background = element_rect(fill= "transparent", colour = NA))+
-    xlab("")+ ylab("")+ guides(fill=guide_legend(title="Direction")) + theme(plot.title = element_text(size=18, face= "bold", color = "burlywood1", vjust = -3, hjust = -0.15), axis.title.x = element_text(size= 8, color = "cornsilk1", hjust = 1.05, vjust = 1.4), 
-                                                                             axis.text.y=element_blank(), axis.ticks.y = element_blank(), axis.text.x = element_blank(),
-                                                                             legend.position = "none")
+                     labels = waiver()) + 
+    theme(legend.position = "none",
+          plot.background = element_rect(fill= "transparent", colour= NA),
+          panel.background = element_rect(fill= "transparent", colour = NA),
+          panel.grid.major = element_line(colour = "NA"), 
+          axis.line = element_line(colour = NA),
+          axis.text.y=element_blank(), 
+          axis.ticks.y = element_blank(), 
+          axis.text.x = element_blank()) +
+    xlab("")+ ylab("") +
+    coord_polar(start = -((dirres/2)/360) * 2*pi) 
   
   # adjust axes if required
   if (!is.na(countmax)){
