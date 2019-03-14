@@ -9,4 +9,5 @@
 *.rar
 *.Rdata
 *.csv
+*.tiff
 !TABLA_REGISTRO.csv
