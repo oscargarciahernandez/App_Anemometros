@@ -146,7 +146,7 @@ p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv
 
 pmap2+p_ros$subgrobs
   
-ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
+ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
  
