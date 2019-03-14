@@ -103,12 +103,9 @@ while(TRUE){
 
 
 
-graphics.off()
-
 pmap<-autoplot(map.latlon)+
   geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "white", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)+
-  coord_fixed()
+  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
 
 
 
@@ -120,6 +117,7 @@ pmap2<- pmap + theme(axis.line=element_blank(),axis.text.x=element_blank(),
           panel.grid.minor=element_blank(),plot.background=element_blank())
 
 prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
+
 source(here::here('windrose_sin_nada.R'))
 
 #hay más paletas pero estas son las secuenciales...
@@ -133,8 +131,13 @@ Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd",
 
 
 
+prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
 
-p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",dir="uv_dwi",dirres = 22.5,spdres = 2,spdseq = c(0,1,2,3,5,7,10,15), palette = "PuRd"))%>%
+p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
+                                                                    dir="uv_dwi",
+                                                                    dirres = 22.5,
+                                                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                                                    palette = "PuRd"))%>%
   mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
                                            x = lon-0.07,      # change from 1 to other 
                                            y = lat-0.07,      # values if necessary,
@@ -146,5 +149,11 @@ pmap2+p_ros$subgrobs
 ggsave(paste0(path_here,"mapaconpuntos_zoom",zoom_in,".tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
-  
+ 
+
+prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
+                                                            dir="uv_dwi",
+                                                            dirres = 22.5,
+                                                            spdseq = c(0,0.3,1,2,3,5,7,10,15), 
+                                                            palette = "PuRd"))
   

@@ -11,7 +11,6 @@ plot.windrose <- function(data,
                           spdseq = NULL,
                           palette = "YlGnBu",
                           countmax = NA,
-                          debug = 0,
                           opacity=0.6,
                           border_color="white"){
   
@@ -23,26 +22,18 @@ plot.windrose <- function(data,
                        dir = dir)
     spd = "spd"
     dir = "dir"
-  } else if (exists("data")){
-    # Assume that we've been given a data frame, and the name of the speed 
-    # and direction columns. This is the format we want for later use.    
-  }  
-  spd = "spd"
-  dir = "dir"
+  }
   # Tidy up input data ----
   n.in <- NROW(data)
   dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
   data[[spd]][dnu] <- NA
   data[[dir]][dnu] <- NA
+  data<-data[,c("Date","lon","lat",spd,dir)]
   
   # figure out the wind speed bins ----
   if (missing(spdseq)){
     spdseq <- seq(spdmin,spdmax,spdres)
-  } else {
-    if (debug >0){
-      cat("Using custom speed bins \n")
-    }
-  }
+  } 
   # get some information about the number of bins, etc.
   n.spd.seq <- length(spdseq)
   n.colors.in.range <- n.spd.seq - 1
