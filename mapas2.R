@@ -321,3 +321,16 @@ for(i in 1:length(maptypes)){
   
 }
 
+
+
+
+# Representar vectores ----------------------------------------------------
+
+base<- ggplot(prueba_1, aes(x="uv_dwi", y="uv_wind"))
+p<- base + coord_polar()
+
+awid <- 2
+p + geom_segment(aes(y=0, xend=degree, yend=value))+
+  geom_segment(aes(y=value-0.05,yend=value,x=degree-awid/value,xend=degree))+
+  geom_segment(aes(y=value-0.05,yend=value,x=degree+awid/value,xend=degree))
+
