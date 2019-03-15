@@ -104,8 +104,10 @@ while(TRUE){
 
 
 pmap<-autoplot(map.latlon)+
-  geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "white", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
+  geom_point(data = Coord_era, aes(lon,lat), 
+             size=3, colour = "white", alpha=0.7)+
+  geom_point(data = Coord_anemo, aes(lon,lat),
+             size=3, colour="red",alpha=0.7)
 
 
 
@@ -120,10 +122,6 @@ prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$l
 
 source(here::here('windrose_sin_nada.R'))
 
-#hay más paletas pero estas son las secuenciales...
-#ideales para representar valores progresivos
-# las otras paletas estan preparadas para representar mediante colores
-#diferentes categorías o señalar valores críticos en el mid-range
 
 
 
@@ -141,9 +139,10 @@ p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv
                                            xmax = lon+0.07,   # depending on the map's
                                            ymax = lat+0.07))) # resolution.
 
-pmap2+p_ros$subgrobs
+#PLOTEAR Y GUARDAR
+#pmap2+p_ros$subgrobs
   
-ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
+#ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
 
@@ -168,16 +167,54 @@ WR_parameters<- function(data,anchura=0.06, opacidad=0.5, paleta){
   return(p_ros)
 }
 
+## Para la prueba plotearemos solamente 1 rosa. La central.
+prueba_1<- prueba[which(prueba$lon==(-2.5) & round(prueba$lat, digits = 1)== 43.2),]
+
+
+
+
 ######Cambiando paletas
+
+#hay más paletas pero estas son las secuenciales...
+#ideales para representar valores progresivos
+# las otras paletas estan preparadas para representar mediante colores
+#diferentes categorías o señalar valores críticos en el mid-range
+
 Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
             "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
             "YlGnBu" ,"YlOrBr" ,"YlOrRd")
 
+Paletas_div<- c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu","RdGy","RdYlBu",
+                "RdYlGn", "Spectral")
+
 for (i in 1:length(Paletas)) {
-  p_ros<- WR_parameters(data = prueba[1:5839,], paleta = Paletas[i])
+  p_ros<- WR_parameters(data = prueba_1, paleta = Paletas[i])
   pmap2+p_ros$subgrobs
   
-  ggsave(paste0(here::here("NUEVO/Mapas//"),"paleta",i,".tiff"),
+  
+  
+  if(dir.exists(here::here('NUEVO/Mapas/Paleta'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/Paleta//"),"paleta",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/Paleta'))
+    ggsave(paste0(here::here("NUEVO/Mapas/Paleta//"),"paleta",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+  }
+  
+  
+}
+
+for (i in 1:length(Paletas_div)) {
+  p_ros<- WR_parameters(data = prueba_1, paleta = Paletas_div[i])
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(here::here("NUEVO/Mapas//"),"paleta_div",i,".tiff"),
          device = "tiff", dpi=200,
          width =7, height =7, 
          units = 'in')
@@ -189,13 +226,24 @@ for (i in 1:length(Paletas)) {
 opacidad_vec<- seq(0,1, 0.05)
 
 for (i in 1:length(opacidad_vec)) {
-  p_ros<- WR_parameters(data = prueba[1:11640,], opacidad = opacidad_vec)
+  p_ros<- WR_parameters(data = prueba_1, opacidad = opacidad_vec, paleta = Paletas[1])
   pmap2+p_ros$subgrobs
   
-  ggsave(paste0(here::here("NUEVO/Mapas//"),"opacidad",i,".tiff"),
-         device = "tiff", dpi=200,
-         width =7, height =7, 
-         units = 'in')
+  if(dir.exists(here::here('NUEVO/Mapas/Opacidad'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/Opacidad//"),"opacidad",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/Opacidad'))
+    ggsave(paste0(here::here("NUEVO/Mapas/Opacidad//"),"opacidad",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
+
   
   
 }
@@ -205,13 +253,24 @@ for (i in 1:length(opacidad_vec)) {
 anchura_vec<- seq(0,0.1, 0.0005)
 
 for (i in 1:length(opacidad_vec)) {
-  p_ros<- WR_parameters(data = prueba[1:11640,], anchura = anchura_vec )
+  p_ros<- WR_parameters(data = prueba, anchura = anchura_vec, paleta = Paletas[1] )
   pmap2+p_ros$subgrobs
   
-  ggsave(paste0(here::here("NUEVO/Mapas//"),"anchura",i,".tiff"),
-         device = "tiff", dpi=200,
-         width =7, height =7, 
-         units = 'in')
+  
+  if(dir.exists(here::here('NUEVO/Mapas/anchura'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/anchura//"),"anchura",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/anchura'))
+    ggsave(paste0(here::here("NUEVO/Mapas/anchura//"),"anchura",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
   
   
 }
