@@ -226,7 +226,7 @@ for (i in 1:length(Paletas_div)) {
 opacidad_vec<- seq(0,1, 0.05)
 
 for (i in 1:length(opacidad_vec)) {
-  p_ros<- WR_parameters(data = prueba_1, opacidad = opacidad_vec, paleta = Paletas[1])
+  p_ros<- WR_parameters(data = prueba_1, opacidad = opacidad_vec[i], paleta = Paletas[1])
   pmap2+p_ros$subgrobs
   
   if(dir.exists(here::here('NUEVO/Mapas/Opacidad'))){
@@ -253,7 +253,7 @@ for (i in 1:length(opacidad_vec)) {
 anchura_vec<- seq(0,0.1, 0.0005)
 
 for (i in 1:length(opacidad_vec)) {
-  p_ros<- WR_parameters(data = prueba, anchura = anchura_vec, paleta = Paletas[1] )
+  p_ros<- WR_parameters(data = prueba, anchura = anchura_vec[i], paleta = Paletas[1] )
   pmap2+p_ros$subgrobs
   
   
