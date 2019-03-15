@@ -12,7 +12,7 @@ plot.windrose <- function(data,
                           palette,
                           countmax = NA,
                           opacity=0.6,
-                          border_color="white"){
+                          border_color="NA"){
   
   
   # Look to see what data was passed in to the function

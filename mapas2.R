@@ -250,7 +250,7 @@ for (i in 1:length(opacidad_vec)) {
 
 
 ######Cambiando opacidad
-anchura_vec<- seq(0,0.1, 0.0005)
+anchura_vec<- seq(0.05,0.1, 0.005)
 
 for (i in 1:length(opacidad_vec)) {
   p_ros<- WR_parameters(data = prueba, anchura = anchura_vec[i], paleta = Paletas[1] )
@@ -274,3 +274,25 @@ for (i in 1:length(opacidad_vec)) {
   
   
 }
+
+
+
+
+# Descargar todos los tipos de mapas con buena calidad --------------------
+
+maptypes<- c("osm", "osm-bw",
+  "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+  "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+  "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+  "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+
+for (i in 1:length(maptypes)) {
+  map <- openmap(ul,lr, minNumTiles=40,
+                 type=maptypes[i],
+                 zoom=NULL)
+  map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+  save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+  
+  
+}
+  
