@@ -304,19 +304,30 @@ for (i in 1:length(maptypes)) {
 
 
 # Probar diferentes mapas con los puntos ----------------------------------
-maptypes<- c("osm", "osm-bw",
-             "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
-             "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
-             "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
-             "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+maps<- list.files(here::here('NUEVO/Mapas/')) %>% .[str_detect(.,".Rdata")]
 
-for(i in 1:length(maptypes)){
-  map_lat_lon<- load(here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
-  pmap_types<-autoplot(map_lat_lon)+
+for(i in 1:length(maps)){
+  #al ejecutar load, se carga un objeto llamado map.latlon
+  load(here::here(paste0("NUEVO/Mapas/",maps[i])))
+  pmap_types<-autoplot(map.latlon)+
     geom_point(data = Coord_era, aes(lon,lat), 
                size=3, colour = "white", alpha=0.7)+
     geom_point(data = Coord_anemo, aes(lon,lat),
                size=3, colour="red",alpha=0.7)
+  if(dir.exists(here::here('NUEVO/Mapas/diff_type'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/diff_type//"),maps[i],".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/diff_type'))
+    ggsave(paste0(here::here("NUEVO/Mapas/diff_type//"),maps[i],".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
   
   
 }
