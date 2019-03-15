@@ -104,10 +104,10 @@ while(TRUE){
 
 
 pmap<-autoplot(map.latlon)+
-  geom_point(data = Coord_era, aes(lon,lat), 
-             size=3, colour = "white", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),
-             size=3, colour="red",alpha=0.7)
+  geom_point(data = Coord_era, aes(lon,lat), shape=23,
+             size=3, fill= "blue",colour = "black")+
+  geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+             size=3, colour="black", fill="red")
 
 
 
@@ -345,3 +345,93 @@ p + geom_segment(aes(y=0, xend=degree, yend=value))+
   geom_segment(aes(y=value-0.05,yend=value,x=degree-awid/value,xend=degree))+
   geom_segment(aes(y=value-0.05,yend=value,x=degree+awid/value,xend=degree))
 
+
+
+
+
+# haciendo funciones ------------------------------------------------------
+map_wpoints<- function(map.latlon, Coord_era,Coord_anemo){
+  pmap<-autoplot(map.latlon)+
+    geom_point(data = Coord_era, aes(lon,lat), shape=23,
+               size=3, fill= "blue",colour = "black")+
+    geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+               size=3, colour="black", fill="red")+
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  print(pmap)
+  return(pmap)
+  
+}
+
+
+
+download_maps<- function(ul,lr,new_folder=TRUE, maptyp=NULL,res=40){
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }
+  else{
+    maptypes<- c("osm", "osm-bw",
+                 "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+                 "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+                 "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+                 "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+    }
+  if(length(maptypes)>1){
+    for (i in 1:length(maptypes)) {
+                                       
+                                       tryCatch({
+                                         map<- openmap(ul,lr, minNumTiles=res,
+                                                       type=maptypes[i],
+                                                       zoom=NULL)
+                                         map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+                                         if(new_folder==TRUE){
+                                           dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+                                           if(dir.exists(dirpath)){
+                                             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+                                             
+                                           }else{
+                                             dir.create(dirpath)
+                                             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+                                             
+                                           }
+                                           
+                                           
+                                         }else{save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+                                         }
+                                       }, error=function(e){})
+                                     }
+  
+  }
+  else {
+    
+      map<- openmap(ul,lr, minNumTiles=res,
+                    type=maptypes,
+                    zoom=NULL)
+      map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+      if(new_folder==TRUE){
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        dir.create(dirpath)
+        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+        
+        
+      }else{
+        if(dir.exists(here::here(paste0("NUEVO/Mapas/")))){
+          save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+          
+          
+        }else{
+          dir.create(here::here(paste0("NUEVO/Mapas/")))
+          save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+          
+        }
+        
+      }
+    
+  }
+
+}

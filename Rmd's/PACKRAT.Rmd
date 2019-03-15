@@ -1,0 +1,17 @@
+---
+title: "PACKRAT"
+author: "Óscar García Hernández"
+date: "15 de marzo de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro
+
+aupi, parece un problema que no debería afectarnos, pero yo que ahora estoy cambiando de ordenadores en la uni, me he dado cuenta de que hay un problema... los paquetes y sus versiones cambian entre ordenadores y esto no es más que una fuente de errores. ¿Cual es la solución? **PACKRAT**. De esta manera podemos crear un *snapshot* de las librerias que estamos utilizando y poder recrear el mismo entorno de trabajo en cualquier ordenador. UN PASO MÁS EN NUESTRA LABOR COMO BUENOS PROGRAMADORES. 
+
+
+Si te soy sincero todavía no llego a entender del todo ni a manejar, pero es una recurso que está ahí y que hay que empezar a utilizar tarde o temprano¡. 
