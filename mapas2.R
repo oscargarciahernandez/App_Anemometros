@@ -287,12 +287,37 @@ maptypes<- c("osm", "osm-bw",
   "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
 
 for (i in 1:length(maptypes)) {
-  map <- openmap(ul,lr, minNumTiles=40,
-                 type=maptypes[i],
-                 zoom=NULL)
-  map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-  save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+  if(file.exists(here::here(paste0("NUEVO/Mapas/",
+                                   maptypes[i],".Rdata")))){}else{
+    
+   tryCatch({
+      map<- openmap(ul,lr, minNumTiles=40,
+                         type=maptypes[i],
+                         zoom=NULL)
+    map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+   }, error=function(e){})
+                                   }
+}
+
+  
+
+
+# Probar diferentes mapas con los puntos ----------------------------------
+maptypes<- c("osm", "osm-bw",
+             "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+             "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+             "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+             "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+
+for(i in 1:length(maptypes)){
+  map_lat_lon<- load(here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+  pmap_types<-autoplot(map_lat_lon)+
+    geom_point(data = Coord_era, aes(lon,lat), 
+               size=3, colour = "white", alpha=0.7)+
+    geom_point(data = Coord_anemo, aes(lon,lat),
+               size=3, colour="red",alpha=0.7)
   
   
 }
-  
+
