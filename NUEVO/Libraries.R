@@ -10,6 +10,13 @@ library(readr)
 library(htmltools)
 library(htmlwidgets)
 library(openair)
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(OpenStreetMap)
+library(rJava)
+library(rgdal)
 
 # Funciones ERA5 ----------------------------------------------------------
 
@@ -401,3 +408,245 @@ juntar_datos2=function(datos1,datos2,interpolar=F){
   }
   return(datos3)
 }
+
+# Funciones mapas ---------------------------------------------------------
+
+#Descargar mapas seteando coordenadas
+download_maps<- function(ul,lr,
+                         new_folder=TRUE, 
+                         maptyp=NULL,
+                         res=40){
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }
+  else{
+    maptypes<- c("osm", "osm-bw",
+                 "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+                 "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+                 "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+                 "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+  }
+  if(length(maptypes)>1){
+    for (i in 1:length(maptypes)) {
+      
+      tryCatch({
+        map<- openmap(ul,lr, minNumTiles=res,
+                      type=maptypes[i],
+                      zoom=NULL)
+        map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        if(new_folder==TRUE){
+          dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+          if(dir.exists(dirpath)){
+            save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+            
+          }else{
+            dir.create(dirpath)
+            save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+            
+          }
+          
+          
+        }else{save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+        }
+      }, error=function(e){})
+    }
+    
+  }
+  else {
+    
+    map<- openmap(ul,lr, minNumTiles=res,
+                  type=maptypes,
+                  zoom=NULL)
+    map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    if(new_folder==TRUE){
+      dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+      dir.create(dirpath)
+      save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+      
+      
+    }else{
+      if(dir.exists(here::here(paste0("NUEVO/Mapas/")))){
+        save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+        
+        
+      }else{
+        dir.create(here::here(paste0("NUEVO/Mapas/")))
+        save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+        
+      }
+      
+    }
+    
+  }
+  
+}
+
+#Plotear mapas con puntos de ERA5 y anemos
+map_wpoints<- function(map.latlon, 
+                       Coord_era,
+                       Coord_anemo){
+  pmap<-autoplot(map.latlon)+
+    geom_point(data = Coord_era, aes(lon,lat), shape=23,
+               size=3, fill= "blue",colour = "black")+
+    geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+               size=3, colour="black", fill="red")+
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  print(pmap)
+  return(pmap)
+  
+}
+
+
+#Rosa de los vientos para plotear sobre mapas
+plot.windrose <- function(data,
+                          spd,
+                          dir,
+                          spdres = 0.5,
+                          dirres = 22.5,
+                          spdmin = 0,
+                          spdmax = 15,
+                          spdseq = NULL,
+                          palette,
+                          countmax = NA,
+                          opacity=0.6,
+                          border_color="NA"){
+  
+  
+  # Look to see what data was passed in to the function
+  if (is.numeric(spd) & is.numeric(dir)){
+    # assume that we've been given vectors of the speed and direction vectors
+    data <- data.frame(spd = spd,
+                       dir = dir)
+    spd = "spd"
+    dir = "dir"
+  }
+  # Tidy up input data ----
+  n.in <- NROW(data)
+  dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
+  data[[spd]][dnu] <- NA
+  data[[dir]][dnu] <- NA
+  data<-data[,c("Date","lon","lat",spd,dir)]
+  
+  # figure out the wind speed bins ----
+  if (missing(spdseq)){
+    spdseq <- seq(spdmin,spdmax,spdres)
+  } 
+  # get some information about the number of bins, etc.
+  n.spd.seq <- length(spdseq)
+  n.colors.in.range <- n.spd.seq - 1
+  
+  # create the color map
+  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),
+                                                min(9,n.colors.in.range)),
+                                            palette ))(n.colors.in.range)
+  
+  if (max(data[[spd]],na.rm = TRUE) > spdmax){    
+    spd.breaks <- c(spdseq,
+                    max(data[[spd]],na.rm = TRUE))
+    spd.labels <- c(paste(c(spdseq[1:n.spd.seq-1]),
+                          '-',
+                          c(spdseq[2:n.spd.seq])),
+                    paste(spdmax,
+                          "-",
+                          max(data[[spd]],na.rm = TRUE)))
+    spd.colors <- c(spd.colors, "grey50")
+  } else{
+    spd.breaks <- spdseq
+    spd.labels <- paste(c(spdseq[1:n.spd.seq-1]),
+                        '-',
+                        c(spdseq[2:n.spd.seq]))    
+  }
+  data$spd.binned <- cut(x = data[[spd]],
+                         breaks = spd.breaks,
+                         labels = spd.labels,
+                         ordered_result = TRUE)
+  # clean up the data
+  data <- na.omit(data)
+  
+  # figure out the wind direction bins
+  dir.breaks <- c(-dirres/2,
+                  seq(dirres/2, 360-dirres/2, by = dirres),
+                  360+dirres/2)  
+  dir.labels <- c(paste(360-dirres/2,"-",dirres/2),
+                  paste(seq(dirres/2, 360-3*dirres/2, by = dirres),
+                        "-",
+                        seq(3*dirres/2, 360-dirres/2, by = dirres)),
+                  paste(360-dirres/2,"-",dirres/2))
+  # assign each wind direction to a bin
+  dir.binned <- cut(data[[dir]],
+                    breaks = dir.breaks,
+                    ordered_result = TRUE)
+  levels(dir.binned) <- dir.labels
+  data$dir.binned <- dir.binned
+  
+  
+  
+  # deal with change in ordering introduced somewhere around version 2.2
+  if(packageVersion("ggplot2") > "2.2"){    
+    cat("ggplot2 version > V2.2")
+    data$spd.binned = with(data, factor(spd.binned, levels = rev(levels(spd.binned))))
+    spd.colors = rev(spd.colors)
+  }
+  
+  # create the plot ----
+  p.windrose <- ggplot(data = data,
+                       aes(x = dir.binned,
+                           fill = spd.binned)) +
+    geom_bar(width = 1,color=border_color, size=0.001, alpha=opacity) + 
+    scale_x_discrete(drop = FALSE,
+                     labels = waiver()) + 
+    theme(legend.position = "none",
+          plot.background = element_rect(fill= "transparent", colour= NA),
+          panel.background = element_rect(fill= "transparent", colour = NA),
+          panel.grid.major = element_line(colour = "NA"), 
+          axis.line = element_line(colour = NA),
+          axis.text.y=element_blank(), 
+          axis.ticks.y = element_blank(), 
+          axis.text.x = element_blank()) +
+    xlab("")+ ylab("") +
+    coord_polar(start = -((dirres/2)/360) * 2*pi)+
+    scale_fill_manual(name = "Wind Speed (m/s)", 
+                      values = spd.colors,
+                      drop = FALSE)
+  
+  # adjust axes if required
+  if (!is.na(countmax)){
+    p.windrose <- p.windrose +
+      ylim(c(0,countmax))
+  }
+  
+  # print the plot
+  print(p.windrose)  
+  
+  # return the handle to the wind rose
+  return(p.windrose)
+}
+
+#Ajuste de parametros windrose para plotear sobre mapa
+#Esto devuele formato ggplot¡¡
+WR_parameters<- function(data,
+                         anchura=0.06, 
+                         opacidad=0.5, 
+                         paleta){
+  p_ros<- data%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
+                                                                    dir="uv_dwi",
+                                                                    dirres = 22.5,
+                                                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                                                    palette = paleta,
+                                                                    opacity = opacidad))%>%
+    mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                             x = lon-anchura,      # change from 1 to other 
+                                             y = lat-anchura,      # values if necessary,
+                                             xmax = lon+anchura,   # depending on the map's
+                                             ymax = lat+anchura))) # resolution.
+  
+  
+  return(p_ros)
+}
+

@@ -104,8 +104,10 @@ while(TRUE){
 
 
 pmap<-autoplot(map.latlon)+
-  geom_point(data = Coord_era, aes(lon,lat), size=3, colour = "white", alpha=0.7)+
-  geom_point(data = Coord_anemo, aes(lon,lat),size=3, colour="red",alpha=0.7)
+  geom_point(data = Coord_era, aes(lon,lat), shape=23,
+             size=3, fill= "blue",colour = "black")+
+  geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+             size=3, colour="black", fill="red")
 
 
 
@@ -120,18 +122,11 @@ prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$l
 
 source(here::here('windrose_sin_nada.R'))
 
-#hay más paletas pero estas son las secuenciales...
-#ideales para representar valores progresivos
-# las otras paletas estan preparadas para representar mediante colores
-#diferentes categorías o señalar valores críticos en el mid-range
-
-Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
-            "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
-            "YlGnBu" ,"YlOrBr" ,"YlOrRd")
 
 
 
 prueba<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
+
 
 p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
                                                                     dir="uv_dwi",
@@ -144,16 +139,299 @@ p_ros<- prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv
                                            xmax = lon+0.07,   # depending on the map's
                                            ymax = lat+0.07))) # resolution.
 
-pmap2+p_ros$subgrobs
+#PLOTEAR Y GUARDAR
+#pmap2+p_ros$subgrobs
   
-ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
+#ggsave(paste0(here::here("NUEVO/Mapas//"),"mapaprueba.tiff"), device = "tiff", dpi=1200,width =7, height =7, units = 'in')
   
   
+
+# Mejorando calidad de las gráficas ---------------------------------------
+
  
 
-prueba%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
-                                                            dir="uv_dwi",
-                                                            dirres = 22.5,
-                                                            spdseq = c(0,0.3,1,2,3,5,7,10,15), 
-                                                            palette = "PuRd"))
+WR_parameters<- function(data,anchura=0.06, opacidad=0.5, paleta){
+  p_ros<- data%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = "uv_wind",
+                                                                      dir="uv_dwi",
+                                                                      dirres = 22.5,
+                                                                      spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                                                      palette = paleta,
+                                                                      opacity = opacidad))%>%
+    mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                             x = lon-anchura,      # change from 1 to other 
+                                             y = lat-anchura,      # values if necessary,
+                                             xmax = lon+anchura,   # depending on the map's
+                                             ymax = lat+anchura))) # resolution.
   
+  
+  return(p_ros)
+}
+
+## Para la prueba plotearemos solamente 1 rosa. La central.
+prueba_1<- prueba[which(prueba$lon==(-2.5) & round(prueba$lat, digits = 1)== 43.2),]
+
+
+
+
+######Cambiando paletas
+
+#hay más paletas pero estas son las secuenciales...
+#ideales para representar valores progresivos
+# las otras paletas estan preparadas para representar mediante colores
+#diferentes categorías o señalar valores críticos en el mid-range
+
+Paletas<- c("Blues", "BuGn", "BuPu", "GnBu" , "Greys", "Oranges", "OrRd", 
+            "PuBu", "PuBuGn", "PuRd", "Purples", "RdPu", "Reds", "YlGn", 
+            "YlGnBu" ,"YlOrBr" ,"YlOrRd")
+
+Paletas_div<- c("BrBG", "PiYG", "PRGn", "PuOr", "RdBu","RdGy","RdYlBu",
+                "RdYlGn", "Spectral")
+
+for (i in 1:length(Paletas)) {
+  p_ros<- WR_parameters(data = prueba_1, paleta = Paletas[i])
+  pmap2+p_ros$subgrobs
+  
+  
+  
+  if(dir.exists(here::here('NUEVO/Mapas/Paleta'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/Paleta//"),"paleta",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/Paleta'))
+    ggsave(paste0(here::here("NUEVO/Mapas/Paleta//"),"paleta",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+  }
+  
+  
+}
+
+for (i in 1:length(Paletas_div)) {
+  p_ros<- WR_parameters(data = prueba_1, paleta = Paletas_div[i])
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(here::here("NUEVO/Mapas//"),"paleta_div",i,".tiff"),
+         device = "tiff", dpi=200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}
+
+######Cambiando opacidad
+opacidad_vec<- seq(0,1, 0.05)
+
+for (i in 1:length(opacidad_vec)) {
+  p_ros<- WR_parameters(data = prueba_1, opacidad = opacidad_vec[i], paleta = Paletas[1])
+  pmap2+p_ros$subgrobs
+  
+  if(dir.exists(here::here('NUEVO/Mapas/Opacidad'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/Opacidad//"),"opacidad",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/Opacidad'))
+    ggsave(paste0(here::here("NUEVO/Mapas/Opacidad//"),"opacidad",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
+
+  
+  
+}
+
+
+######Cambiando opacidad
+anchura_vec<- seq(0.05,0.1, 0.005)
+
+for (i in 1:length(opacidad_vec)) {
+  p_ros<- WR_parameters(data = prueba, anchura = anchura_vec[i], paleta = Paletas[1] )
+  pmap2+p_ros$subgrobs
+  
+  
+  if(dir.exists(here::here('NUEVO/Mapas/anchura'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/anchura//"),"anchura",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/anchura'))
+    ggsave(paste0(here::here("NUEVO/Mapas/anchura//"),"anchura",i,".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
+  
+  
+}
+
+
+
+
+# Descargar todos los tipos de mapas con buena calidad --------------------
+
+maptypes<- c("osm", "osm-bw",
+  "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+  "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+  "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+  "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+
+for (i in 1:length(maptypes)) {
+  if(file.exists(here::here(paste0("NUEVO/Mapas/",
+                                   maptypes[i],".Rdata")))){}else{
+    
+   tryCatch({
+      map<- openmap(ul,lr, minNumTiles=40,
+                         type=maptypes[i],
+                         zoom=NULL)
+    map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+   }, error=function(e){})
+                                   }
+}
+
+  
+
+
+# Probar diferentes mapas con los puntos ----------------------------------
+maps<- list.files(here::here('NUEVO/Mapas/')) %>% .[str_detect(.,".Rdata")]
+
+for(i in 1:length(maps)){
+  #al ejecutar load, se carga un objeto llamado map.latlon
+  load(here::here(paste0("NUEVO/Mapas/",maps[i])))
+  pmap_types<-autoplot(map.latlon)+
+    geom_point(data = Coord_era, aes(lon,lat), 
+               size=3, colour = "white", alpha=0.7)+
+    geom_point(data = Coord_anemo, aes(lon,lat),
+               size=3, colour="red",alpha=0.7)
+  if(dir.exists(here::here('NUEVO/Mapas/diff_type'))){
+    ggsave(paste0(here::here("NUEVO/Mapas/diff_type//"),maps[i],".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }else{
+    dir.create(here::here('NUEVO/Mapas/diff_type'))
+    ggsave(paste0(here::here("NUEVO/Mapas/diff_type//"),maps[i],".tiff"),
+           device = "tiff", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+  }
+  
+  
+}
+
+
+
+
+# Representar vectores ----------------------------------------------------
+
+base<- ggplot(prueba_1, aes(x="uv_dwi", y="uv_wind"))
+p<- base + coord_polar()
+
+awid <- 2
+p + geom_segment(aes(y=0, xend=degree, yend=value))+
+  geom_segment(aes(y=value-0.05,yend=value,x=degree-awid/value,xend=degree))+
+  geom_segment(aes(y=value-0.05,yend=value,x=degree+awid/value,xend=degree))
+
+
+
+
+
+# haciendo funciones ------------------------------------------------------
+map_wpoints<- function(map.latlon, Coord_era,Coord_anemo){
+  pmap<-autoplot(map.latlon)+
+    geom_point(data = Coord_era, aes(lon,lat), shape=23,
+               size=3, fill= "blue",colour = "black")+
+    geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+               size=3, colour="black", fill="red")+
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  print(pmap)
+  return(pmap)
+  
+}
+
+
+
+download_maps<- function(ul,lr,new_folder=TRUE, maptyp=NULL,res=40){
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }
+  else{
+    maptypes<- c("osm", "osm-bw",
+                 "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
+                 "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
+                 "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
+                 "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+    }
+  if(length(maptypes)>1){
+    for (i in 1:length(maptypes)) {
+                                       
+                                       tryCatch({
+                                         map<- openmap(ul,lr, minNumTiles=res,
+                                                       type=maptypes[i],
+                                                       zoom=NULL)
+                                         map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+                                         if(new_folder==TRUE){
+                                           dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+                                           if(dir.exists(dirpath)){
+                                             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+                                             
+                                           }else{
+                                             dir.create(dirpath)
+                                             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+                                             
+                                           }
+                                           
+                                           
+                                         }else{save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
+                                         }
+                                       }, error=function(e){})
+                                     }
+  
+  }
+  else {
+    
+      map<- openmap(ul,lr, minNumTiles=res,
+                    type=maptypes,
+                    zoom=NULL)
+      map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+      if(new_folder==TRUE){
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        dir.create(dirpath)
+        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+        
+        
+      }else{
+        if(dir.exists(here::here(paste0("NUEVO/Mapas/")))){
+          save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+          
+          
+        }else{
+          dir.create(here::here(paste0("NUEVO/Mapas/")))
+          save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+          
+        }
+        
+      }
+    
+  }
+
+}
