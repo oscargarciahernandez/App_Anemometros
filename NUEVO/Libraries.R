@@ -346,7 +346,7 @@ juntar_datos=function(datos_anemos,datos_era){
   return(datos_juntos)
 }
 
-juntar_datos2=function(datos1,datos2){
+juntar_datos2=function(datos1,datos2,interpolar=F){
   #Esta funcion recoge dos dataframes de datos (1 y 2), y devuelve otro (3)
   #(3) contiene informacion de la epoca en la que se solapan (1) y (2)
   #(1) marca las fechas a usar. A cada fecha de (1) se le asigna la mas cercana de (2)
@@ -391,9 +391,13 @@ juntar_datos2=function(datos1,datos2){
   datos3[1:nrow(datos1),1:ncol(datos1)]=datos1  #Rellenar la mitad izquierda de datos3, la relativa a la aprte solapada de datos1
   
   #Para cada fecha de datos1, buscamos el dato de datos2 mas cercano, y asi vamos rellenando datos3
-  for (i in 1:nrow(datos3)) {
-    n=(datos2$Date-datos3$Date[i]) %>% as.numeric %>% abs %>% which.min
-    datos3[i,(ncol(datos1)+1):ncol(datos3)]=datos2[n,]
+  if (isTRUE(interpolar)) {
+  stop("Todavia no se ha desarrollado para interpolar = TRUE !")
+  }else{
+    for (i in 1:nrow(datos3)) {
+      n=(datos2$Date-datos3$Date[i]) %>% as.numeric %>% abs %>% which.min
+      datos3[i,(ncol(datos1)+1):ncol(datos3)]=datos2[n,]
+    }
   }
   return(datos3)
 }
