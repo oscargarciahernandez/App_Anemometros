@@ -119,7 +119,7 @@ ERA5_cutdata<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord
 
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
 
-nombre<- str_remove(list.files(dir.path), ".Rdata")
+nombre<- str_remove(list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")], ".Rdata")
 
 p_ros<- WR_parameters(data = ERA5_cutdata, 
                       anchura = 0.06, 
