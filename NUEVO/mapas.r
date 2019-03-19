@@ -62,8 +62,8 @@ if(w > 0){w<- w - incr}else{w<- w- incr}
 
 
 
-ul <- c(n,w)  #Upper Left
-lr <- c(s,e)  #Lower Right
+ul <- round(c(n,w),digits = 2)  #Upper Left
+lr <- round(c(s,e), digits = 2)  #Lower Right
 
 
 
@@ -89,7 +89,7 @@ dir.path<- map_folder[2]
 
 #plotear y guardar los ploteos con los puntos
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
-nombre<- str_remove(list.files(dir.path), ".Rdata")
+nombre<- str_remove(list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")], ".Rdata")
 
 for (i in 1: length(map_files)) {
   
