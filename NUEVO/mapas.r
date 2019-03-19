@@ -2,7 +2,7 @@ library(here)
 source(here::here("NUEVO/Libraries.R"))
 
 
-# importar  ----------------------------------------------------------------
+# Importar  ----------------------------------------------------------------
 
 
 #Importar ERA5_df
@@ -88,7 +88,7 @@ dir.path<- map_folder[2]
 
 
 #plotear y guardar los ploteos con los puntos
-map_files<- list.files(dir.path, full.names = TRUE)
+map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
 nombre<- str_remove(list.files(dir.path), ".Rdata")
 
 for (i in 1: length(map_files)) {
@@ -117,8 +117,16 @@ for (i in 1: length(map_files)) {
 #ploteo mapas con rosas de los vientos
 ERA5_cutdata<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
 
-map_files<- list.files(dir.path, full.names = TRUE)
+map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
+
 nombre<- str_remove(list.files(dir.path), ".Rdata")
+
+p_ros<- WR_parameters(data = ERA5_cutdata, 
+                      anchura = 0.06, 
+                      paleta = "YlGnBu",
+                      opacidad = 0.5)
+
+
 
 for (i in 1: length(map_files)) {
   
@@ -131,11 +139,7 @@ for (i in 1: length(map_files)) {
                                      panel.grid.minor=element_blank(),plot.background=element_blank())
   
   
-  p_ros<- WR_parameters(data = ERA5_cutdata, 
-                        anchura = 0.06, 
-                        paleta = "YlGnBu" )
-  
-  
+
   pmap2+p_ros$subgrobs
   
   ggsave(paste0(dir.path,'/',nombre[i],"_WR.tiff"),
