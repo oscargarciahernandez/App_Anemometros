@@ -53,7 +53,7 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-incr<- 0.05
+incr<- 0.06
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
