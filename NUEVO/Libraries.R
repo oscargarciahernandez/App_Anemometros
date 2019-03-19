@@ -353,10 +353,12 @@ juntar_datos=function(datos_anemos,datos_era){
   return(datos_juntos)
 }
 
-juntar_datos2=function(datos1,datos2,interpolar=F){
+juntar_datos2=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Date")){
   #Esta funcion recoge dos dataframes de datos (1 y 2), y devuelve otro (3)
   #(3) contiene informacion de la epoca en la que se solapan (1) y (2)
   #(1) marca las fechas a usar. A cada fecha de (1) se le asigna la mas cercana de (2)
+  
+  #Explicación nombres_col_fechas: vector en el que especificamos los nombres de las columnas donde estan las fechas en nuestros datos.
   
   #Analizar los inputs.Errores?
   if (!is.data.frame(datos1)) {stop("El primer input no es un dataframe")}
@@ -364,37 +366,43 @@ juntar_datos2=function(datos1,datos2,interpolar=F){
   if (nrow(datos1)==0) {stop("El primer input tiene 0 lineas")}
   if (nrow(datos2)==0) {stop("El segundo input tiene 0 lineas")}
   #Donde estan las fechas en cada uno? (Estaria bien algun dia mirar el tipo de cada columna, no el nombre, pero ahora se me atraganta)
-  col_fechas1=which(colnames(datos1)=="Date")
-  if (!is.numeric(col_fechas1)) {stop("El primer input no tiene ninguna columna llamada \"Date\"")}
-  col_fechas2=which(colnames(datos2)=="Date")
-  if (!is.numeric(col_fechas2)) {stop("El segundo input no tiene ninguna columna llamada \"Date\"")}
+  if (!is.vector(nombres_col_fechas)) {stop("nombres_col_fechas no es un vector")}
+  if (length(nombres_col_fechas)!=2) {stop("nombres_col_fechas tiene que tener 2 elementos")}
+  if (length(nombres_col_fechas)!=2) {stop("nombres_col_fechas tiene que tener 2 elementos")}
+  if (sum(lapply(nombres_col_fechas, class)=="character")!=2) {stop("nombres_col_fechas solo puede contener strings")}
+  if (sum(colnames(datos1)==nombres_col_fechas[1])==0) {stop(paste0("El primer input no tiene ninguna columna llamada \"",nombres_col_fechas[1],"\""))}
+  if (sum(colnames(datos2)==nombres_col_fechas[2])==0) {stop(paste0("El segundo input no tiene ninguna columna llamada \"",nombres_col_fechas[2],"\""))}
+  if (sum(colnames(datos1)==nombres_col_fechas[1])>1) {stop(paste0("El primer input tiene varias columnas llamadas \"",nombres_col_fechas[1],"\". Solo puede haber una"))}
+  if (sum(colnames(datos2)==nombres_col_fechas[2])>1) {stop(paste0("El segundo input tiene varias columnas llamadas \"",nombres_col_fechas[2],"\". Solo puede haber una"))}
+  col_fechas1=which(colnames(datos1)==nombres_col_fechas[1])
+  col_fechas2=which(colnames(datos2)==nombres_col_fechas[2])
   
   #De donde a donde van nuestros datos?
-  fechamin=max(c(range(datos1$Date)[1],range(datos2$Date)[1]))
-  fechamax=min(c(range(datos1$Date)[2],range(datos2$Date)[2]))
+  fechamin=max(c(range(datos1[,col_fechas1])[1],range(datos2[,col_fechas2])[1]))
+  fechamax=min(c(range(datos1[,col_fechas1])[2],range(datos2[,col_fechas2])[2]))
   if (fechamin>=fechamax) {stop("Los datos no se solapan en el tiempo")}
   
   #Cuales son las fechas del primer input mas cercanas a los limites de nuestros datos?
   #Fechainicio?
-  if (fechamin==range(datos1$Date)[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+  if (fechamin==range(datos1[,col_fechas1])[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
     fechainicio=fechamin
   }else{
-    pos=(datos1$Date-fechamin) %>% as.numeric %>% abs %>% which.min
-    fechainicio=datos1$Date[pos]
+    pos=(datos1[,col_fechas1]-fechamin) %>% as.numeric %>% abs %>% which.min
+    fechainicio=datos1[,col_fechas1][pos]
   }
   #Fechafinal?
-  if (fechamax==range(datos1$Date)[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
+  if (fechamax==range(datos1[,col_fechas1])[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
     fechafinal=fechamax
   }else{
-    pos=(datos1$Date-fechamax) %>% as.numeric %>% abs %>% which.min
-    fechafinal=datos1$Date[pos]
+    pos=(datos1[,col_fechas1]-fechamax) %>% as.numeric %>% abs %>% which.min
+    fechafinal=datos1[,col_fechas1][pos]
   }
   
-  #Ahora que tenemos las fechas podemos a crear datos3
+  #Ahora que tenemos las fechas podemos crear datos3
   datos3=cbind(datos1[1,],datos2[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
   datos3[1,]=NA   #Vaciamos porseaca
   colnames(datos3)[c(col_fechas1,ncol(datos1)+col_fechas2)]=c("Date","Date2")   #Diferenciar entre el $Date de datos1 y $Date de datos2
-  datos1=datos1[which(datos1$Date==fechainicio):which(datos1$Date==fechafinal),]  #Coger las fechas de datos1 que esten en la parte solapada
+  datos1=datos1[which(datos1[,col_fechas1]==fechainicio):which(datos1[,col_fechas1]==fechafinal),]  #Coger las fechas de datos1 que esten en la parte solapada
   datos3[1:nrow(datos1),1:ncol(datos1)]=datos1  #Rellenar la mitad izquierda de datos3, la relativa a la aprte solapada de datos1
   
   #Para cada fecha de datos1, buscamos el dato de datos2 mas cercano, y asi vamos rellenando datos3
@@ -402,7 +410,7 @@ juntar_datos2=function(datos1,datos2,interpolar=F){
   stop("Todavia no se ha desarrollado para interpolar = TRUE !")
   }else{
     for (i in 1:nrow(datos3)) {
-      n=(datos2$Date-datos3$Date[i]) %>% as.numeric %>% abs %>% which.min
+      n=(datos2[,col_fechas2]-datos3[,col_fechas1][i]) %>% as.numeric %>% abs %>% which.min
       datos3[i,(ncol(datos1)+1):ncol(datos3)]=datos2[n,]
     }
   }
