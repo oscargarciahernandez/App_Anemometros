@@ -418,8 +418,7 @@ download_maps<- function(ul,lr,
                          res=40){
   if(is.character(maptyp)){
     maptypes<- maptyp
-  }
-  else{
+  }else{
     maptypes<- c("osm", "osm-bw",
                  "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
                  "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
@@ -427,21 +426,44 @@ download_maps<- function(ul,lr,
                  "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
   }
   if(length(maptypes)>1){
+    res1=res
     for (i in 1:length(maptypes)) {
+      res=res1
+      k=1
       
       tryCatch({
-        map<- openmap(ul,lr, minNumTiles=res,
-                      type=maptypes[i],
-                      zoom=NULL)
-        map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        while(TRUE){
+          tryCatch({
+            map1<- openmap(ul,lr, minNumTiles=res,
+                           type=maptypes,
+                           zoom=NULL)
+            
+          },error=function(e){cat("Error Java")})
+          
+          if(!exists("map1")){
+            res<- res-k
+            k<- k+1
+            print("Bajando minNumtiles")
+          }else{
+            print(paste0("Descargado con minNumtiles=", res))
+            break}
+        }
+        map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        
         if(new_folder==TRUE){
           dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
           if(dir.exists(dirpath)){
             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+            print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
+            
+            rm(map1)
             
           }else{
             dir.create(dirpath)
             save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+            print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
+            
+            rm(map1)
             
           }
           
@@ -451,27 +473,49 @@ download_maps<- function(ul,lr,
       }, error=function(e){})
     }
     
-  }
-  else {
+  }else{
+    while(TRUE){
+      tryCatch({
+        map1<- openmap(ul,lr, minNumTiles=res,
+                      type=maptypes,
+                      zoom=NULL)
+        
+      },error=function(e){cat("Error Java")})
+      
+      if(!exists("map1")){
+        res<- res-1
+        print("Bajando minNumtiles")
+      }else{
+        print(paste0("Descargado con minNumtiles=", res))
+        break}
+    }
+    map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     
-    map<- openmap(ul,lr, minNumTiles=res,
-                  type=maptypes,
-                  zoom=NULL)
-    map.latlon <- openproj(map, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     if(new_folder==TRUE){
       dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
-      dir.create(dirpath)
-      save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+      if(dir.exists(dirpath)){
+        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
+        
+      }else{
+        dir.create(dirpath)
+        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
+      }
+      
+      
       
       
     }else{
       if(dir.exists(here::here(paste0("NUEVO/Mapas/")))){
         save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+        print(paste0("Guardado ",paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
         
         
       }else{
         dir.create(here::here(paste0("NUEVO/Mapas/")))
         save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
+        print(paste0("Guardado ",paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
         
       }
       
