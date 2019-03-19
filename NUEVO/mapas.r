@@ -87,6 +87,7 @@ map_folder<- find_mapfolder()
 dir.path<- map_folder[2]
 
 
+#plotear y guardar los ploteos con los puntos
 map_files<- list.files(dir.path, full.names = TRUE)
 nombre<- str_remove(list.files(dir.path), ".Rdata")
 
@@ -105,3 +106,43 @@ for (i in 1: length(map_files)) {
   
   
 }
+
+
+
+
+#La anchura, la paleta de colores y la opcidad todavía estan por afinar
+#♠Mapas2.R está preparado para plotear las rosas cambiando estos parámetros y poder comparar
+#Se crean mogollón de carpetas con las imagenes de diferentes formatos. 
+
+#ploteo mapas con rosas de los vientos
+ERA5_cutdata<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord_era$lat),]
+
+map_files<- list.files(dir.path, full.names = TRUE)
+nombre<- str_remove(list.files(dir.path), ".Rdata")
+
+for (i in 1: length(map_files)) {
+  
+  load(file = map_files[i])
+  pmap2<-autoplot(map.latlon)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                     axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                     axis.title.x=element_blank(),
+                                     axis.title.y=element_blank(),legend.position="none",
+                                     panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                     panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  
+  p_ros<- WR_parameters(data = ERA5_cutdata, 
+                        anchura = 0.06, 
+                        paleta = "YlGnBu" )
+  
+  
+  pmap2+p_ros$subgrobs
+  
+  ggsave(paste0(dir.path,'/',nombre[i],"_WR.tiff"),
+         device = "tiff", dpi=1200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}
+
