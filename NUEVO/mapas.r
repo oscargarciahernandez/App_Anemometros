@@ -80,4 +80,28 @@ download_maps(ul,lr)
 
 # Plotear mapas -----------------------------------------------------------
 
+#Buscamos las carpetas que contienen los mapas
+map_folder<- find_mapfolder()
 
+#Aquí seleccionamos la carpeta que queremos plotear
+dir.path<- map_folder[2]
+
+
+map_files<- list.files(dir.path, full.names = TRUE)
+nombre<- str_remove(list.files(dir.path), ".Rdata")
+
+for (i in 1: length(map_files)) {
+  
+  load(file = map_files[i])
+  ggmap1<- map_wpoints(map.latlon = map.latlon, 
+                       Coord_era = Coord_era, 
+                       Coord_anemo = Coord_anemo)
+  ggmap1
+  
+  ggsave(paste0(dir.path,'/',nombre[i],".tiff"),
+         device = "tiff", dpi=1200,
+         width =7, height =7, 
+         units = 'in')
+  
+  
+}

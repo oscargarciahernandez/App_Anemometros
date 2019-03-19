@@ -702,3 +702,12 @@ WR_parameters<- function(data,
   return(p_ros)
 }
 
+
+
+
+find_mapfolder<- function(){
+  map_folder<- list.dirs(here::here("NUEVO/Mapas/"))
+  map_folder1<- str_split(map_folder, "/")
+  map_folder2<- map_folder[str_detect(sapply(map_folder1, function(x) x[length(x)]),"[[:digit:]]")]
+  return(map_folder2)
+}
