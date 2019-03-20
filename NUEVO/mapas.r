@@ -74,7 +74,7 @@ lr <- round(c(s,e), digits = 2)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr)
+download_maps(ul,lr, maptyp = "bing")
 
 
 
