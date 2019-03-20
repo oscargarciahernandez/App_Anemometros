@@ -215,7 +215,7 @@ rm(n)
 
 #Rosas de los vientos
 windRose(datos_era,ws = "uv_wind",wd="uv_dwi",paddle = F,key.header = "uv_wind")
-windRose(datos_era,ws = "wind",wd="dwi",paddle = F,key.header = "wind")
+#windRose(datos_era,ws = "wind",wd="dwi",paddle = F,key.header = "wind")
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("coordenadas_era")) {
@@ -238,6 +238,32 @@ load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 datos_uni=juntar_datos2(datos_era,datos_anemos)
+
+#Separar por direcciones de anemos
+datos_uni_dir=list()
+dirs=unique(datos_uni$Dir)      #Que direcciones tenemos en el anemo?
+dirs=dirs[-which(is.na(dirs))]  #Quitar NA
+dirs=as.numeric(dirs)           #ESTAN EN CHARACTER!  Cambiar a numerico para que se ordenen bien
+dirs=dirs[order(dirs)]          #Ordenar de menor a mayor
+for (i in 1:length(dirs)) {
+  datos_uni_dir[[i]]=datos_uni[which(datos_uni$Dir==dirs[i]),]
+}
+names(datos_uni_dir)=dirs       #Los elementos de la lista se llamaran como la direcion que les corresponde
+
+#Correlaciones por direcciones
+cors_dir=data.frame()  #Aqui iran las correlaciones correspondientes a cada direccion
+cors_dir[1:length(datos_uni_dir),1]=names(datos_uni_dir)  #Col 1=las direcciones
+for (i in 1:length(datos_uni_dir)) {  
+  cors_dir[i,2]=cor(datos_uni_dir[[i]]$uv_wind,datos_uni_dir[[i]]$Mean,"na") #Col 2=las correlaciones
+  cors_dir[i,3]=nrow(datos_uni_dir[[i]])*100/sum(unlist(lapply(datos_uni_dir,nrow)))  #Col 3=porcentaje de datos en esa direccion
+}
+colnames(cors_dir)=c("Dir","cor","%")
+
+windRose(mydata = datos_uni,ws="Mean",wd = "Dir",paddle = F)
+windRose(mydata = datos_uni,ws="uv_wind",wd="uv_dwi",paddle = F)
+windRose(mydata = datos_uni,ws="Mean",wd = "Dir",ws2="uv_wind",wd2="uv_dwi",paddle = F)
+
+
 
 n1=500
 n2=nrow(datos_uni)
