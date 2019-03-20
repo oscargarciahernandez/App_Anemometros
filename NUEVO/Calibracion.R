@@ -269,3 +269,9 @@ n1=500
 n2=nrow(datos_uni)
 plot(datos_uni$Date[n1:n2],datos_uni$Mean[n1:n2],type="l")
 lines(datos_uni$Date[n1:n2],datos_uni$uv_wind[n1:n2],col="grey")
+
+
+
+
+
+#cut(datos_uni_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_uni_dir)),0)) 
