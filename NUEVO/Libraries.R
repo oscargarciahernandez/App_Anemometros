@@ -420,8 +420,7 @@ juntar_datos2=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","D
 # Funciones mapas ---------------------------------------------------------
 
 #Descargar mapas seteando coordenadas
-download_maps<- function(ul,lr,
-                         new_folder=TRUE, 
+download_maps<- function(ul,lr, 
                          maptyp=NULL,
                          res=40){
   if(is.character(maptyp)){
@@ -458,26 +457,15 @@ download_maps<- function(ul,lr,
         }
         map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
         
-        if(new_folder==TRUE){
-          dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
-          if(dir.exists(dirpath)){
-            save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
-            print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
-            
-            rm(map1)
-            
-          }else{
-            dir.create(dirpath)
-            save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
-            print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
-            
-            rm(map1)
-            
-          }
+       
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        
+        if(!dir.exists(dirpath)){dir.create(dirpath)}
+        save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
           
           
-        }else{save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes[i],".Rdata")))
-        }
+       
       }, error=function(e){})
     }
     
@@ -497,41 +485,21 @@ download_maps<- function(ul,lr,
         print(paste0("Descargado con minNumtiles=", res))
         break}
     }
+    
     map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     
-    if(new_folder==TRUE){
+    
       dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
-      if(dir.exists(dirpath)){
-        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
-        print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
-        
-      }else{
-        dir.create(dirpath)
-        save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
-        print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
-      }
       
-      
-      
-      
-    }else{
-      if(dir.exists(here::here(paste0("NUEVO/Mapas/")))){
-        save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
-        print(paste0("Guardado ",paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
-        
-        
-      }else{
-        dir.create(here::here(paste0("NUEVO/Mapas/")))
-        save(map.latlon, file=here::here(paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
-        print(paste0("Guardado ",paste0("NUEVO/Mapas/",maptypes,"_",ul,lr,".Rdata")))
-        
-      }
+      if(!dir.exists(dirpath)){dir.create(dirpath)}
+      save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+      print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
       
     }
     
-  }
-  
 }
+  
+
 
 #Plotear mapas con puntos de ERA5 y anemos
 map_wpoints<- function(map.latlon, 
