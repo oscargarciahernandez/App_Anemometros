@@ -172,7 +172,7 @@ colnames(Coordenadas_anemos)=c("lat","lon")
 Coordenadas_anemos[1,]=c(43.179389,-2.488504)
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
-if (!exists("coordenadas_era")) {
+if (!exists("Coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
 }
 #Ordenarlos de cercanos a lejanos
@@ -218,7 +218,7 @@ windRose(datos_era,ws = "uv_wind",wd="uv_dwi",paddle = F,key.header = "uv_wind")
 #windRose(datos_era,ws = "wind",wd="dwi",paddle = F,key.header = "wind")
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
-if (!exists("coordenadas_era")) {
+if (!exists("Coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
 }
 #Ordenarlos de cercanos a lejanos
