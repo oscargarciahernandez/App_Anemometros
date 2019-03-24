@@ -8,109 +8,14 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 #Encontrar errores datos anemos----
 
-
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
-
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
-mean_max=50/3.6     #[m/s]
-gust_max=200/3.6    #[m/s]
-dif_max_gust=30/3.6 #[m/s]
-dif_max_mean=20/3.6 #[m/s]
-dif_min=0/3.6       #[m/s]
-tomas_dif_min=20    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
+#Encontrar posiciones de mediciones supuestamente erroneas
+lista_pos_errores=filtrar_datos(datos_anemos,desglosar = TRUE)
+N_mean=c(lista_pos_errores$N1_mean,lista_pos_errores$N2_mean,lista_pos_errores$N3_mean)
+N_gust=c(lista_pos_errores$N1_gust,lista_pos_errores$N2_gust,lista_pos_errores$N3_gust)
 
-N_mean=c() #Aqui guardamos las posiciones de las mediciones de mean que parecen errores.
-N_gust=c()
-
-#Fitros de viento medio
-#N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<=0 ))   #<=0
-N_mean=cbind(N_mean,which(datos_anemos$Mean>mean_max | datos_anemos$Mean<0 ))     #<0
-
-#N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<=0))     #<=0
-N_gust=cbind(N_gust,which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0))       #<0
-
-#Nivel 2 -- coherencia temporal del dato 
-#Step test:
-#Velocidad diferencia con el dato anterior de dif_max m/s tanto si la diferencia es + como si es -
-#Se lo pasamos al mean
-for (i in 2:length(datos_anemos$Mean)){
-  difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
-  if (is.na(difer)==FALSE & abs(difer)>dif_max_mean){
-    N_mean[length(N_mean)+1]=i
-  }
-}
-
-#Ahora al gust
-for (i in 2:length(datos_anemos$Gust)){
-  difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
-  if (is.na(difer)==FALSE & abs(difer)>dif_max_gust){
-    N_gust[length(N_gust)+1]=i
-  }
-}
-
-#Nivel 4 -- coherencia temporal de la serie
-#Idea para calibrar este filtro: fijarse si vuando detecta errores en mean tambien lo hace en gust. Solo mean=puedes ser un perido e calma. Ambos:el anemo esta totalmente quieto durante decenas de minutos. 
-# En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
-i=1
-while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
-  if(is.na(datos_anemos$Mean[i])==FALSE){
-    difer<-max(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)
-    if (is.na(difer)==FALSE & abs(difer)<=dif_min){
-      N_mean[(length(N_mean)+1):(length(N_mean)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
-      i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va haver al final del while
-    }
-  }
-  i=i+1
-}
-rm(i)
-
-# En tomas_dif_min tomas que la velocidad no varie en dif_min (Gust)
-i=1
-while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
-  if(is.na(datos_anemos$Gust[i])==FALSE){
-    difer<-max(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)
-    if (is.na(difer)==FALSE & abs(difer)<=dif_min){
-      N_gust[(length(N_gust)+1):(length(N_gust)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
-      i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va haver al final del while
-    }
-  }
-  i=i+1
-}
-rm(i)
-
-# Direcci?n
-# En 1 hora que la direcci?n no varie en 1
-#Esto no creo que nos sirva porque tenemos poca resolucion en $Dir (22,5>>1)
-#Por eso meto los filtros de direccion en un if que nunca se va a ejecutar
-if (FALSE) {
-for (i in 6:c(nrow(datos_anemos))){
-  if(is.na(datos_anemos$Dir[i])==FALSE){
-    difer<-max(datos_anemos$Dir[(i-5):i],na.rm=TRUE)-min(datos_anemos$Dir[(i-5):i],na.rm=TRUE)
-    if (!is.na(difer) & abs(difer)<=1){
-      N_dir[length(N_dir)+1]=i
-    }
-  }
-}
-
-
-# Direcci?n
-# En 1 hora no varia nada si no tenemos en cuenta los 0s
-N4<-c()
-for (i in 6:c(nrow(datos_anemos))){
-  if(is.na(datos_anemos$Dir[i])==FALSE){
-    data<-datos_anemos$Dir[(i-5):i]
-    n_data<-which(data==0)
-    data<-data[-n_data]
-    if(is.na(data)==FALSE){
-      difer<-max(data,na.rm=TRUE)-min(data,na.rm=TRUE)
-      if (is.na(difer)==FALSE & abs(difer)<=1){
-        N4<-c(N4,i)
-      }
-    }
-  }
-}
-}
 
 #Donde hay NAs? Marcar en rojo mas tarde
 N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
@@ -120,7 +25,7 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
 #Plotear de n en n
 graphics.off()
 dev.off()
-n=nrow(datos_anemos)/20   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+n=nrow(datos_anemos)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
 #NUestros datos estan al reves! (Primero los mas nuevos). Asi que los vamos a plotar del reves:
 #Ultimo plot=datos mas nuevos (el primero que vemos en la ventana de plots)

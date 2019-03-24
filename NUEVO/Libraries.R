@@ -260,24 +260,122 @@ rellenar_huecos_anemos=function(datos_anemos){
   return(datos_anemos_rellenado)
 }
 
-#!!!!!!. Filtrar_datos no esta del todo adaptado por que nuestros datos de anemos no tienen $dir en numerico, sino en character.
-filtrar_datos=function(datos_anemos){
-  #Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
-  #nuestro formato estandar. Si en vez de eso recibe una lista, se llama a si mismo
-  #para cada elemento de la lista.
-  if (class(datos_anemos)=="data.frame") {
-    #En desarrollo en Calibracion.r
-  }else{
-    if (class(datos_anemos)=="list") {
-      for (i in 1:length(datos_anemos)) {
-        datos_anemos[[i]]=filtrar_datos(datos_anemos[[i]])
-      }
-    
-    }else{
-    print("ERROR. El input datos_anemos que ha recibido la funcion filtrar_datos no es ni data.frame ni list")
+filtrar_datos=function(datos_anemos,
+                       mean_max=50/3.6,     #[m/s]
+                       gust_max=200/3.6,    #[m/s]
+                       dif_max_gust=30/3.6, #[m/s]
+                       dif_max_mean=20/3.6, #[m/s]
+                       dif_min=0/3.6,       #[m/s]
+                       tomas_dif_min=20,    #[-]  Numero de tomas consecutivas en las que el viento varia en menos de dif_min
+                       desglosar=FALSE)
+  {#Esta funcion trabaja con un data.frame de mediciones de anemos que sigan nuestro
+  #nuestro formato estandar.
+  
+  #Explicacion desglosar: si desglosar=FALSE, se devolveran todas las posiciones de mediciones supuestamente erroneas
+  #en un solo vector. Si desglosar=TRUE, se devolvera una lista de vectores de posiciones, cada vector correspondiente a un filtro
+  
+  #Analizar los inputs.Errores?
+  if (!is.data.frame(datos_anemos)) {stop("El input no es un dataframe")}
+  if (nrow(datos_anemos)==0)  {stop("El dataframe esta vacio")}
+  if (sum(unlist(lapply(datos_anemos, class))!=c("POSIXct","POSIXt","numeric","numeric","character"))) {stop("Formato inadecuado")}
+  
+  #Nivel 1 -- Fitros de viento medio
+  N1_mean=c()
+  #N1_mean=which(datos_anemos$Mean>mean_max | datos_anemos$Mean<=0 )   #<=0
+  N1_mean=which(datos_anemos$Mean>mean_max | datos_anemos$Mean<0 )     #<0
+  
+  #N1_gust=which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<=0)     #<=0
+  N1_gust=which(datos_anemos$Gust>200/3.6 | datos_anemos$Gust<0)       #<0
+  
+  #Nivel 2 -- coherencia temporal del dato 
+  #Step test:
+  #Velocidad diferencia con el dato anterior de dif_max m/s tanto si la diferencia es + como si es -
+  N2_mean=c()
+  for (i in 2:length(datos_anemos$Mean)){
+    difer<-datos_anemos$Mean[i-1]-datos_anemos$Mean[i]
+    if (is.na(difer)==FALSE & abs(difer)>dif_max_mean){
+      N2_mean[length(N2_mean)+1]=i
     }
   }
   
+  N2_gust=c()
+  for (i in 2:length(datos_anemos$Gust)){
+    difer<-datos_anemos$Gust[i-1]-datos_anemos$Gust[i]
+    if (is.na(difer)==FALSE & abs(difer)>dif_max_gust){
+      N2_gust[length(N2_gust)+1]=i
+    }
+  }
+  
+  #Nivel 3 -- coherencia temporal de la serie
+  #Idea para calibrar este filtro: fijarse si vuando detecta errores en mean tambien lo hace en gust. Solo mean=puedes ser un perido e calma. Ambos:el anemo esta totalmente quieto durante decenas de minutos. 
+  #En tomas_dif_min tomas que la velocidad no varie en dif_min (Mean)
+  N3_mean=c()
+  i=1
+  while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
+    if(is.na(datos_anemos$Mean[i])==FALSE){
+      difer<-max(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Mean[i:(i+tomas_dif_min-1)],na.rm=TRUE)
+      if (is.na(difer)==FALSE & abs(difer)<=dif_min){
+        N3_mean[(length(N3_mean)+1):(length(N3_mean)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
+        i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va hacer al final del while
+      }
+    }
+    i=i+1
+  }
+  
+  # En tomas_dif_min tomas que la velocidad no varie en dif_min (Gust)
+  N3_gust=c()
+  i=1
+  while (i<=(nrow(datos_anemos)-tomas_dif_min+1)){
+    if(is.na(datos_anemos$Gust[i])==FALSE){
+      difer<-max(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)-min(datos_anemos$Gust[i:(i+tomas_dif_min-1)],na.rm=TRUE)
+      if (is.na(difer)==FALSE & abs(difer)<=dif_min){
+        N3_gust[(length(N3_gust)+1):(length(N3_gust)+tomas_dif_min)]=(i:(i+tomas_dif_min-1))
+        i=i+tomas_dif_min-1 #Se hace un -1 para compensar el +1 que se le va hacer al final del while
+      }
+    }
+    i=i+1
+  }
+  
+  # Direcci?n
+  # En 1 hora que la direcci?n no varie en 1
+  #Esto no creo que nos sirva porque tenemos poca resolucion en $Dir (22,5>>1)
+  #Por eso meto los filtros de direccion en un if que nunca se va a ejecutar
+  if (FALSE) {
+    for (i in 6:c(nrow(datos_anemos))){
+      if(is.na(datos_anemos$Dir[i])==FALSE){
+        difer<-max(datos_anemos$Dir[(i-5):i],na.rm=TRUE)-min(datos_anemos$Dir[(i-5):i],na.rm=TRUE)
+        if (!is.na(difer) & abs(difer)<=1){
+          N_dir[length(N_dir)+1]=i
+        }
+      }
+    }
+    
+    
+    # Direcci?n
+    # En 1 hora no varia nada si no tenemos en cuenta los 0s
+    N4<-c()
+    for (i in 6:c(nrow(datos_anemos))){
+      if(is.na(datos_anemos$Dir[i])==FALSE){
+        data<-datos_anemos$Dir[(i-5):i]
+        n_data<-which(data==0)
+        data<-data[-n_data]
+        if(is.na(data)==FALSE){
+          difer<-max(data,na.rm=TRUE)-min(data,na.rm=TRUE)
+          if (is.na(difer)==FALSE & abs(difer)<=1){
+            N4<-c(N4,i)
+          }
+        }
+      }
+    }
+  }
+  
+  if (desglosar==TRUE) {
+    lista=list(N1_mean,N1_gust,N2_mean,N2_gust,N3_mean,N3_gust)
+    names(lista)=c("N1_mean","N1_gust","N2_mean","N2_gust","N3_mean","N3_gust")
+    return(lista)
+  }else{
+    return(unique(c(N1_mean,N1_gust,N2_mean,N2_gust,N3_mean,N3_gust)))
+  }
 }
 
   
