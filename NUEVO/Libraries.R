@@ -317,43 +317,7 @@ extract_hourly_data_2=function(datos_anemos){
   return(datos_anemos_horario)
 }
 
-juntar_datos=function(datos_anemos,datos_era){
-  #De donde a donde van nuestros datos?
-  fechamin=max(c(range(datos_anemos$Date)[1],range(datos_era$Date)[1]))
-  fechamax=min(c(range(datos_anemos$Date)[2],range(datos_era$Date)[2]))
-  
-  #Cuales son las fechas de era mas cercanas a los limites de nuestros datos?
-  #Fechainicio?
-  if (fechamin==range(datos_era$Date)[1]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
-    fechainicio=fechamin
-  }else{
-    pos=(datos_era$Date-fechamin) %>% as.numeric %>% abs %>% which.min
-    fechainicio=datos_era$Date[pos]
-  }
-  #Fechafinal?
-  if (fechamax==range(datos_era$Date)[2]) { #Si se cumple la condicion, nos ahorramos el procesamiento que requiere else{}, aunque deberian dar lo mismo
-    fechafinal=fechamax
-  }else{
-    pos=(datos_era$Date-fechamax) %>% as.numeric %>% abs %>% which.min
-    fechafinal=datos_era$Date[pos]
-  }
-  
-  #Ahora que tenemos las fechas podemos a crear datos_juntos
-  datos_juntos=cbind(datos_anemos[1,],datos_era[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
-  datos_juntos[1,]=NA   #Vaciamos porseaca
-  colnames(datos_juntos)[c(1,5)]=c("Date_anemo","Date_era")   #Diferenciar entre el $Date de anemos y $Date de era
-  datos_era=datos_era[which(datos_era$Date==fechainicio):which(datos_era$Date==fechafinal),]  #Coger las fechas de era que estan en la parte solapada
-  datos_juntos[1:length(vector_fechas),5:13]=datos_era #Nuestra quinta columna (aka $Date_era)
-  
-  #Para cada hora en punto, buscamos el dato de anemo mas cercano y rellenamos datos_anemos_horario
-  for (i in 1:nrow(datos_juntos)) {
-    n=(datos_anemos$Date-datos_juntos$Date_era[i]) %>% as.numeric %>% abs %>% which.min
-    datos_juntos[i,1:4]=datos_anemos[n,]
-  }
-  return(datos_juntos)
-}
-
-juntar_datos2=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Date")){
+juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Date")){
   #Esta funcion recoge dos dataframes de datos (1 y 2), y devuelve otro (3)
   #(3) contiene informacion de la epoca en la que se solapan (1) y (2)
   #(1) marca las fechas a usar. A cada fecha de (1) se le asigna la mas cercana de (2)
