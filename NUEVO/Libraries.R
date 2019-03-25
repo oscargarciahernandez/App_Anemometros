@@ -513,7 +513,7 @@ download_maps<- function(ul,lr,
             print("Bajando minNumtiles")
             if(res<1){break}
           }else{
-            print(paste0("Descargado con minNumtiles=", res))
+            print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
             break}
         }
         map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
@@ -543,7 +543,7 @@ download_maps<- function(ul,lr,
         res<- res-1
         print("Bajando minNumtiles")
       }else{
-        print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
+        print(paste0(maptypes,": Descargado con minNumtiles=", res))
         break}
     }
     
