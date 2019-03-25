@@ -504,7 +504,7 @@ download_maps<- function(ul,lr,
         while(TRUE){
           tryCatch({
             map1<- openmap(ul,lr, minNumTiles=res,
-                           type=maptypes,
+                           type=maptypes[i],
                            zoom=NULL)
             
           },error=function(e){cat("Error Java")})
