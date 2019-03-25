@@ -6,15 +6,18 @@ source(here::here("NUEVO/Libraries.R"))
 load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
 
-#Encontrar errores datos anemos----
+#Crear & procesar datos_anemos----
 
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
+#Ordenar cronologicamente datos_anemos
+datos_anemos=datos_anemos[order(datos_anemos$Date),]
+
 #Encontrar posiciones de mediciones supuestamente erroneas
 lista_pos_errores=filtrar_datos(datos_anemos,desglosar = TRUE)
-N_mean=c(lista_pos_errores$N1_mean,lista_pos_errores$N2_mean,lista_pos_errores$N3_mean)
-N_gust=c(lista_pos_errores$N1_gust,lista_pos_errores$N2_gust,lista_pos_errores$N3_gust)
+N_errores=unique(c(lista_pos_errores$N1_mean,lista_pos_errores$N2_mean,lista_pos_errores$N3_mean,
+                   lista_pos_errores$N1_gust,lista_pos_errores$N2_gust,lista_pos_errores$N3_gust))
 
 
 #Donde hay NAs? Marcar en rojo mas tarde
@@ -22,41 +25,44 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
 
 #Ploteos de datos_anemos----
 
-#Plotear de n en n
+#Plotear de n en n (que datos_anemos este en orden cronologico!)
+#Leyenda:
+  #Rojo = NA
+  #Berde = error segun filtro nivel 1 (valores negativos o muy altos)
+  #Azul = error segun filtro nivel 2 (cambios demasiado bruscos)
+  #Violeta = error segun filtro nivel 3 (viento sospechosamente estable)
 graphics.off()
 dev.off()
 n=nrow(datos_anemos)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
-#NUestros datos estan al reves! (Primero los mas nuevos). Asi que los vamos a plotar del reves:
-#Ultimo plot=datos mas nuevos (el primero que vemos en la ventana de plots)
-#En cada plot los datos en orden cronologico, es decir, en orden contrario al que aparecen en el data.frame
-for (i in seq(nrow(datos_anemos),1,-n)) {
-  layout(mat = c(1,2))  #Separar la ventana de plts en dos, una para mean, otro para gust
+for (i in seq(1,nrow(datos_anemos),n)) {
+  layout(mat = c(1,2))  #Separar la ventana de plots en dos, una para mean, otro para gust
   #Mean
-  plot(datos_anemos$Mean[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Mean [m/s]")
-  points(x = datos_anemos$Date[N_mean],y = datos_anemos$Mean[N_mean],col="blue",lwd=1)   #Los errores de mean en rojo
+  plot(datos_anemos$Mean[i:(i+n-1)],x = datos_anemos$Date[i:(i+n-1)],col="grey",type="p",xlab="",ylab="Mean [m/s]")
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
-  title(main = paste0(datos_anemos$Date[i]," - ",datos_anemos$Date[i-n+1]))
+  points(x = datos_anemos$Date[lista_pos_errores$N1_mean],y = datos_anemos$Mean[lista_pos_errores$N1_mean],col="green",lwd=1)
+  points(x = datos_anemos$Date[lista_pos_errores$N2_mean],y = datos_anemos$Mean[lista_pos_errores$N2_mean],col="blue",lwd=1)
+  points(x = datos_anemos$Date[lista_pos_errores$N3_mean],y = datos_anemos$Mean[lista_pos_errores$N3_mean],col="violet",lwd=1)
+  title(main = paste0(datos_anemos$Date[i]," - ",datos_anemos$Date[i+n-1]))
   #Gust
-  plot(datos_anemos$Gust[(i-n+1):i],x = datos_anemos$Date[(i-n+1):i],col="grey",type="p",xlab="",ylab="Gust [m/s]")
-  points(x = datos_anemos$Date[N_gust],y = datos_anemos$Gust[N_gust],col="blue",lwd=1)
+  plot(datos_anemos$Gust[i:(i+n-1)],x = datos_anemos$Date[i:(i+n-1)],col="grey",type="p",xlab="",ylab="Gust [m/s]")
   points(x = datos_anemos$Date[N_na],y = rep_len(0,length(datos_anemos$Date[N_na])),col="red",lwd=1)
-}
+  points(x = datos_anemos$Date[lista_pos_errores$N1_gust],y = datos_anemos$Mean[lista_pos_errores$N1_gust],col="green",lwd=1)
+  points(x = datos_anemos$Date[lista_pos_errores$N2_gust],y = datos_anemos$Mean[lista_pos_errores$N2_gust],col="blue",lwd=1)
+  points(x = datos_anemos$Date[lista_pos_errores$N3_gust],y = datos_anemos$Mean[lista_pos_errores$N3_gust],col="violet",lwd=1)
+  }
 rm(n)
 
 #Rosas de los vientos
 windRose(datos_anemos,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
 windRose(datos_anemos,ws = "Gust",wd="Dir",paddle = F,key.header = "Gust [m/s]")
 
-windRose(Anemometros$`0B75FE3A4FB6`,ws = "Mean",wd="Dir",paddle = F,key.header = "Mean [m/s]")
-
 #Quitar mediciones erroneas, guardar, cargar----
 #Llenar de NAs las mediciones consideradas erroneas. No eliminamos la fila; queremos mantener la fechas de los NAs.
-datos_anemos[N_mean,c(2,3,4)]=NA
-datos_anemos[N_gust,c(2,3,4)]=NA
+datos_anemos[N_errores,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
-#Quitar los ultimos (cronologicamnete los primeros) datos de los anemos de la uni, que no sirven de nada
+#Quitar los primeros datos de los anemos de la uni, que no sirven de nada
 datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42"):nrow(datos_anemos)),]
 
 #Guardar los resultados
