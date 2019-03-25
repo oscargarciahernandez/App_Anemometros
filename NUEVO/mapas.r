@@ -84,7 +84,7 @@ download_maps(ul,lr, maptyp = "bing")
 map_folder<- find_mapfolder()
 
 #Aquí seleccionamos la carpeta que queremos plotear
-dir.path<- map_folder[2]
+dir.path<- map_folder[3]
 
 
 #plotear y guardar los ploteos con los puntos
@@ -119,7 +119,7 @@ ERA5_cutdata<- ERA5_df[which(ERA5_df$lon%in%Coord_era$lon & ERA5_df$lat%in%Coord
 
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
 
-nombre<- str_remove(list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")], ".Rdata")
+nombre<- str_split(map_files,"/") %>% lapply(., function(x) return(x[length(x)])) %>% str_remove(., ".Rdata")
 
 p_ros<- WR_parameters(data = ERA5_cutdata, 
                       anchura = 0.06, 
@@ -139,11 +139,12 @@ for (i in 1: length(map_files)) {
                                      panel.grid.minor=element_blank(),plot.background=element_blank())
   
   
-
+  dev.off()
+  
   pmap2+p_ros$subgrobs
   
-  ggsave(paste0(dir.path,'/',nombre[i],"_WR.tiff"),
-         device = "tiff", dpi=1200,
+  ggsave(paste0(dir.path,'/',nombre[i],"_WR.png"),
+         device = "png", dpi=1200,
          width =7, height =7, 
          units = 'in')
   
