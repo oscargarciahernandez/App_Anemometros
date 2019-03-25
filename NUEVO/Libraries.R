@@ -488,17 +488,16 @@ download_maps<- function(ul,lr,
   if(is.character(maptyp)){
     maptypes<- maptyp
   }else{
-    maptypes<- c("osm", "osm-bw",
-                 "maptoolkit-topo", "waze", "bing", "stamen-toner", "stamen-terrain",
-                 "stamen-watercolor", "osm-german", "osm-wanderreitkarte", "mapbox", "esri",
-                 "esri-topo", "nps", "apple-iphoto", "skobbler", "hillshade", "opencyclemap",
-                 "osm-transport", "osm-public-transport", "osm-bbike", "osm-bbike-german")
+    maptypes<- c("waze", "bing",
+                 "esri","esri-topo", "nps", 
+                 "apple-iphoto", "skobbler",
+                 "hillshade")
   }
   if(length(maptypes)>1){
-    res1=res
+    res1<- res
     for (i in 1:length(maptypes)) {
-      res=res1
-      k=1
+      res<- res1
+      
       
       tryCatch({
         while(TRUE){
@@ -510,9 +509,9 @@ download_maps<- function(ul,lr,
           },error=function(e){cat("Error Java")})
           
           if(!exists("map1")){
-            res<- res-k
-            k<- k+1
+            res<- res-1
             print("Bajando minNumtiles")
+            if(res<1){break}
           }else{
             print(paste0("Descargado con minNumtiles=", res))
             break}
@@ -528,7 +527,7 @@ download_maps<- function(ul,lr,
           
           
        
-      }, error=function(e){})
+      }, error=function(e){print(paste0(maptypes[i],": No descargado"))})
     }
     
   }else{
@@ -544,7 +543,7 @@ download_maps<- function(ul,lr,
         res<- res-1
         print("Bajando minNumtiles")
       }else{
-        print(paste0("Descargado con minNumtiles=", res))
+        print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
         break}
     }
     
