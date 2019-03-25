@@ -63,7 +63,7 @@ datos_anemos[N_errores,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
 #Quitar los primeros datos de los anemos de la uni, que no sirven de nada
-datos_anemos=datos_anemos[-(which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42"):nrow(datos_anemos)),]
+datos_anemos=datos_anemos[-(1:which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42")),]
 
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
