@@ -53,7 +53,7 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-incr<- 0.005
+incr<- 0.01
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -63,7 +63,7 @@ if(w > 0){w<- w - incr}else{w<- w- incr}
 
 
 ul <- round(c(n,w),digits = 3)  #Upper Left
-lr <- round(c(s+0.001,e-0.001), digits = 3)  #Lower Right
+lr <- round(c(s,e), digits = 3)  #Lower Right
 
 
 
@@ -74,7 +74,7 @@ lr <- round(c(s+0.001,e-0.001), digits = 3)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr, res=40)
+download_maps(ul,lr, res=40, maptyp = c("esri-topo","nps"))
 
 
 
@@ -100,7 +100,7 @@ for (i in 1: length(map_files)) {
   ggmap1
   
   ggsave(paste0(dir.path,'/',nombre[i],".png"),
-         device = "png", dpi=1200,
+         device = "png", dpi=200,
          width =7, height =7, 
          units = 'in')
   

@@ -598,7 +598,8 @@ plot.windrose <- function(data,
                           palette,
                           countmax = NA,
                           opacity=0.6,
-                          border_color="NA"){
+                          border_color="NA",
+                          border_size=0.001){
   
   
   # Look to see what data was passed in to the function
@@ -681,7 +682,7 @@ plot.windrose <- function(data,
   p.windrose <- ggplot(data = data,
                        aes(x = dir.binned,
                            fill = spd.binned)) +
-    geom_bar(width = 1,color=border_color, size=0.001, alpha=opacity) + 
+    geom_bar(width = 1,color=border_color, size=border_size, alpha=opacity) + 
     scale_x_discrete(drop = FALSE,
                      labels = waiver()) + 
     theme(legend.position = "none",
