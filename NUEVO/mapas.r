@@ -41,7 +41,7 @@ Coord_era<- Coordenadas_era[order((Coordenadas_era$lon-Coord_anemo$lon)^2+(Coord
 
 
 #Coger los n mas cercanos
-n=9
+n=1
 Coord_era=Coord_era[1:n,]
 
 
@@ -53,7 +53,7 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-incr<- 0.06
+incr<- 0.005
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -62,8 +62,8 @@ if(w > 0){w<- w - incr}else{w<- w- incr}
 
 
 
-ul <- round(c(n,w),digits = 2)  #Upper Left
-lr <- round(c(s,e), digits = 2)  #Lower Right
+ul <- round(c(n,w),digits = 3)  #Upper Left
+lr <- round(c(s+0.001,e-0.001), digits = 3)  #Lower Right
 
 
 
@@ -74,7 +74,7 @@ lr <- round(c(s,e), digits = 2)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr, maptyp = "bing")
+download_maps(ul,lr, res=40)
 
 
 
@@ -84,12 +84,12 @@ download_maps(ul,lr, maptyp = "bing")
 map_folder<- find_mapfolder()
 
 #Aquí seleccionamos la carpeta que queremos plotear
-dir.path<- map_folder[3]
+dir.path<- map_folder[2]
 
 
 #plotear y guardar los ploteos con los puntos
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
-nombre<- str_remove(list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")], ".Rdata")
+nombre<- str_split(map_files,"/") %>% lapply(., function(x) return(x[length(x)])) %>% str_remove(., ".Rdata")
 
 for (i in 1: length(map_files)) {
   
@@ -99,8 +99,8 @@ for (i in 1: length(map_files)) {
                        Coord_anemo = Coord_anemo)
   ggmap1
   
-  ggsave(paste0(dir.path,'/',nombre[i],".tiff"),
-         device = "tiff", dpi=1200,
+  ggsave(paste0(dir.path,'/',nombre[i],".png"),
+         device = "png", dpi=1200,
          width =7, height =7, 
          units = 'in')
   
@@ -129,6 +129,7 @@ p_ros<- WR_parameters(data = ERA5_cutdata,
 
 
 for (i in 1: length(map_files)) {
+  if(exists("map.latlon")){rm(map.latlon)}
   
   load(file = map_files[i])
   pmap2<-autoplot(map.latlon)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),

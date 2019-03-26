@@ -432,3 +432,23 @@ download_maps<- function(ul,lr,new_folder=TRUE, maptyp=NULL,res=40){
   }
 
 }
+
+
+
+##Rosas de los vientos para logo anemoi
+
+for (i in c(1,4,8)) {
+  plot.windrose(prueba_1, spd = "uv_wind",
+                dir="uv_dwi",
+                dirres = 22.5,
+                spdseq= seq(0,20,1.2),
+                palette = Paletas[i],
+                opacity = 0.95,
+                border_color = "white")
+  
+  ggsave(paste0(here::here(paste0("NUEVO/Mapas/paleta",i,".png"))),
+         device = "png", dpi=600,
+         width =7, height =7, 
+         units = 'in')
+  
+}

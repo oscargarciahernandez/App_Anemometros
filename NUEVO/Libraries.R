@@ -522,6 +522,7 @@ download_maps<- function(ul,lr,
         dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
         
         if(!dir.exists(dirpath)){dir.create(dirpath)}
+        
         save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
         print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
         rm(map1) 
@@ -542,6 +543,7 @@ download_maps<- function(ul,lr,
       if(!exists("map1")){
         res<- res-1
         print("Bajando minNumtiles")
+        if(res<1){break}
       }else{
         print(paste0(maptypes,": Descargado con minNumtiles=", res))
         break}
@@ -550,11 +552,11 @@ download_maps<- function(ul,lr,
     map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     rm(map1)
     
-      dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
-      
-      if(!dir.exists(dirpath)){dir.create(dirpath)}
-      save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
-      print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
+    dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+    
+    if(!dir.exists(dirpath)){dir.create(dirpath)}
+    save(map.latlon, file=paste0(dirpath,"/",maptypes,res,".Rdata"))
+    print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".Rdata")))
       
     }
     
