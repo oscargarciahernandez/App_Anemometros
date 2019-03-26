@@ -517,14 +517,14 @@ download_maps<- function(ul,lr,
             break}
         }
         map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-        
+        rm(map1)
        
         dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
         
         if(!dir.exists(dirpath)){dir.create(dirpath)}
         save(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".Rdata"))
         print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".Rdata")))
-          
+        rm(map1) 
           
        
       }, error=function(e){print(paste0(maptypes[i],": No descargado"))})
@@ -548,7 +548,7 @@ download_maps<- function(ul,lr,
     }
     
     map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
-    
+    rm(map1)
     
       dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
       
