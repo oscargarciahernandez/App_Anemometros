@@ -150,6 +150,13 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 datos_uni=juntar_datos(datos_era,datos_anemos)
 
+#Guardar datos_era
+if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
+save(datos_uni,
+     file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+
+load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+
 #Separar por direcciones de anemos
 datos_uni_dir=list()
 dirs=unique(datos_uni$Dir)      #Que direcciones tenemos en el anemo?
@@ -195,7 +202,8 @@ plot(x=datos_uni$Date[2000:2500],y=datos_uni$Mean[2000:2500],col="red",type="l")
 lines(x=datos_uni$Date[2000:2500],y=k*datos_uni$uv_wind[2000:2500])
 plot(x=datos_uni$Date[2000:2500],y=datos_uni$Dir[2000:2500])
 
-plot(x=datos_uni_dir$`225`$Date[200:500],y=datos_uni_dir$`225`$Mean[200:500],col="red",type="l")
-lines(x=datos_uni_dir$`225`$Date[200:500],y=k*datos_uni_dir$`225`$uv_wind[200:500])
+plot(x=datos_uni_dir$`247.5`$Date[200:500],y=datos_uni_dir$`247.5`$Mean[200:500],col="red",type="l")
+lines(x=datos_uni_dir$`247.5`$Date[200:500],y=datos_uni_dir$`247.5`$uv_wind[200:500],col="grey")
+lines(x=datos_uni_dir$`247.5`$Date[200:500],y=k*datos_uni_dir$`247.5`$uv_wind[200:500],col="black")
 
 #cut(datos_uni_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_uni_dir)),0)) 
