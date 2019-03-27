@@ -155,6 +155,11 @@ if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUE
 save(datos_uni,
      file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
+<<<<<<< HEAD
+load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+=======
+>>>>>>> 9f1cf8e608b30279a5193e0d15dd62aba49a0db6
+
 #Separar por direcciones de anemos
 datos_uni_dir=list()
 dirs=unique(datos_uni$Dir)      #Que direcciones tenemos en el anemo?
@@ -186,8 +191,22 @@ n2=nrow(datos_uni)
 plot(datos_uni$Date[n1:n2],datos_uni$Mean[n1:n2],type="l")
 lines(datos_uni$Date[n1:n2],datos_uni$uv_wind[n1:n2],col="grey")
 
+#Calculo factor K diferencia de modulo entre punto ERA y anemo
+zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
+z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
+zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
+k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
 
+plot(x=datos_uni$Date,y=datos_uni$Mean,col="red",type="l")
+lines(x=datos_uni$Date,y=k*datos_uni$uv_wind)
 
+layout(c(1,2))
+plot(x=datos_uni$Date[2000:2500],y=datos_uni$Mean[2000:2500],col="red",type="l")
+lines(x=datos_uni$Date[2000:2500],y=k*datos_uni$uv_wind[2000:2500])
+plot(x=datos_uni$Date[2000:2500],y=datos_uni$Dir[2000:2500])
 
+plot(x=datos_uni_dir$`247.5`$Date[200:500],y=datos_uni_dir$`247.5`$Mean[200:500],col="red",type="l")
+lines(x=datos_uni_dir$`247.5`$Date[200:500],y=datos_uni_dir$`247.5`$uv_wind[200:500],col="grey")
+lines(x=datos_uni_dir$`247.5`$Date[200:500],y=k*datos_uni_dir$`247.5`$uv_wind[200:500],col="black")
 
 #cut(datos_uni_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_uni_dir)),0)) 

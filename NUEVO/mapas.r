@@ -53,7 +53,11 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
+<<<<<<< HEAD
 incr<- 0.0215
+=======
+incr<- 0.01
+>>>>>>> f1247100009fce85c245c2cb5f8a2761d1474834
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -74,7 +78,7 @@ lr <- round(c(s,e), digits = 3)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr, res=40, maptyp = c("esri-topo", "bing"))
+download_maps(ul,lr, res=40, maptyp = c("esri-topo","nps"))
 
 
 
@@ -84,7 +88,9 @@ download_maps(ul,lr, res=40, maptyp = c("esri-topo", "bing"))
 map_folder<- find_mapfolder()
 
 #Aquí seleccionamos la carpeta que queremos plotear
+
 dir.path<- map_folder[5]
+
 
 
 #plotear y guardar los ploteos con los puntos
@@ -153,6 +159,7 @@ for (i in 1: length(map_files)) {
 }
 
 
+
 ### Rosa de los vienos ERA5 y anemometro
 load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
@@ -213,3 +220,50 @@ for (j in 1:length(map_files)) {
 }
 
 
+
+## separar por direcciones
+#Separar por direcciones de anemos
+
+datos_rosa_dir=list()
+dirs=unique(datos_rosa$Dir)      #Que direcciones tenemos en el anemo?  #Quitar NA
+dirs=as.numeric(dirs)           #ESTAN EN CHARACTER!  Cambiar a numerico para que se ordenen bien
+dirs=dirs[order(dirs)]          #Ordenar de menor a mayor
+for (i in 1:length(dirs)) {
+  datos_rosa_dir[[i]]=datos_rosa[which(datos_rosa$Dir==dirs[i]),]
+}
+names(datos_rosa_dir)=dirs       #Los elementos de la lista se llamaran como la direcion que les corresponde
+
+#Correlaciones por direcciones
+cors_dir=data.frame()  #Aqui iran las correlaciones correspondientes a cada direccion
+cors_dir[1:length(datos_rosa_dir),1]=names(datos_rosa_dir)  #Col 1=las direcciones
+for (i in 1:length(datos_rosa_dir)) {  
+  cors_dir[i,2]=cor(datos_rosa_dir[[i]]$uv_wind,datos_rosa_dir[[i]]$Mean,"na") #Col 2=las correlaciones
+  cors_dir[i,3]=nrow(datos_rosa_dir[[i]])*100/sum(unlist(lapply(datos_rosa_dir,nrow)))  #Col 3=porcentaje de datos en esa direccion
+}
+colnames(cors_dir)=c("Dir","cor","%")
+
+
+#Cojo solo la dirección con la mejor correlación
+#para gráficas para el artículo
+prueba<- datos_rosa_dir$`247.5`
+k<-10
+for(i in 1:10){
+  a<- k*i
+  b<- a+50
+  rango<- c(100:150)
+  
+  plot(x=prueba$Date[rango],SMA(prueba$uv_wind[rango], n=3), col="red", type="l")
+  lines(x=prueba$Date[rango],SMA(prueba$Mean[rango], n=3))
+  lines(x=prueba$Date[rango],prueba$uv_wind[rango]*k, col="blue")
+  k<- k*2
+  
+  
+  
+}
+
+
+#Calculo factor K diferencia de modulo entre punto ERA y anemo
+zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
+z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
+zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
+k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
