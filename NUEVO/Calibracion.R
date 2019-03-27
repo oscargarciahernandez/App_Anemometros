@@ -155,7 +155,10 @@ if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUE
 save(datos_uni,
      file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
+<<<<<<< HEAD
 load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+=======
+>>>>>>> 9f1cf8e608b30279a5193e0d15dd62aba49a0db6
 
 #Separar por direcciones de anemos
 datos_uni_dir=list()
