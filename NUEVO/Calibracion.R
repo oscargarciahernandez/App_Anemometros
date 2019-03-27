@@ -150,6 +150,12 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 datos_uni=juntar_datos(datos_era,datos_anemos)
 
+#Guardar datos_era
+if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
+save(datos_uni,
+     file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+
+
 #Separar por direcciones de anemos
 datos_uni_dir=list()
 dirs=unique(datos_uni$Dir)      #Que direcciones tenemos en el anemo?
