@@ -148,7 +148,7 @@ datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coorden
 load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
-datos_uni=juntar_datos2(datos_era,datos_anemos)
+datos_uni=juntar_datos(datos_era,datos_anemos)
 
 #Separar por direcciones de anemos
 datos_uni_dir=list()
@@ -181,8 +181,21 @@ n2=nrow(datos_uni)
 plot(datos_uni$Date[n1:n2],datos_uni$Mean[n1:n2],type="l")
 lines(datos_uni$Date[n1:n2],datos_uni$uv_wind[n1:n2],col="grey")
 
+#Calculo factor K diferencia de modulo entre punto ERA y anemo
+zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
+z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
+zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
+k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
 
+plot(x=datos_uni$Date,y=datos_uni$Mean,col="red",type="l")
+lines(x=datos_uni$Date,y=k*datos_uni$uv_wind)
 
+layout(c(1,2))
+plot(x=datos_uni$Date[2000:2500],y=datos_uni$Mean[2000:2500],col="red",type="l")
+lines(x=datos_uni$Date[2000:2500],y=k*datos_uni$uv_wind[2000:2500])
+plot(x=datos_uni$Date[2000:2500],y=datos_uni$Dir[2000:2500])
 
+plot(x=datos_uni_dir$`225`$Date[200:500],y=datos_uni_dir$`225`$Mean[200:500],col="red",type="l")
+lines(x=datos_uni_dir$`225`$Date[200:500],y=k*datos_uni_dir$`225`$uv_wind[200:500])
 
 #cut(datos_uni_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_uni_dir)),0)) 
