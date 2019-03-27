@@ -53,7 +53,7 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-incr<- 0.01
+incr<- 0.019
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -74,7 +74,7 @@ lr <- round(c(s,e), digits = 3)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr, res=40, maptyp = c("esri-topo","nps"))
+download_maps(ul,lr, res=40, maptyp = c("esri-topo", "bing"))
 
 
 
@@ -84,7 +84,7 @@ download_maps(ul,lr, res=40, maptyp = c("esri-topo","nps"))
 map_folder<- find_mapfolder()
 
 #Aquí seleccionamos la carpeta que queremos plotear
-dir.path<- map_folder[2]
+dir.path<- map_folder[4]
 
 
 #plotear y guardar los ploteos con los puntos
@@ -151,4 +151,95 @@ for (i in 1: length(map_files)) {
   
   
 }
+
+
+### Rosa de los vienos ERA5 y anemometro
+load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+
+datos_rosa<- datos_uni[,c("Date","lon","lat","uv_wind","uv_dwi","Mean","Dir")]
+datos_rosa<- datos_rosa[complete.cases(datos_rosa),]
+datos_rosa$Dir<- as.numeric(datos_rosa$Dir)
+
+Paletas<- c("Blues", "GnBu" ,"PuBu","YlGnBu")
+
+p_ros_ERA<- WR_parameters2(data = datos_rosa, 
+                      anchura = 0.015,
+                      spd_name ="uv_wind" ,
+                      dir_name = "uv_dwi",
+                      lon_pos = Coord_era$lon,
+                      lat_pos =Coord_era$lat, 
+                      paleta = "YlGnBu",
+                      opacidad = 0.7)
+
+p_ros_UNI<- WR_parameters2(data = datos_rosa, 
+                       anchura = 0.015,
+                       spd_name ="Mean" ,
+                       dir_name = "Dir",
+                       lon_pos = Coord_anemo$lon,
+                       lat_pos =Coord_anemo$lat, 
+                       paleta = "YlGnBu",
+                       opacidad = 0.7)
+
+
+
+dir.path<- map_folder[3]
+map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
+nombre<- str_split(map_files,"/") %>% lapply(., function(x) return(x[length(x)])) %>% str_remove(., ".Rdata")
+
+load(file = map_files)
+pmap2<-autoplot(map.latlon)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                   axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                   axis.title.x=element_blank(),
+                                   axis.title.y=element_blank(),legend.position="none",
+                                   panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                   panel.grid.minor=element_blank(),plot.background=element_blank())
+
+
+
+
+
+Paletas<- c("Blues", "GnBu" ,"PuBu","YlGnBu")
+
+for (j in 1:length(map_files)) {
+  load(file = map_files[j])
+  pmap2<-autoplot(map.latlon)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                     axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                     axis.title.x=element_blank(),
+                                     axis.title.y=element_blank(),legend.position="none",
+                                     panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                     panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  
+  for (i in 1:length(Paletas)) {
+    p_ros_ERA<- WR_parameters2(data = datos_rosa, 
+                               anchura = 0.015,
+                               spd_name ="uv_wind" ,
+                               dir_name = "uv_dwi",
+                               lon_pos = Coord_era$lon,
+                               lat_pos =Coord_era$lat, 
+                               paleta = Paletas[i],
+                               opacidad = 0.7)
+    
+    p_ros_UNI<- WR_parameters2(data = datos_rosa, 
+                               anchura = 0.015,
+                               spd_name ="Mean" ,
+                               dir_name = "Dir",
+                               lon_pos = Coord_anemo$lon,
+                               lat_pos =Coord_anemo$lat, 
+                               paleta = Paletas[i],
+                               opacidad = 0.7)
+    
+    pmap2 + p_ros_ERA$subgrobs + p_ros_UNI$subgrobs
+    
+    ggsave(paste0(dir.path,'/',Paletas[i],nombre[j],"_WR.png"),
+           device = "png", dpi=200,
+           width =7, height =7, 
+           units = 'in')
+    
+    
+  }
+  
+  
+}
+
 

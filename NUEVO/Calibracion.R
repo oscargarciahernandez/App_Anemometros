@@ -148,7 +148,12 @@ datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coorden
 load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
-datos_uni=juntar_datos2(datos_era,datos_anemos)
+datos_uni=juntar_datos(datos_era,datos_anemos)
+
+#Guardar datos_era
+if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
+save(datos_uni,
+     file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
 #Separar por direcciones de anemos
 datos_uni_dir=list()
