@@ -167,10 +167,11 @@ datos_rosa<- datos_uni[,c("Date","lon","lat","uv_wind","uv_dwi","Mean","Dir")]
 datos_rosa<- datos_rosa[complete.cases(datos_rosa),]
 datos_rosa$Dir<- as.numeric(datos_rosa$Dir)
 
-Paletas<- c("Blues", "GnBu" ,"PuBu","YlGnBu")
+Paletas<- c("GnBu","YlGnBu")
 
 
 
+map_folder<- find_mapfolder()
 
 dir.path<- map_folder[6]
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
@@ -195,7 +196,7 @@ for (j in 1:length(map_files)) {
                                lon_pos = Coord_era$lon,
                                lat_pos =Coord_era$lat, 
                                paleta = Paletas[i],
-                               opacidad = 0.8)
+                               opacidad = 0.5)
     
     p_ros_UNI<- WR_parameters2(data = datos_rosa, 
                                anchura = 0.02,
@@ -204,12 +205,12 @@ for (j in 1:length(map_files)) {
                                lon_pos = Coord_anemo$lon,
                                lat_pos =Coord_anemo$lat, 
                                paleta = Paletas[i],
-                               opacidad = 0.8)
+                               opacidad = 0.5)
     
     pmap2 + p_ros_ERA$subgrobs + p_ros_UNI$subgrobs
     
     ggsave(paste0(dir.path,'/',Paletas[i],nombre[j],"_WR.png"),
-           device = "png", dpi=1200,
+           device = "png", dpi=800,
            width =7, height =7, 
            units = 'in')
     
@@ -242,28 +243,40 @@ for (i in 1:length(datos_rosa_dir)) {
 }
 colnames(cors_dir)=c("Dir","cor","%")
 
-
-#Cojo solo la dirección con la mejor correlación
-#para gráficas para el artículo
-prueba<- datos_rosa_dir$`247.5`
-k<-10
-for(i in 1:10){
-  a<- k*i
-  b<- a+50
-  rango<- c(100:150)
-  
-  plot(x=prueba$Date[rango],SMA(prueba$uv_wind[rango], n=3), col="red", type="l")
-  lines(x=prueba$Date[rango],SMA(prueba$Mean[rango], n=3))
-  lines(x=prueba$Date[rango],prueba$uv_wind[rango]*k, col="blue")
-  k<- k*2
-  
-  
-  
-}
-
-
 #Calculo factor K diferencia de modulo entre punto ERA y anemo
 zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
 z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
 zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
 k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
+
+
+#Cojo solo la dirección con la mejor correlación
+#para gráficas para el artículo
+prueba<- datos_rosa_dir$`247.5`
+rango<- c(0:59)
+prueba<-prueba[which(week(prueba$Date)==24),]
+
+plot(x=prueba$Date[rango],SMA(prueba$uv_wind[rango], n=2), col="red", type="l")
+lines(x=prueba$Date[rango],SMA(prueba$Mean[rango], n=2))
+lines(x=prueba$Date[rango],SMA(prueba$uv_wind[rango]*k,n=2), col="blue")
+
+
+
+##Stackoverflow al poder colega
+xrange <- diff(range(prueba$Date))
+yrange <- diff(range(prueba$Mean))
+aspectratio <- xrange/yrange
+
+## convert from polar to cartesian
+prueba$xend <- aspectratio * (1 * sin(prueba$Dir)) +prueba$Date
+prueba$yend <- aspectratio * (1 * cos(prueba$Dir)) + prueba$Mean
+
+
+ggplot(data = prueba, aes(x = Date, y = Mean)) +
+  geom_line() +
+  geom_segment(data = prueba,          
+               size = 1,
+               aes(xend = xend,
+                   yend = yend,
+                   color = Mean),
+               arrow = arrow(length = unit(0.5, "cm"))) 
