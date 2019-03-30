@@ -255,28 +255,48 @@ k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
 prueba<- datos_rosa_dir$`247.5`
 rango<- c(0:59)
 prueba<-prueba[which(week(prueba$Date)==24),]
+prueba$uv_dwi2<-cut(prueba$uv_dwi, 
+                    breaks = c(0,seq(11.5,349.5,22.5),360), 
+                    labels = c(as.numeric(names(datos_rosa_dir)),0)) 
+prueba$uv_dwi2<- as.numeric(as.character(prueba$uv_dwi2)) 
 
-plot(x=prueba$Date[rango],SMA(prueba$uv_wind[rango], n=2), col="red", type="l")
-lines(x=prueba$Date[rango],SMA(prueba$Mean[rango], n=2))
-lines(x=prueba$Date[rango],SMA(prueba$uv_wind[rango]*k,n=2), col="blue")
-
-
-
-##Stackoverflow al poder colega
-xrange <- diff(range(prueba$Date))
-yrange <- diff(range(prueba$Mean))
-aspectratio <- xrange/yrange
-
-## convert from polar to cartesian
-prueba$xend <- aspectratio * (1 * sin(prueba$Dir)) +prueba$Date
-prueba$yend <- aspectratio * (1 * cos(prueba$Dir)) + prueba$Mean
+vectores<- as.data.frame(cbind(prueba$Date,(-prueba$uv_dwi2+90)+180, (-prueba$Dir+90)+180))
+colnames(vectores)<- c("Date","ERA","Anem")
+vectores$Date<- prueba$Date
+vectores<- vectores[seq(0,length(vectores[,1]), 2),]
 
 
-ggplot(data = prueba, aes(x = Date, y = Mean)) +
-  geom_line() +
-  geom_segment(data = prueba,          
-               size = 1,
-               aes(xend = xend,
-                   yend = yend,
-                   color = Mean),
-               arrow = arrow(length = unit(0.5, "cm"))) 
+ggplot(data = prueba, aes(x=Date, y=uv_wind)) + 
+  geom_line(size=1, color="blue",linetype="longdash", alpha=0.5)+
+  geom_line(data=prueba, aes(y=uv_wind*k), size=1.2, color="blue")+
+  geom_text(data=vectores, aes(x=Date,y=8,
+                               angle=ERA, label="→"), 
+            color="blue", 
+            alpha=0.5,
+            size=15)+
+  geom_line(aes(x=Date, y=Mean),size=1.2, color="red")+
+  geom_text(data=vectores, 
+            aes(x=Date,y=6,
+                angle=Anem, 
+                label="→"),
+            color="red", 
+            alpha=0.5,
+            size=15)+
+  ylim(0,10.5)+theme(panel.background = element_blank(),
+                    panel.border = element_rect(linetype = "dashed", fill = NA),
+                    panel.grid.major = element_line(colour = "grey50"),
+                    axis.text = element_text(size=20,face="bold"),
+                    axis.title = element_text(size = 25, face="bold"))+
+  labs(y= "Wind speed (m/s)",
+       x= "")+
+  geom_text(x=prueba$Date[55], y=10.3, 
+            label=paste0("Cor= ",
+                         round(cor(prueba$Mean, prueba$uv_wind),digits = 3)),
+            size=10)
+
+dir.path<- here::here("NUEVO/Mapas/")
+ggsave(paste0(dir.path,'/',"cor_plot2.png"),
+       device = "png", dpi=1200,
+       width =14, height =7, 
+       units = 'in')
+
