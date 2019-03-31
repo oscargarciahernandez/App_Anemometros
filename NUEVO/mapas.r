@@ -53,11 +53,9 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-<<<<<<< HEAD
+
 incr<- 0.0215
-=======
-incr<- 0.01
->>>>>>> f1247100009fce85c245c2cb5f8a2761d1474834
+
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -157,6 +155,9 @@ for (i in 1: length(map_files)) {
   
   
 }
+
+
+# Calibración Cosas para el artículo --------------------------------------
 
 
 
@@ -300,3 +301,35 @@ ggsave(paste0(dir.path,'/',"cor_plot2.png"),
        width =14, height =7, 
        units = 'in')
 
+
+#### A partir de aquí hacemos distribucion de weibull, para el artículo. 
+datos_wei<-datos_rosa %>%
+  mutate(grup_vel=cut(datos_rosa$uv_wind,
+                      seq(0,max(datos_rosa$uv_wind),
+                          by=0.5),
+                      labels = seq(0.5,
+                                   max(datos_rosa$uv_wind),
+                                   by=0.5),
+                      include.lowest = T,right = T))
+
+
+
+wei1<- table(datos_wei$grup_vel)
+wei2<-sum(wei1)
+wei_per<- wei1/wei2
+wei_an<- wei_per*8600
+wei_an<- as.data.frame(wei_an)
+
+ggplot(wei_an)+
+  geom_bar(aes(x=as.numeric(row.names(wei_an)), y= Freq),
+           stat = "identity",
+           alpha=.95,fill='lightblue',
+           color='lightblue4',
+           show.legend = T)+
+  geom_line(aes(y=dweibull(seq(0,10, len=length(wei_an[,1])), shape = k, scale = c)*8600))
+
+
+
+k <- (sd(datos_rosa$Mean)/mean(datos_rosa$Mean))^(-1.086)
+c <- mean(datos_rosa$Mean)/(gamma(1+1/k))
+c
