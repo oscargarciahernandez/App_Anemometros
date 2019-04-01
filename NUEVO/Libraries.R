@@ -747,21 +747,21 @@ find_mapfolder<- function(){
 
 
 WR_parameters2<- function(data,
-                          spd_name,
-                          dir_name,
-                          lon_pos,
-                          lat_pos,
                          anchura=0.06, 
                          opacidad=0.5, 
-                         paleta){
+                         paleta,
+                         lon_pos,
+                         lat_pos,
+                         spd_name,
+                         dir_name){
   p_ros<- data%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = spd_name,
-                                                                    dir= dir_name,
+                                                                    dir=dir_name,
                                                                     dirres = 22.5,
-                                                                    spdseq= c(0,0.3,1,1.5,2,2.5,3,4,5,7,9,11,15,20),
+                                                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
                                                                     palette = paleta,
                                                                     opacity = opacidad,
                                                                     border_color = "white",
-                                                                    border_size = 0.7))%>%
+                                                                    border_size = 0.5))%>%
     mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
                                              x = lon_pos-anchura,      # change from 1 to other 
                                              y = lat_pos-anchura,      # values if necessary,
@@ -771,4 +771,6 @@ WR_parameters2<- function(data,
   
   return(p_ros)
 }
+
+
 
