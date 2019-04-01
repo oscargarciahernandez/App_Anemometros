@@ -53,7 +53,9 @@ w=min(c(Coord_era$lon),Coord_anemo$lon)
 
 
 #Fijamos incremento para hacer más grande el mapa
-incr<- 0.019
+
+incr<- 0.0215
+
 
 if(n > 0){n<- n + incr}else{n<- n + incr}
 if(s > 0){s<- s - incr}else{s<- s- incr}
@@ -74,7 +76,7 @@ lr <- round(c(s,e), digits = 3)  #Lower Right
 # si no pones nada descarga todos los mapas disponibles
 #Se puede cambiar la resolución, pero esta por defecto en 
 # 40 numtiles
-download_maps(ul,lr, res=40, maptyp = c("esri-topo", "bing"))
+download_maps(ul,lr, res=40, maptyp = c("esri-topo","nps"))
 
 
 
@@ -84,7 +86,9 @@ download_maps(ul,lr, res=40, maptyp = c("esri-topo", "bing"))
 map_folder<- find_mapfolder()
 
 #Aquí seleccionamos la carpeta que queremos plotear
-dir.path<- map_folder[4]
+
+dir.path<- map_folder[5]
+
 
 
 #plotear y guardar los ploteos con los puntos
@@ -100,7 +104,7 @@ for (i in 1: length(map_files)) {
   ggmap1
   
   ggsave(paste0(dir.path,'/',nombre[i],".png"),
-         device = "png", dpi=200,
+         device = "png", dpi=1200,
          width =7, height =7, 
          units = 'in')
   
@@ -153,6 +157,10 @@ for (i in 1: length(map_files)) {
 }
 
 
+# Calibración Cosas para el artículo --------------------------------------
+
+
+
 ### Rosa de los vienos ERA5 y anemometro
 load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
@@ -160,45 +168,16 @@ datos_rosa<- datos_uni[,c("Date","lon","lat","uv_wind","uv_dwi","Mean","Dir")]
 datos_rosa<- datos_rosa[complete.cases(datos_rosa),]
 datos_rosa$Dir<- as.numeric(datos_rosa$Dir)
 
-Paletas<- c("Blues", "GnBu" ,"PuBu","YlGnBu")
-
-p_ros_ERA<- WR_parameters2(data = datos_rosa, 
-                      anchura = 0.015,
-                      spd_name ="uv_wind" ,
-                      dir_name = "uv_dwi",
-                      lon_pos = Coord_era$lon,
-                      lat_pos =Coord_era$lat, 
-                      paleta = "YlGnBu",
-                      opacidad = 0.7)
-
-p_ros_UNI<- WR_parameters2(data = datos_rosa, 
-                       anchura = 0.015,
-                       spd_name ="Mean" ,
-                       dir_name = "Dir",
-                       lon_pos = Coord_anemo$lon,
-                       lat_pos =Coord_anemo$lat, 
-                       paleta = "YlGnBu",
-                       opacidad = 0.7)
+Paletas<- c("GnBu","YlGnBu")
 
 
 
-dir.path<- map_folder[3]
+map_folder<- find_mapfolder()
+
+dir.path<- map_folder[6]
 map_files<- list.files(dir.path, full.names = TRUE) %>% .[str_detect(., ".Rdata")]
 nombre<- str_split(map_files,"/") %>% lapply(., function(x) return(x[length(x)])) %>% str_remove(., ".Rdata")
 
-load(file = map_files)
-pmap2<-autoplot(map.latlon)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),
-                                   axis.text.y=element_blank(),axis.ticks=element_blank(),
-                                   axis.title.x=element_blank(),
-                                   axis.title.y=element_blank(),legend.position="none",
-                                   panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
-                                   panel.grid.minor=element_blank(),plot.background=element_blank())
-
-
-
-
-
-Paletas<- c("Blues", "GnBu" ,"PuBu","YlGnBu")
 
 for (j in 1:length(map_files)) {
   load(file = map_files[j])
@@ -212,27 +191,27 @@ for (j in 1:length(map_files)) {
   
   for (i in 1:length(Paletas)) {
     p_ros_ERA<- WR_parameters2(data = datos_rosa, 
-                               anchura = 0.015,
+                               anchura = 0.023,
                                spd_name ="uv_wind" ,
                                dir_name = "uv_dwi",
                                lon_pos = Coord_era$lon,
                                lat_pos =Coord_era$lat, 
                                paleta = Paletas[i],
-                               opacidad = 0.7)
+                               opacidad = 0.5)
     
     p_ros_UNI<- WR_parameters2(data = datos_rosa, 
-                               anchura = 0.015,
+                               anchura = 0.02,
                                spd_name ="Mean" ,
                                dir_name = "Dir",
                                lon_pos = Coord_anemo$lon,
                                lat_pos =Coord_anemo$lat, 
                                paleta = Paletas[i],
-                               opacidad = 0.7)
+                               opacidad = 0.5)
     
     pmap2 + p_ros_ERA$subgrobs + p_ros_UNI$subgrobs
     
     ggsave(paste0(dir.path,'/',Paletas[i],nombre[j],"_WR.png"),
-           device = "png", dpi=200,
+           device = "png", dpi=800,
            width =7, height =7, 
            units = 'in')
     
@@ -243,3 +222,114 @@ for (j in 1:length(map_files)) {
 }
 
 
+
+## separar por direcciones
+#Separar por direcciones de anemos
+
+datos_rosa_dir=list()
+dirs=unique(datos_rosa$Dir)      #Que direcciones tenemos en el anemo?  #Quitar NA
+dirs=as.numeric(dirs)           #ESTAN EN CHARACTER!  Cambiar a numerico para que se ordenen bien
+dirs=dirs[order(dirs)]          #Ordenar de menor a mayor
+for (i in 1:length(dirs)) {
+  datos_rosa_dir[[i]]=datos_rosa[which(datos_rosa$Dir==dirs[i]),]
+}
+names(datos_rosa_dir)=dirs       #Los elementos de la lista se llamaran como la direcion que les corresponde
+
+#Correlaciones por direcciones
+cors_dir=data.frame()  #Aqui iran las correlaciones correspondientes a cada direccion
+cors_dir[1:length(datos_rosa_dir),1]=names(datos_rosa_dir)  #Col 1=las direcciones
+for (i in 1:length(datos_rosa_dir)) {  
+  cors_dir[i,2]=cor(datos_rosa_dir[[i]]$uv_wind,datos_rosa_dir[[i]]$Mean,"na") #Col 2=las correlaciones
+  cors_dir[i,3]=nrow(datos_rosa_dir[[i]])*100/sum(unlist(lapply(datos_rosa_dir,nrow)))  #Col 3=porcentaje de datos en esa direccion
+}
+colnames(cors_dir)=c("Dir","cor","%")
+
+#Calculo factor K diferencia de modulo entre punto ERA y anemo
+zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
+z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
+zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
+k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
+
+
+#Cojo solo la dirección con la mejor correlación
+#para gráficas para el artículo
+prueba<- datos_rosa_dir$`247.5`
+rango<- c(0:59)
+prueba<-prueba[which(week(prueba$Date)==24),]
+prueba$uv_dwi2<-cut(prueba$uv_dwi, 
+                    breaks = c(0,seq(11.5,349.5,22.5),360), 
+                    labels = c(as.numeric(names(datos_rosa_dir)),0)) 
+prueba$uv_dwi2<- as.numeric(as.character(prueba$uv_dwi2)) 
+
+vectores<- as.data.frame(cbind(prueba$Date,(-prueba$uv_dwi2+90)+180, (-prueba$Dir+90)+180))
+colnames(vectores)<- c("Date","ERA","Anem")
+vectores$Date<- prueba$Date
+vectores<- vectores[seq(0,length(vectores[,1]), 2),]
+
+
+ggplot(data = prueba, aes(x=Date, y=uv_wind)) + 
+  geom_line(size=1, color="blue",linetype="longdash", alpha=0.5)+
+  geom_line(data=prueba, aes(y=uv_wind*k), size=1.2, color="blue")+
+  geom_text(data=vectores, aes(x=Date,y=8,
+                               angle=ERA, label="→"), 
+            color="blue", 
+            alpha=0.5,
+            size=15)+
+  geom_line(aes(x=Date, y=Mean),size=1.2, color="red")+
+  geom_text(data=vectores, 
+            aes(x=Date,y=6,
+                angle=Anem, 
+                label="→"),
+            color="red", 
+            alpha=0.5,
+            size=15)+
+  ylim(0,10.5)+theme(panel.background = element_blank(),
+                    panel.border = element_rect(linetype = "dashed", fill = NA),
+                    panel.grid.major = element_line(colour = "grey50"),
+                    axis.text = element_text(size=20,face="bold"),
+                    axis.title = element_text(size = 25, face="bold"))+
+  labs(y= "Wind speed (m/s)",
+       x= "")+
+  geom_text(x=prueba$Date[55], y=10.3, 
+            label=paste0("Cor= ",
+                         round(cor(prueba$Mean, prueba$uv_wind),digits = 3)),
+            size=10)
+
+dir.path<- here::here("NUEVO/Mapas/")
+ggsave(paste0(dir.path,'/',"cor_plot2.png"),
+       device = "png", dpi=1200,
+       width =14, height =7, 
+       units = 'in')
+
+
+#### A partir de aquí hacemos distribucion de weibull, para el artículo. 
+datos_wei<-datos_rosa %>%
+  mutate(grup_vel=cut(datos_rosa$uv_wind,
+                      seq(0,max(datos_rosa$uv_wind),
+                          by=0.5),
+                      labels = seq(0.5,
+                                   max(datos_rosa$uv_wind),
+                                   by=0.5),
+                      include.lowest = T,right = T))
+
+
+
+wei1<- table(datos_wei$grup_vel)
+wei2<-sum(wei1)
+wei_per<- wei1/wei2
+wei_an<- wei_per*8600
+wei_an<- as.data.frame(wei_an)
+
+ggplot(wei_an)+
+  geom_bar(aes(x=as.numeric(row.names(wei_an)), y= Freq),
+           stat = "identity",
+           alpha=.95,fill='lightblue',
+           color='lightblue4',
+           show.legend = T)+
+  geom_line(aes(y=dweibull(seq(0,10, len=length(wei_an[,1])), shape = k, scale = c)*8600))
+
+
+
+k <- (sd(datos_rosa$Mean)/mean(datos_rosa$Mean))^(-1.086)
+c <- mean(datos_rosa$Mean)/(gamma(1+1/k))
+c
