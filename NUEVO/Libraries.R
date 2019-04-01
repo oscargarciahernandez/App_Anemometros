@@ -18,6 +18,7 @@ library(OpenStreetMap)
 library(rJava)
 library(rgdal)
 library(RColorBrewer)
+library(geosphere)
 # Funciones ERA5 ----------------------------------------------------------
 
 

@@ -79,17 +79,19 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 #Coordenadas que queremos representar
 
 Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
-colnames(Coordenadas_anemos)=c("lat","lon")
-Coordenadas_anemos[1,]=c(43.179389,-2.488504)
+colnames(Coordenadas_anemos)=c("lon","lat")
+Coordenadas_anemos[1,]=c(-2.488504,43.179389)
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("Coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
+  Coordenadas_era=cbind(Coordenadas_era$lon,Coordenadas_era$lat)  #Asegurarse orden correcto para distm
 }
 #Ordenarlos de cercanos a lejanos
-Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
+#Para que distm funcione bien, en las columnas primero lon, luego lat, justo lo contrario de era
+Coordenadas_era=Coordenadas_era[order(distm(Coordenadas_era, Coordenadas_anemos, fun = distHaversine)[,1]),]
 #Coger los n mas cercanos
-n=1
+n=9
 Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
@@ -150,7 +152,7 @@ load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
 datos_uni=juntar_datos(datos_era,datos_anemos)
 
-#Guardar datos_era
+#Guardar datos_uni
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
 save(datos_uni,
      file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
