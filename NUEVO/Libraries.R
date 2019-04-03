@@ -416,12 +416,13 @@ extract_hourly_data_2=function(datos_anemos){
   return(datos_anemos_horario)
 }
 
-juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Date")){
+juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Date"),coletillas=c("","")){
   #Esta funcion recoge dos dataframes de datos (1 y 2), y devuelve otro (3)
   #(3) contiene informacion de la epoca en la que se solapan (1) y (2)
   #(1) marca las fechas a usar. A cada fecha de (1) se le asigna la mas cercana de (2)
   
   #Explicación nombres_col_fechas: vector en el que especificamos los nombres de las columnas donde estan las fechas en nuestros datos.
+  #Explicación coletillas: strings que se añaden a los nombres de columnas de los inputs
   
   #Analizar los inputs.Errores?
   if (!is.data.frame(datos1)) {stop("El primer input no es un dataframe")}
@@ -437,8 +438,18 @@ juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Da
   if (sum(colnames(datos2)==nombres_col_fechas[2])==0) {stop(paste0("El segundo input no tiene ninguna columna llamada \"",nombres_col_fechas[2],"\""))}
   if (sum(colnames(datos1)==nombres_col_fechas[1])>1) {stop(paste0("El primer input tiene varias columnas llamadas \"",nombres_col_fechas[1],"\". Solo puede haber una"))}
   if (sum(colnames(datos2)==nombres_col_fechas[2])>1) {stop(paste0("El segundo input tiene varias columnas llamadas \"",nombres_col_fechas[2],"\". Solo puede haber una"))}
+  if (!is.vector(coletillas)) {stop("nombres_col_fechas no es un vector")}
+  if (length(coletillas)!=2) {stop("coletillas tiene que tener 2 elementos")}
+  if (sum(lapply(coletillas, class)=="character")!=2) {stop("coletillas solo puede contener strings")}
+  if (!is.character(coletillas) & !is.null(coletillas)) {stop("La coletilla tiene que ser character o NULL")}
+  
+  
   col_fechas1=which(colnames(datos1)==nombres_col_fechas[1])
   col_fechas2=which(colnames(datos2)==nombres_col_fechas[2])
+  
+  #Aplicar coletillas
+  colnames(datos1)=paste0(colnames(datos1),coletillas[1])
+  colnames(datos2)=paste0(colnames(datos1),coletillas[2])
   
   #De donde a donde van nuestros datos?
   fechamin=max(c(range(datos1[,col_fechas1])[1],range(datos2[,col_fechas2])[1]))
