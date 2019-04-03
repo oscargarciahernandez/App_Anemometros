@@ -97,9 +97,22 @@ Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=filter(ERA5_df,lat %in% Coordenadas_era$lat,lon %in% Coordenadas_era$lon)
-datos_era=as_tibble(datos_era)
 #Coger solo columnas que nos interesan
 datos_era=select(datos_era,Date,"lon",lat,"uv_wind",uv_dwi) #Select acepta nombres de columnas tanto con comillas como sin
+
+#Reorganizar datos_era con juntar_datos. Primero los mas cercanos al anemo
+#Por ahora los juntamos en datos_era2
+datos_era2=filter(datos_era,lon==Coordenadas_era$lon[1],lat==Coordenadas_era$lat[1])
+colnames(datos_era2)[1:ncol(datos_era2)]=paste0(colnames(datos_era2)[1:ncol(datos_era2)],"1")
+for (i in 2:nrow(Coordenadas_era)) {
+  datos_era2=juntar_datos(datos_era2,
+                          filter(datos_era,lon==Coordenadas_era$lon[i],lat==Coordenadas_era$lat[i]),
+                          nombres_col_fechas = c("Date1","Date"),
+                          coletillas = c("",as.character(i)))
+}
+#Vamos a dar el cambiazo
+datos_era=datos_era2
+rm(datos_era2)
 
 #Guardar datos_era
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
@@ -154,7 +167,11 @@ datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coorden
 load(here::here("NUEVO/Data_calibracion/datos_era.Rdata"))
 load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
 
-datos_uni=juntar_datos(datos_era,datos_anemos)
+#Le añadimos los datos del anemo a datos_era
+datos_uni=juntar_datos(datos_era,datos_anemos,nombres_col_fechas = c("Date1","Date"))
+#Queda mas guapo columnas de anemo a la izquierda y lo de era a la derecha no? (Modo chungo de reordenarlo, pero bueno)
+datos_uni=datos_uni[,c((ncol(datos_uni)+1-ncol(datos_anemos)):ncol(datos_uni),1:(ncol(datos_uni)-ncol(datos_anemos)))]
+
 
 #Guardar datos_uni
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
