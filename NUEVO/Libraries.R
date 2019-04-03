@@ -443,13 +443,16 @@ juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Da
   if (sum(lapply(coletillas, class)=="character")!=2) {stop("coletillas solo puede contener strings")}
   if (!is.character(coletillas) & !is.null(coletillas)) {stop("La coletilla tiene que ser character o NULL")}
   
+  #La funcion range se cabrea con los tibbles. Pasamos a dataframe
+  datos1=as.data.frame(datos1)
+  datos2=as.data.frame(datos2)
   
   col_fechas1=which(colnames(datos1)==nombres_col_fechas[1])
   col_fechas2=which(colnames(datos2)==nombres_col_fechas[2])
   
   #Aplicar coletillas
   colnames(datos1)=paste0(colnames(datos1),coletillas[1])
-  colnames(datos2)=paste0(colnames(datos1),coletillas[2])
+  colnames(datos2)=paste0(colnames(datos2),coletillas[2])
   
   #De donde a donde van nuestros datos?
   fechamin=max(c(range(datos1[,col_fechas1])[1],range(datos2[,col_fechas2])[1]))
@@ -475,7 +478,6 @@ juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Da
   #Ahora que tenemos las fechas podemos crear datos3
   datos3=cbind(datos1[1,],datos2[1,])  #En vez de crear de cero, juntamos la primera linean de ambas. Menos problemas de formato!
   datos3[1,]=NA   #Vaciamos porseaca
-  colnames(datos3)[c(col_fechas1,ncol(datos1)+col_fechas2)]=c("Date","Date2")   #Diferenciar entre el $Date de datos1 y $Date de datos2
   datos1=datos1[which(datos1[,col_fechas1]==fechainicio):which(datos1[,col_fechas1]==fechafinal),]  #Coger las fechas de datos1 que esten en la parte solapada
   datos3[1:nrow(datos1),1:ncol(datos1)]=datos1  #Rellenar la mitad izquierda de datos3, la relativa a la aprte solapada de datos1
   
