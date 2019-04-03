@@ -9,6 +9,7 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #Crear & procesar datos_anemos----
 
 datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
+datos_uni=as_tibble(datos_uni)
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
 #Ordenar cronologicamente datos_anemos
@@ -85,7 +86,7 @@ Coordenadas_anemos[1,]=c(-2.488504,43.179389)
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("Coordenadas_era")) {
   Coordenadas_era=unique(ERA5_df[,c(2,3)])
-  Coordenadas_era=cbind(Coordenadas_era$lon,Coordenadas_era$lat)  #Asegurarse orden correcto para distm
+  Coordenadas_era=arrange(as_tibble(Coordenadas_era),lon,lat)  #Asegurarse orden correcto para distm
 }
 #Ordenarlos de cercanos a lejanos
 #Para que distm funcione bien, en las columnas primero lon, luego lat, justo lo contrario de era
@@ -95,7 +96,10 @@ n=9
 Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
-datos_era=ERA5_df[which((ERA5_df$lon==Coordenadas_era$lon)&(ERA5_df$lat==Coordenadas_era$lat)),]
+datos_era=filter(ERA5_df,lat %in% Coordenadas_era$lat,lon %in% Coordenadas_era$lon)
+datos_era=as_tibble(datos_era)
+#Coger solo columnas que nos interesan
+datos_era=select(datos_era,Date,"lon",lat,"uv_wind",uv_dwi) #Select acepta nombres de columnas tanto con comillas como sin
 
 #Guardar datos_era
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
@@ -197,6 +201,7 @@ zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
 z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
 zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
 k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
+
 
 plot(x=datos_uni$Date,y=datos_uni$Mean,col="red",type="l")
 lines(x=datos_uni$Date,y=k*datos_uni$uv_wind)
