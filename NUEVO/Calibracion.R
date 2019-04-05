@@ -181,6 +181,38 @@ save(datos_uni,
 
 load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
 
+#Comparar anemo con todos los puntos
+cors_anemo_vs_puntos=c()
+col_mean=grep("Mean",colnames(datos_uni)) #Numeros de columna cuyo nombre contenga "Mean"
+for (i in grep("uv_wind",colnames(datos_uni))) { #Vector: Numeros de columnas cuyos nombres contengan "uv_wind
+  cors_anemo_vs_puntos[length(cors_anemo_vs_puntos)+1]=cor(datos_uni[,i],datos_uni[,col_mean],"na")
+}
+rm(col_mean)
+
+#Comparar anemo con todos los puntos por direcciones
+cors_anemo_vs_puntos=data.frame()
+col_mean=grep("Mean",colnames(datos_uni)) #Numeros de columna cuyo nombre contenga "Mean"
+dirs=unique(na.omit(datos_uni$Dir))
+dirs=dirs[order(as.numeric(dirs))]
+kont_i=1
+#Bucle para correlaciones
+for (i in grep("uv_wind",colnames(datos_uni))) { #Vector: Numeros de columnas cuyos nombres contengan "uv_wind
+  kont_j=1
+  for (j in dirs) {
+    cors_anemo_vs_puntos[kont_j,kont_i]=cor(datos_uni[which(datos_uni$Dir==j),i],datos_uni[which(datos_uni$Dir==j),col_mean],"na")
+  kont_j=kont_j+1
+  }
+  kont_i=kont_i+1
+}
+#Bucle para porcentajes
+porcentajes_dir=c()
+for (i in dirs) {
+  porcentajes_dir[i]=nrow(filter(datos_uni,Dir==i))*100/nrow(datos_uni)  #Col 3=porcentaje de datos en esa direccion
+}
+cors_anemo_vs_puntos[,ncol(cors_anemo_vs_puntos)+1]=porcentajes_dir
+colnames(cors_anemo_vs_puntos)=c(1:(ncol(cors_anemo_vs_puntos)-1),"%")
+row.names(cors_anemo_vs_puntos)=dirs
+rm(col_mean,kont_i,kont_j,porcentajes_dir)
 
 #Separar por direcciones de anemos
 datos_uni_dir=list()
