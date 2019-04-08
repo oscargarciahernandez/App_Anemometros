@@ -6,10 +6,11 @@ source(here::here("NUEVO/Libraries.R"))
 load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
 
-#Crear & procesar datos_anemos----
+#Datos_anemos:elegir anemo, crear, rellenar, filtrar, guardar----
 
-datos_anemos=rellenar_huecos_anemos(Anemometros$`0B38DAE79059`)
-datos_uni=as_tibble(datos_uni)
+#Que anemo usaremos? Elegir
+anemo_elegido="0B38DAE79059"
+datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==anemo_elegido)]])
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
 #Ordenar cronologicamente datos_anemos
@@ -64,17 +65,19 @@ datos_anemos[N_errores,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
 #Quitar los primeros datos de los anemos de la uni, que no sirven de nada
-datos_anemos=datos_anemos[-(1:which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42")),]
+if (anemo_elegido=="0B38DAE79059") {
+  datos_anemos=datos_anemos[-(1:which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42")),]
+}
 
 #Guardar los resultados
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){
   dir.create(here::here("NUEVO/Data_calibracion"))
 }
-save(datos_anemos,
-     file=here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+saveRDS(datos_anemos,
+     file=here::here(paste0("NUEVO/Data_calibracion/",anemo_elegido,"_tratado.rds")))
 
-#Cargarlos
-load(here::here("NUEVO/Data_calibracion/datos_uni_tratados.Rdata"))
+#Cargar los resultados
+datos_anemos=readRDS(here::here(paste0("NUEVO/Data_calibracion/",anemo_elegido,"_tratado.rds")))
 
 #Tratar datos era----
 #Coordenadas que queremos representar
@@ -214,7 +217,7 @@ colnames(cors_anemo_vs_puntos)=c(1:(ncol(cors_anemo_vs_puntos)-1),"%")
 row.names(cors_anemo_vs_puntos)=dirs
 rm(col_mean,kont_i,kont_j,porcentajes_dir)
 
-#Separar por direcciones de anemos
+#Separar por direcciones de anemos (creo que esto queda obsoleto)
 datos_uni_dir=list()
 dirs=unique(datos_uni$Dir)      #Que direcciones tenemos en el anemo?
 dirs=dirs[-which(is.na(dirs))]  #Quitar NA
@@ -225,7 +228,7 @@ for (i in 1:length(dirs)) {
 }
 names(datos_uni_dir)=dirs       #Los elementos de la lista se llamaran como la direcion que les corresponde
 
-#Correlaciones por direcciones
+#Correlaciones por direcciones (creo que esto queda obsoleto)
 cors_dir=data.frame()  #Aqui iran las correlaciones correspondientes a cada direccion
 cors_dir[1:length(datos_uni_dir),1]=names(datos_uni_dir)  #Col 1=las direcciones
 for (i in 1:length(datos_uni_dir)) {  
