@@ -9,8 +9,13 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #Datos_anemos:elegir anemo, crear, rellenar, filtrar, guardar----
 
 #Que anemo usaremos? Elegir
-anemo_elegido="0B38DAE79059"
-datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==anemo_elegido)]])
+if (!exists("t_reg")) {
+  t_reg<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"), sep=";")
+}
+levels(t_reg$ID)  #Que anemos tenemos? Enseña las IDs
+#anemo_elegido="0B38DAE79059"
+anemo_elegido="0B75FE3A4FB6"
+datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==as.character(anemo_elegido))]])
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
 #Ordenar cronologicamente datos_anemos
@@ -35,7 +40,7 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
   #Violeta = error segun filtro nivel 3 (viento sospechosamente estable)
 graphics.off()
 dev.off()
-n=nrow(datos_anemos)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
+n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
 for (i in seq(1,nrow(datos_anemos),n)) {
   layout(mat = c(1,2))  #Separar la ventana de plots en dos, una para mean, otro para gust
@@ -65,8 +70,11 @@ datos_anemos[N_errores,c(2,3,4)]=NA
 datos_anemos[N_na,c(2,3,4)]=NA    #Esto parece redundante pero viene bien asegurarse
 
 #Quitar los primeros datos de los anemos de la uni, que no sirven de nada
-if (anemo_elegido=="0B38DAE79059") {
+if (anemo_elegido=="0B38DAE79059") {#Uni
   datos_anemos=datos_anemos[-(1:which(as.character(datos_anemos$Date)=="2018-05-21 10:13:42")),]
+}
+if (anemo_elegido=="0B75FE3A4FB6") {#Hex
+  datos_anemos=datos_anemos[-(1:which(as.character(datos_anemos$Date)=="2018-05-17 09:12:48")),]  #Le ponemos la ultima fecha mala
 }
 
 #Guardar los resultados
@@ -84,7 +92,9 @@ datos_anemos=readRDS(here::here(paste0("NUEVO/Data_calibracion/",anemo_elegido,"
 
 Coordenadas_anemos=data.frame(a=as.numeric(),b=as.numeric())
 colnames(Coordenadas_anemos)=c("lon","lat")
-Coordenadas_anemos[1,]=c(-2.488504,43.179389)
+if (anemo_elegido=="0B38DAE79059") {
+  Coordenadas_anemos[1,]=c(-2.488504,43.179389)
+}
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("Coordenadas_era")) {
@@ -179,7 +189,7 @@ datos_uni=datos_uni[,c((ncol(datos_uni)+1-ncol(datos_anemos)):ncol(datos_uni),1:
 #Guardar datos_uni
 if(!dir.exists(here::here("NUEVO/Data_calibracion"))){dir.create(here::here("NUEVO/Data_calibracion"))}
 save(datos_uni,
-     file=here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
+     file=here::here("NUEVO/Data_calibracion/datos_uni_hex.Rdata"))
 
 
 load(here::here("NUEVO/Data_calibracion/datos_uni.Rdata"))
