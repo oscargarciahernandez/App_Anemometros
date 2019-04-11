@@ -46,19 +46,10 @@ names(Anemometros)<- Anem_ID
 #Si lo de rellenar los huecos de los dataframes acaba siedo algo permanente lo implantamos aqui.
 
 #Guardar
-
-
-if(dir.exists(here::here("NUEVO/Data_anemometros"))){
-  save(Anemometros,
-       file=here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))  
-  
-}else{
-  dir.create(here::here("NUEVO/Data_anemometros"))
-  save(Anemometros,
-       file=here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))  
-  
-}
-
+if(!dir.exists(here::here("NUEVO/Data_anemometros"))){dir.create(here::here("NUEVO/Data_anemometros"))}
+               
+   save(Anemometros,
+        file=here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))  
 
 #Borramos CSV Y listo
 rm(CSV)

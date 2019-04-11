@@ -1,3 +1,6 @@
+import numpy
+import cdsapi
+
 def req(year):
     import cdsapi
     c = cdsapi.Client()
@@ -45,6 +48,9 @@ def req(year):
         'grid' : '0.1/0.1'
     },
     'Data_{}.nc'.format(year))
+    
+
+req(2019)
          
 
 
