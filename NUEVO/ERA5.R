@@ -48,3 +48,40 @@ save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 #Para Cargar los datos. Se cargaran en el enviroment con el mismo nombre
 
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
+
+
+
+
+
+# CONSTRUIR HISTÓRICO ERA5 ------------------------------------------------
+
+ERA5_allfiles<- here::here('python/ERA5/') %>% list.files(full.names = T)
+  
+
+
+for(i in 1:length(ERA5_allfiles)){
+  #Importar
+  data_ERA<- open.nc(ERA5_allfiles[i])
+  
+  #Crear lista
+  data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
+  
+  #Modificar fecha
+  data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
+  
+  #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
+  ERA5_df<- ls_to_df_ERA(data_ERA_ls)
+  
+  #metemos las etiquetas de direccion y redondeamos los valores
+  ERA5_df<-Dirlab_round_ERA(ERA5_df)
+  
+  file_name<- ERA5_allfiles[i] %>% str_split("/") %>% .[[1]] %>%
+    .[length(.)] %>% str_remove(".nc") %>% paste0(.,".RDS")
+  
+  path_ERA<- here::here("NUEVO/Data_ERA5/")
+  
+  saveRDS(ERA5_df, file=paste0(path_ERA, file_name))
+  rm(c(data_ERA_ls, ERA5_df))
+  
+  
+}  
