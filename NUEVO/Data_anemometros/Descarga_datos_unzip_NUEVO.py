@@ -9,6 +9,7 @@ def conseguir_path_app_anemometros():
        import re
        import os
        
+       #APUNTE. Esto solo funciona en windows, no en ubuntu. / vs \
        path_viejo=os.getcwd()
        pattern=re.compile('.+'                          #Cualquier cosa...
                           '\\\App_Anemometros')         #... hasta esto (inclusive)
@@ -74,6 +75,11 @@ def bajar_cvs(fechainicio,fechafinal,id_sensor,driver):
        
        import re
        import requests
+       
+       #IMPORTANTE. Esto es un parche para el proble de MobileAlerts de cuando
+       #pusieron la fecha como el culo (mes/dia/año)
+       fechainicio=fechainicio[3:6]+fechainicio[0:3]+fechainicio[6:]
+       #IMPORTANTE. Fin del parche.
        
        #Vamos a mirar el codigo html de la pagina web donde nos salen todos los
        #sensores, y ver que url le corressponde a id_sensor
