@@ -108,7 +108,7 @@ def bajar_cvs(fechainicio,fechafinal,id_sensor,driver):
        cajatexto_fechafinal.clear()   #Vaciar la segunda cajetilla
        cajatexto_fechainicio.send_keys(fechainicio)  #Escribir fechainicio en la primera cajetilla
        cajatexto_fechafinal.send_keys(fechafinal)    #Escribir fechafinal en la segunda cajetilla
-       boton_exportar=driver.find_element_by_css_selector("button.btn:nth-child(10)")
+       boton_exportar=driver.find_element_by_css_selector("button.btn:nth-child(11)")
        boton_exportar.click()
 
 def crear_driver():
