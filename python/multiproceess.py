@@ -8,9 +8,9 @@ def req(year):
         'reanalysis-era5-single-levels',
         {
             'variable': [
-                '10m_u_component_of_neutral_wind', '10m_u_component_of_wind', '10m_v_component_of_neutral_wind',
-                '10m_v_component_of_wind', '10m_wind_direction', '10m_wind_gust_since_previous_post_processing',
-                '10m_wind_speed', '2m_temperature', 'instantaneous_10m_wind_gust'
+                '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
             ],
             'product_type': 'reanalysis',
             'year': year,
@@ -53,8 +53,8 @@ def req(year):
 from multiprocessing import Pool
 
 if __name__ == "__main__":
-    r = Pool(len(np.arange(1979, 1999)))
-    r.map(req, list(map(str, np.arange(1979, 1999))))
+    r = Pool(len(np.arange(2018, 2020)))
+    r.map(req, list(map(str, np.arange(2018, 2020))))
 
 
 

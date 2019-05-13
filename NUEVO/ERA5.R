@@ -2,6 +2,8 @@ library(here)
 source(here::here("NUEVO/Libraries.R"))
 
 
+MAKE_HISTORICO<- FALSE
+
 # Importación de datos ----------------------------------------------------
 
 if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
@@ -55,33 +57,43 @@ load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
 
 # CONSTRUIR HISTÓRICO ERA5 ------------------------------------------------
 
-ERA5_allfiles<- here::here('python/ERA5/') %>% list.files(full.names = T)
+if(MAKE_HISTORICO){
+  ERA5_allfiles<- here::here('python/ERA5/') %>% list.files(full.names = T)
   
+  
+  
+  for(i in 1:length(ERA5_allfiles)){
+    #Importar
+    data_ERA<- open.nc(ERA5_allfiles[i])
+    
+    #Crear lista
+    data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
+    
+    #Cerrar ERA 
+    close.nc(data_ERA)
+    
+    #Modificar fecha
+    data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
+    
+    #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
+    ERA5_df<- ls_to_df_ERA(data_ERA_ls)
+    
+    #metemos las etiquetas de direccion y redondeamos los valores
+    ERA5_df<-Dirlab_round_ERA(ERA5_df)
+    
+    file_name<- ERA5_allfiles[i] %>% str_split("/") %>% .[[1]] %>%
+      .[length(.)] %>% str_remove(".nc") %>% paste0(.,".RDS")
+    
+    path_ERA<- here::here("NUEVO/Data_ERA5/")
+    if(!dir.exists(path_ERA)){dir.create(path_ERA)}
+    
+    saveRDS(ERA5_df, file=paste0(path_ERA, file_name))
+    rm("data_ERA_ls", "ERA5_df","data_ERA")
+    
+    
+  }  
+  
+}
 
 
-for(i in 1:length(ERA5_allfiles)){
-  #Importar
-  data_ERA<- open.nc(ERA5_allfiles[i])
-  
-  #Crear lista
-  data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
-  
-  #Modificar fecha
-  data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
-  
-  #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
-  ERA5_df<- ls_to_df_ERA(data_ERA_ls)
-  
-  #metemos las etiquetas de direccion y redondeamos los valores
-  ERA5_df<-Dirlab_round_ERA(ERA5_df)
-  
-  file_name<- ERA5_allfiles[i] %>% str_split("/") %>% .[[1]] %>%
-    .[length(.)] %>% str_remove(".nc") %>% paste0(.,".RDS")
-  
-  path_ERA<- here::here("NUEVO/Data_ERA5/")
-  
-  saveRDS(ERA5_df, file=paste0(path_ERA, file_name))
-  rm(c(data_ERA_ls, ERA5_df))
-  
-  
-}  
+
