@@ -208,12 +208,11 @@ RDS_HISTORICO_ERA<-list.files(here::here('NUEVO/Data_ERA5/'), full.names = T) %>
   .[1:40]
 
 ERA_mean<- vector()
-ERA_mean_k<- vector()
+#ERA_mean_k<- vector()
 
 for (i in 1:length(RDS_HISTORICO_ERA) ) {
     ERA_mean[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>% 
     summarise(ERA_mean= mean(uv_wind, na.rm = T))
-    ERA_mean_k[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>% 
-      summarise(ERA_mean= mean(uv_wind*k, na.rm = T))
+    #ERA_mean_k[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>%summarise(ERA_mean= mean(uv_wind*k, na.rm = T))
               
 }
