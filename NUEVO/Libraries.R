@@ -39,6 +39,24 @@ uv_transformation<- function(tabla_comp){
   return(tabla_comp)
   
 }
+uv_transformation_2019<- function(tabla_comp){
+  
+  u10<- tabla_comp$u10
+  v10<- tabla_comp$v10
+  
+  wind_abs <- sqrt(u10^2 + v10^2)
+  wind_dir_rad <-  atan2(u10/wind_abs, v10/wind_abs) 
+  wind_dir_deg1 <-  wind_dir_rad * 180/pi 
+  wind_dir_deg2 <-  wind_dir_deg1+ 180 
+  
+  tabla_comp<- as.data.frame(cbind(tabla_comp,wind_abs,wind_dir_deg2))
+  tabla_comp$u10<- NULL
+  tabla_comp$v10<- NULL
+  colnames(tabla_comp)<- c("Date","lon","lat","uv_wind","uv_dwi")
+  return(tabla_comp)
+  
+}
+
 Formato_fecha_ERA<- function(lista_ERA){
   time_1<-utcal.nc("hours since 1900-01-01 00:00:0.0",lista_ERA$time, type = "n")
   ymd_1<-paste(time_1[,1],time_1[,2],time_1[,3],sep = "-")
@@ -79,6 +97,35 @@ ls_to_df_ERA<- function(data_ERA_ls){
   return(ERA5_df)
   
 }
+ls_to_df_ERA_2019<- function(data_ERA_ls){
+  tabla2<- data.frame()
+  
+  for (lon in 1:length(data_ERA_ls$longitude)) {
+    tabla1<- data.frame()
+    for (lat in 1:length(data_ERA_ls$latitude)) {
+      x<- cbind(data_ERA_ls$longitude[lon],
+                data_ERA_ls$latitude[lat],
+                data_ERA_ls[["u10"]][lon,lat, ],
+                data_ERA_ls[["v10"]][lon,lat, ])
+      
+      tabla1<- rbind(tabla1,x)
+      
+      
+    }
+    tabla2<- rbind(tabla2,tabla1)
+    
+  }
+  
+  tabla_3<- cbind(data_ERA_ls$time,tabla2)
+  colnames(tabla_3)<- c("Date","lon","lat","u10","v10")
+  
+  
+  ERA5_df<- uv_transformation_2019(tabla_3)
+  
+  return(ERA5_df)
+  
+}
+
 
 Dirlab_round_ERA<- function(ERA_df){
   
@@ -102,6 +149,28 @@ Dirlab_round_ERA<- function(ERA_df){
   tabla$wind<- round(tabla$wind,digits = 1)
   tabla$uv_wind<- round(tabla$uv_wind,digits = 1)
   tabla$dwi<- round(tabla$dwi,digits = 1)
+  tabla$uv_dwi<- round(tabla$uv_dwi,digits = 1)
+  
+  
+  
+  
+  
+  return(tabla)
+}
+Dirlab_round_ERA_2019<- function(ERA_df){
+  
+  
+  a_uv_dwi<- cut(ERA_df$uv_dwi,
+                 breaks = c(0,seq(11.25,360,by=22.50),361),
+                 labels = c("N","NNE","NE","NEE","E",
+                            "SEE","SE","SSE","S","SSW","SW",
+                            "SWW","W","NWW","NW","NNW","N"))
+  
+  tabla<- as.data.frame(cbind(ERA_df,a_uv_dwi))
+  colnames(tabla)<- c(names(ERA_df),"Dir_uv_dwi")
+  
+  
+  tabla$uv_wind<- round(tabla$uv_wind,digits = 1)
   tabla$uv_dwi<- round(tabla$uv_dwi,digits = 1)
   
   
