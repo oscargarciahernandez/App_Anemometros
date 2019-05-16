@@ -282,25 +282,31 @@ k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
 #CALCULO DE MEDIAS
 ###HACIENDO MEDIA DE LOS DATOS DE LOS ANEMOS Y ERA_5 TENIENDO EN CUENTA 
 #EL PERIODO DE SOLAPAMIENTO
-DATOS_JUNTOS %>% .[complete.cases(.),] %>% summarise(Vmean=mean(Mean), Gust_mean=mean(Gust),
-                                                     ERA5_mean=mean(uv_wind), ERA5_mean_K=mean(uv_wind*k))
+HACER_MEDIAS<- FALSE
 
-
-
-#########HACIENDO MEDIAS DEL HISTÓRICO DE ERA5
-RDS_HISTORICO_ERA<-list.files(here::here('NUEVO/Data_ERA5/'), full.names = T) %>% 
-  .[1:40]
-
-ERA_mean<- vector()
-#ERA_mean_k<- vector()
-
-for (i in 1:length(RDS_HISTORICO_ERA) ) {
-  ERA_mean[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>% 
-    summarise(ERA_mean= mean(uv_wind, na.rm = T))
-  #ERA_mean_k[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>%summarise(ERA_mean= mean(uv_wind*k, na.rm = T))
+if(HACER_MEDIAS){
+  DATOS_JUNTOS %>% .[complete.cases(.),] %>% summarise(Vmean=mean(Mean), Gust_mean=mean(Gust),
+                                                       ERA5_mean=mean(uv_wind), ERA5_mean_K=mean(uv_wind*k))
+  
+  
+  
+  #########HACIENDO MEDIAS DEL HISTÓRICO DE ERA5
+  RDS_HISTORICO_ERA<-list.files(here::here('NUEVO/Data_ERA5/'), full.names = T) %>% 
+    .[1:40]
+  
+  ERA_mean<- vector()
+  #ERA_mean_k<- vector()
+  
+  for (i in 1:length(RDS_HISTORICO_ERA) ) {
+    ERA_mean[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>% 
+      summarise(ERA_mean= mean(uv_wind, na.rm = T))
+    #ERA_mean_k[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>%summarise(ERA_mean= mean(uv_wind*k, na.rm = T))
+    
+  }
+  
+  
   
 }
-
 
 
 # AQUÍ VIENE GGANIMATE!!!! ------------------------------------------------
@@ -343,7 +349,14 @@ DATOS_JUNTOS$lon_anem<- as.numeric(as.character(Coord_anemo$lon) %>% str_replace
 DATOS_JUNTOS$lat_anem<- as.numeric(as.character(Coord_anemo$lat) %>% str_replace(",","."))
 DATOS_JUNTOS<- DATOS_JUNTOS[complete.cases(DATOS_JUNTOS), ]
 
-DATOS_JUNTOS1<- DATOS_JUNTOS[DATOS_JUNTOS$Date>ymd("2018/12/01"),]
+
+### FIJAR PERIODO 
+FECHA_INI<-ymd("2019/01/01")
+FECHA_FIN<- ymd("2019/01/05")
+
+
+
+DATOS_JUNTOS1<- DATOS_JUNTOS[DATOS_JUNTOS$Date>FECHA_INI&DATOS_JUNTOS$Date<FECHA_FIN,]
 
 DATOS_JUNTOS1$Dir<- as.numeric(as.character(DATOS_JUNTOS1$Dir))
 DATOS_JUNTOS1$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS1$Dir_ERA))
@@ -397,40 +410,58 @@ animate_dir_var<- autoplot(mapfile)+
                          limits=c(floor(rng[1]), ceiling(rng[2])))
 
 
+FIXED_MODULE2<- 0.002
+MULTIPLIER_MODULE<- 0.0007
+
+animate_dir_fix_var<- autoplot(mapfile)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE2+MULTIPLIER_MODULE*uv_wind,
+                                    colour=uv_wind),
+             arrow= arrow(ends = "last",  
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon_anem, y=lat_anem,
+                                    angle=(((-Dir)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE2+MULTIPLIER_MODULE*Mean,
+                                    colour=Mean),
+             arrow= arrow(ends = "last",
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  scale_colour_gradient2(low="aquamarine", high="firebrick", #colors in the scale
+                         midpoint=mean(rng),    #same midpoint for plots (mean of the range)
+                         breaks=seq(0,max(rng),0.25), #breaks in the scale bar
+                         limits=c(floor(rng[1]), ceiling(rng[2])))
+
+
+
+
+
+
 ########SELECCIONAR MODULO CAMBIANTE O FIJO
 
 
-ANIMATE_DIRCLEAN<- animate_dir_fix+theme(axis.line=element_blank(),axis.text.x=element_blank(),
+ANIMATE_DIRCLEAN<- animate_dir_fix_var+theme(axis.line=element_blank(),axis.text.x=element_blank(),
                   axis.text.y=element_blank(),axis.ticks=element_blank(),
                   axis.title.x=element_blank(),
                   axis.title.y=element_blank(),legend.position="none",
                   panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
                   panel.grid.minor=element_blank(),plot.background=element_blank())+
   labs(title ="Date: {as.Date(frame_along)}") +
+  shadow_wake(alpha=0.01, size=0.8,wake_length = 1)+
   transition_reveal(Date)
 
 
 
 
-animate(ANIMATE_DIRCLEAN, fps=5,nframes = nrow(DATOS_JUNTOS1))
+animate(ANIMATE_DIRCLEAN, fps=10,nframes = nrow(DATOS_JUNTOS1))
 
-path_animaciones<- here::here('GGanimate/')
-if(!dir.exists(path_animaciones)){dir.create(path_animaciones)}
-anim_save(paste0(path_animaciones,'ERA5_ANM_VEC_CM_sat.gif'))
+GUARDAR<- FALSE
+
+if(GUARDAR){
+  path_animaciones<- here::here('GGanimate/')
+  if(!dir.exists(path_animaciones)){dir.create(path_animaciones)}
+  anim_save(paste0(path_animaciones,'ERA5_ANM_VEC_CM_sat.gif'))
+}
     
 
-
-
-
-
-# COMPROBACIÓN DATOS JUNTOS 2 ---------------------------------------------
-
-DATOS_JUNTOS2<- DATOS_JUNTOS1[3,]
-DATOS_JUNTOS2$Dir<- as.numeric(as.character(DATOS_JUNTOS2$Dir))
-DATOS_JUNTOS2$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS2$Dir_ERA))
-
-
-
-animate_dir_fix
-DATOS_JUNTOS2
 
