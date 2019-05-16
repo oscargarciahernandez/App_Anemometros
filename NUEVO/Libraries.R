@@ -837,7 +837,8 @@ WR_parameters2<- function(data,
                          lon_pos,
                          lat_pos,
                          spd_name,
-                         dir_name){
+                         dir_name,
+                         border_size=0.5){
   p_ros<- data%>%group_by(., lon,lat)%>% do(subplots= plot.windrose(., spd = spd_name,
                                                                     dir=dir_name,
                                                                     dirres = 22.5,
@@ -845,7 +846,7 @@ WR_parameters2<- function(data,
                                                                     palette = paleta,
                                                                     opacity = opacidad,
                                                                     border_color = "white",
-                                                                    border_size = 0.5))%>%
+                                                                    border_size = border_size))%>%
     mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
                                              x = lon_pos-anchura,      # change from 1 to other 
                                              y = lat_pos-anchura,      # values if necessary,

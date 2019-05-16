@@ -349,6 +349,8 @@ DATOS_JUNTOS$lon_anem<- as.numeric(as.character(Coord_anemo$lon) %>% str_replace
 DATOS_JUNTOS$lat_anem<- as.numeric(as.character(Coord_anemo$lat) %>% str_replace(",","."))
 DATOS_JUNTOS<- DATOS_JUNTOS[complete.cases(DATOS_JUNTOS), ]
 
+DATOS_JUNTOS$Dir<- as.numeric(as.character(DATOS_JUNTOS$Dir))
+DATOS_JUNTOS$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS$Dir_ERA))
 
 ### FIJAR PERIODO 
 FECHA_INI<-ymd("2019/01/01")
@@ -358,20 +360,15 @@ FECHA_FIN<- ymd("2019/01/05")
 
 DATOS_JUNTOS1<- DATOS_JUNTOS[DATOS_JUNTOS$Date>FECHA_INI&DATOS_JUNTOS$Date<FECHA_FIN,]
 
-DATOS_JUNTOS1$Dir<- as.numeric(as.character(DATOS_JUNTOS1$Dir))
-DATOS_JUNTOS1$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS1$Dir_ERA))
-
-
-
 FIXED_MODULE<- 0.01
 MODULE_MULTIPLIER<- 0.0025
 ARROW_LENGTH<- 0.5 # NO LE HARÍA MUCHO CASO
 ARROW_SIZE<- 1.5
 
- ###
-
+############# A PARTIR DE AQUI DIFERENTES METODOS PARA GENERAR LOS VECTORES
 rng<- range(DATOS_JUNTOS1$uv_wind,DATOS_JUNTOS1$Mean)
 
+#VECTORES CON MODULO FIJO
 animate_dir_fix<- autoplot(mapfile)+
   geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
                                     radius=FIXED_MODULE,
@@ -390,7 +387,7 @@ animate_dir_fix<- autoplot(mapfile)+
                          midpoint=mean(rng),    #same midpoint for plots (mean of the range)
                          breaks=seq(0,max(rng),0.25), #breaks in the scale bar
                          limits=c(floor(rng[1]), ceiling(rng[2])))
-
+## MODULO VARIABLE 
 animate_dir_var<- autoplot(mapfile)+
   geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
                                     radius=uv_wind*MODULE_MULTIPLIER*k,
@@ -409,7 +406,7 @@ animate_dir_var<- autoplot(mapfile)+
                          breaks=seq(0,max(rng),0.25), #breaks in the scale bar
                          limits=c(floor(rng[1]), ceiling(rng[2])))
 
-
+## MUDULO VARIABLE CON UNA PEQUEÑA PARTE VARIABLE 
 FIXED_MODULE2<- 0.002
 MULTIPLIER_MODULE<- 0.0007
 
@@ -437,8 +434,7 @@ animate_dir_fix_var<- autoplot(mapfile)+
 
 
 
-########SELECCIONAR MODULO CAMBIANTE O FIJO
-
+########SELECCIONAR TIPO DE MODULO 
 
 ANIMATE_DIRCLEAN<- animate_dir_fix_var+theme(axis.line=element_blank(),axis.text.x=element_blank(),
                   axis.text.y=element_blank(),axis.ticks=element_blank(),
@@ -465,3 +461,77 @@ if(GUARDAR){
     
 
 
+##### GENERAR ROSA DE LOS VIENTOS PARA CADA LOCALIZACION 
+# HAY QUE USAR ROSA$SUBGROBS.... IMPORTANTE 
+
+ROSA_UNI<- WR_parameters2(data = DATOS_JUNTOS, 
+               anchura = 0.02,
+               spd_name ="Mean" ,
+               dir_name = "Dir",
+               lon_pos = DATOS_JUNTOS1$lon_anem[1],
+               lat_pos =DATOS_JUNTOS1$lat_anem[1], 
+               paleta = "YlGnBu",
+               opacidad = 0.5, 
+               border_size = 0.01)
+
+ROSA_ERA<- WR_parameters2(data = DATOS_JUNTOS, 
+                          anchura = 0.02,
+                          spd_name ="uv_wind" ,
+                          dir_name = "Dir_ERA",
+                          lon_pos = DATOS_JUNTOS1$lon[1],
+                          lat_pos =DATOS_JUNTOS1$lat[1], 
+                          paleta = "YlGnBu",
+                          opacidad = 0.5,
+                          border_size = 0.01)
+
+
+MAPA_CON_ROSA<- autoplot(mapfile)+ROSA_ERA$subgrobs+ROSA_UNI$subgrobs
+#MAPA_CON_ROSA
+
+
+
+
+FIXED_MODULE2<- 0.02
+MULTIPLIER_MODULE<- 0.0007
+
+animate_dir_fix_var<- MAPA_CON_ROSA +
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE2+MULTIPLIER_MODULE*uv_wind,
+                                    colour=uv_wind),
+             arrow= arrow(ends = "last",  
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon_anem, y=lat_anem,
+                                    angle=(((-Dir)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE2+MULTIPLIER_MODULE*Mean,
+                                    colour=Mean),
+             arrow= arrow(ends = "last",
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  scale_colour_gradient2(low="aquamarine", high="firebrick", #colors in the scale
+                         midpoint=mean(rng),    #same midpoint for plots (mean of the range)
+                         breaks=seq(0,max(rng),0.25), #breaks in the scale bar
+                         limits=c(floor(rng[1]), ceiling(rng[2])))
+
+
+
+
+
+
+########ANIMAMOS
+ANIMATE_DIRCLEAN<- animate_dir_fix_var+theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                             axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                             axis.title.x=element_blank(),
+                                             axis.title.y=element_blank(),legend.position="none",
+                                             panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                             panel.grid.minor=element_blank(),plot.background=element_blank())+
+  labs(title ="Date: {as.Date(frame_along)}") +
+  shadow_mark(alpha=0.9, size=0.8)+
+  transition_reveal(Date)
+
+
+
+
+animate(ANIMATE_DIRCLEAN, fps=2,
+        nframes = nrow(DATOS_JUNTOS1),
+        renderer = ffmpeg_renderer())
