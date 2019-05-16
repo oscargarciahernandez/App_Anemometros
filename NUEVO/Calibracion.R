@@ -6,6 +6,17 @@ source(here::here("NUEVO/Libraries.R"))
 load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
 load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
 
+####CARGAMOS PERO TRABAJANDO CON RDS
+RDS<- FALSE
+if(RDS){
+  ERA5_df<- readRDS(here::here("NUEVO/Data_ERA5/ERA5_df.RDS"))
+  Anemometros<- readRDS(here::here('NUEVO/Data_anemometros/Anemometros.RDS'))
+  
+}
+
+
+
+
 #Datos_anemos:elegir anemo, crear, rellenar, filtrar----
 
 #Que anemo usaremos? Elegir
@@ -23,6 +34,16 @@ datos_anemos=datos_anemos[order(datos_anemos$Date),]
 
 #Encontrar posiciones de mediciones supuestamente erroneas
 lista_pos_errores=filtrar_datos(datos_anemos,desglosar = TRUE)
+
+
+#ME DEVULVE ERROR PORQUE NECESITA QUE LA COLUMNA DIR SEA CHARACTER??? 
+
+datos_anemos$Dir<-as.character(datos_anemos$Dir)
+lista_pos_errores=filtrar_datos(datos_anemos,desglosar = TRUE)
+
+
+
+
 N_errores=unique(c(lista_pos_errores$N1_mean,lista_pos_errores$N2_mean,lista_pos_errores$N3_mean,
                    lista_pos_errores$N1_gust,lista_pos_errores$N2_gust,lista_pos_errores$N3_gust))
 
@@ -96,9 +117,18 @@ Coordenadas_anemos=filter(t_reg,ID==anemo_elegido) %>% select(lon,lat)  #Primero
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("Coordenadas_era")) {
-  Coordenadas_era=unique(ERA5_df[,c(2,3)])
-  Coordenadas_era=arrange(Coordenadas_era,lon,lat)  #Asegurarse orden correcto para distm
+  if(file.exists(here::here('NUEVO/Data_ERA5/ERA5_coord.RDS'))){Coordenadas_era<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_coord.RDS'))}else{
+    Coordenadas_era=unique(ERA5_df[,c(2,3)])
+    Coordenadas_era=arrange(Coordenadas_era,lon,lat)  #Asegurarse orden correcto para distm
+  }
 }
+
+#CAMBIAR LA COMA POR UN PUNTO Y PASAR A FORMATO NUMERICO 
+#ESTO ESTABA CAUSANDO PROBLEMAS A LA HORA DE RECONOCER EL PUNTO MAS CERCANO 
+Coordenadas_anemos$lon<- Coordenadas_anemos$lon %>% as.character() %>% str_replace(",",".") %>% as.numeric()
+Coordenadas_anemos$lat<- Coordenadas_anemos$lat %>% as.character() %>% str_replace(",",".") %>% as.numeric()
+
+
 #Ordenarlos de cercanos a lejanos
 #Para que distm funcione bien, en las columnas primero lon, luego lat, justo lo contrario de era
 Coordenadas_era=Coordenadas_era[order(distm(Coordenadas_era, Coordenadas_anemos, fun = distHaversine)[,1]),]
@@ -160,9 +190,26 @@ windRose(datos_era,ws = "uv_wind",wd="uv_dwi",paddle = F,key.header = "uv_wind")
 #windRose(datos_era,ws = "wind",wd="dwi",paddle = F,key.header = "wind")
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
-if (!exists("Coordenadas_era")) {
-  Coordenadas_era=unique(ERA5_df[,c(2,3)])
+if (!exists("t_reg")) {#Cargamos la tabla de registro, para poder extraer coordenadas_anemos de anemo_elegido
+  t_reg<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"), sep=";")
 }
+Coordenadas_anemos=filter(t_reg,ID==anemo_elegido) %>% select(lon,lat)  #Primero lon, luego lat
+
+#Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
+if (!exists("Coordenadas_era")) {
+  if(file.exists(here::here('NUEVO/Data_ERA5/ERA5_coord.RDS'))){Coordenadas_era<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_coord.RDS'))}else{
+    Coordenadas_era=unique(ERA5_df[,c(2,3)])
+    Coordenadas_era=arrange(Coordenadas_era,lon,lat)  #Asegurarse orden correcto para distm
+  }
+}
+
+#CAMBIAR LA COMA POR UN PUNTO Y PASAR A FORMATO NUMERICO 
+#ESTO ESTABA CAUSANDO PROBLEMAS A LA HORA DE RECONOCER EL PUNTO MAS CERCANO 
+Coordenadas_anemos$lon<- Coordenadas_anemos$lon %>% as.character() %>% str_replace(",",".") %>% as.numeric()
+Coordenadas_anemos$lat<- Coordenadas_anemos$lat %>% as.character() %>% str_replace(",",".") %>% as.numeric()
+
+
+
 #Ordenarlos de cercanos a lejanos
 Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
 #Coger los n mas cercanos

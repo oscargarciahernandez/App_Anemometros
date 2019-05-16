@@ -491,17 +491,17 @@ MAPA_CON_ROSA<- autoplot(mapfile)+ROSA_ERA$subgrobs+ROSA_UNI$subgrobs
 
 
 
-FIXED_MODULE2<- 0.02
+FIXED_MODULE2<- 0.008
 MULTIPLIER_MODULE<- 0.0007
 
 animate_dir_fix_var<- MAPA_CON_ROSA +
-  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
+  geom_spoke(data=DATOS_JUNTOS,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
                                     radius=FIXED_MODULE2+MULTIPLIER_MODULE*uv_wind,
                                     colour=uv_wind),
              arrow= arrow(ends = "last",  
                           length = unit(ARROW_LENGTH, "cm")),
              size=ARROW_SIZE)+
-  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon_anem, y=lat_anem,
+  geom_spoke(data=DATOS_JUNTOS,aes(x=lon_anem, y=lat_anem,
                                     angle=(((-Dir)+90)-180)*pi/180,
                                     radius=FIXED_MODULE2+MULTIPLIER_MODULE*Mean,
                                     colour=Mean),
@@ -527,11 +527,12 @@ ANIMATE_DIRCLEAN<- animate_dir_fix_var+theme(axis.line=element_blank(),axis.text
                                              panel.grid.minor=element_blank(),plot.background=element_blank())+
   labs(title ="Date: {as.Date(frame_along)}") +
   shadow_mark(alpha=0.9, size=0.8)+
-  transition_reveal(Date)
+  transition_reveal(Date)+
+  ease_aes('cubic-in-out')
 
 
 
 
-animate(ANIMATE_DIRCLEAN, fps=2,
-        nframes = nrow(DATOS_JUNTOS1),
+animate(ANIMATE_DIRCLEAN, fps=15,
+        nframes = nrow(DATOS_JUNTOS),
         renderer = ffmpeg_renderer())
