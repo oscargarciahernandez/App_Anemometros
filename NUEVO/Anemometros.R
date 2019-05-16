@@ -48,8 +48,8 @@ names(Anemometros)<- Anem_ID
 #Guardar
 if(!dir.exists(here::here("NUEVO/Data_anemometros"))){dir.create(here::here("NUEVO/Data_anemometros"))}
                
-   save(Anemometros,
-        file=here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))  
+   saveRDS(Anemometros,
+        file=here::here("NUEVO/Data_anemometros/Anemometros.RDS"))  
 
 #Borramos CSV Y listo
 rm(CSV)
