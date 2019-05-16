@@ -4,43 +4,46 @@ source(here::here("NUEVO/Libraries.R"))
 
 HACER_HISTORICO<- FALSE
 
+EJECUTAR_PROCESO_OBSOLETO<- FALSE
 # Importación de datos ----------------------------------------------------
 
 # [NO EJECUTAR, OBSOLETO] -------------------------------------------------
 
 #OBSOLETO DEBIDO A QUE YA NO USAMOS Rdata's  Y SEGUNDO HAY QUE INCLUIR ERA5 2019
-if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
-
-#Guardar 
-if(!dir.exists(here::here("NUEVO/Data_ERA5"))){dir.create(here::here("NUEVO/Data_ERA5"))}
-
-
-#Importar
-data_ERA_2018<- open.nc(here::here("NUEVO/Data_ERA5/Data_2018.nc"))
-
-#Crear lista
-data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
-
-#Modificar fecha
-data_ERA_2018_ls<- Formato_fecha_ERA(data_ERA_2018_ls)
-
-#Convertir de lista a data.frame. PROBLEMAS CON LA RAM
-ERA5_df<- ls_to_df_ERA(data_ERA_2018_ls)
-
-
-#Borrar variables excepto ERA5_df
-rm(list = setdiff(ls(),c("ERA5_df","data_ERA_2018_ls",lsf.str())))
-
-#vemos el peso de  toda la información que emplearemos 
-format(object.size(ERA5_df),"Gb")
-
-#metemos las etiquetas de direccion y redondeamos los valores
-ERA5_df<-Dirlab_round_ERA(ERA5_df)
-
-  
-save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
-
-
+if(EJECUTAR_PROCESO_OBSOLETO){
+  if(file.exists(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))){}else{
+    
+    #Guardar 
+    if(!dir.exists(here::here("NUEVO/Data_ERA5"))){dir.create(here::here("NUEVO/Data_ERA5"))}
+    
+    
+    #Importar
+    data_ERA_2018<- open.nc(here::here("NUEVO/Data_ERA5/Data_2018.nc"))
+    
+    #Crear lista
+    data_ERA_2018_ls<- read.nc(data_ERA_2018, unpack = TRUE)
+    
+    #Modificar fecha
+    data_ERA_2018_ls<- Formato_fecha_ERA(data_ERA_2018_ls)
+    
+    #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
+    ERA5_df<- ls_to_df_ERA(data_ERA_2018_ls)
+    
+    
+    #Borrar variables excepto ERA5_df
+    rm(list = setdiff(ls(),c("ERA5_df","data_ERA_2018_ls",lsf.str())))
+    
+    #vemos el peso de  toda la información que emplearemos 
+    format(object.size(ERA5_df),"Gb")
+    
+    #metemos las etiquetas de direccion y redondeamos los valores
+    ERA5_df<-Dirlab_round_ERA(ERA5_df)
+    
+    
+    save(ERA5_df, file=here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))
+    
+    
+  }
 }
 
 
@@ -61,7 +64,7 @@ if(!file.exists(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))){
   saveRDS(ERA5_df, file = here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))
   
   rm("Data_2018","Data_2019")
-}
+}else{ERA5_df<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))}
 
 
 # CONSTRUIR HISTÓRICO ERA5 ------------------------------------------------

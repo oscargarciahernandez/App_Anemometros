@@ -186,3 +186,251 @@ ggplot(wei_an)+
 k <- (sd(datos_rosa$Mean)/mean(datos_rosa$Mean))^(-1.086)
 c <- mean(datos_rosa$Mean)/(gamma(1+1/k))
 c
+
+
+# SACANDO MEDIAS PARA EL ARTÍCULO -----------------------------------------
+
+# COORDENADA MÁS CERCANA --------------------------------------------------
+GENERAR_RDS_PUNTO_MC<-FALSE
+if(GENERAR_RDS_PUNTO_MC){
+  
+  #IMPORTAR TABLA DE REGISTRO
+  if (!exists("t_reg")) {
+    t_reg<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"), sep=";")
+  }
+  
+  
+  #SELECCIONAMOS ANEMOMETRO
+  head(t_reg)
+  ANEMO_SELECCIONADO<- 1
+  name_ERA5_coord_anem<- paste0("ERA5_coord_",
+                                str_replace_all(as.character(t_reg$ID[ANEMO_SELECCIONADO]), " ",""),
+                                ".RDS")
+  
+  #SACAR COORDENADAS MÁS CERCANAS SI ES NECESARIO
+  if (file.exists(paste0(here::here("NUEVO/Data_ERA5/"), name_ERA5_coord_anem))) {Coord_ERA5_anemo<- readRDS(paste0(here::here("NUEVO/Data_ERA5/"),
+                                                                                                                    name_ERA5_coord_anem))
+  }else{#SACAR LAS COORDENADAS ERA5 SI ES NECESARIO...CUIDADO CON EL UNIQUE(ERA5_DF)
+    if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))) {ER5_coord<- readRDS(here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))
+    }else{
+      ERA5_df<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))
+      Coordenadas_era<- unique(ERA5_df[,c("lon","lat")])
+      saveRDS(Coordenadas_era, file=here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))
+    }
+    
+    
+    #SACAMOS LAS COORDENADAS DEL ANEMO DE LA TABLA DE REGISTRO
+    Coordenadas_anemos<- as.data.frame(cbind(as.numeric(sub(",",".",as.character(t_reg$lon))),
+                                             as.numeric(sub(",",".",as.character(t_reg$lat)))))
+    colnames(Coordenadas_anemos)=c("lon","lat")
+    
+    #Seleccionar anemo
+    Coord_anemo<- Coordenadas_anemos[ANEMO_SELECCIONADO,]
+    
+    
+    #Ordenarlos puntos del ERA de cercanos a lejanos
+    Coord_era<- Coordenadas_era[order((Coordenadas_era$lon-Coord_anemo$lon)^2+(Coordenadas_era$lat-Coord_anemo$lat)^2),]
+    
+    
+    #SELECCIONAMOS LOS N MÁS CERCANOS 
+    n=1
+    Coord_era=Coord_era[1:n,]
+    Coord_ERA5_anemo<- Coord_era
+    
+    saveRDS(Coord_era, file=paste0(here::here("NUEVO/Data_ERA5/"),
+                                   name_ERA5_coord_anem))
+  }
+  
+}
+
+
+
+####JUNTAMOS LOS DATOS DEL ANEMO
+
+#CARGAMOS LOS DATOS DE ERA5 2018_2019
+ERA5_df<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))
+
+
+#CARGAMOS ANEMOS
+#LOS CARGAMOS DESDE JUNTOS.RDS PORQUE ES DONDE EL SCRIPT CALIBRACIÓN A ENTRADO EN 
+# JUEGO PASANDO LOS FILTROS PARA LIMPIAR LOS DATOS Y ADEMÁS SE HAN EQUIPARADO LOS DATOS 
+# CON ERA5... HABLANDO DE RESOLUCIÓN TEMPORAL. 
+
+DATOS_ANEMOMETRO_UNI<- readRDS(here::here('NUEVO/Data_calibracion/0B38DAE79059_juntos.rds')) %>% 
+  .[,c(5,2,3,4)]
+colnames(DATOS_ANEMOMETRO_UNI)<- c("Date", colnames(readRDS(here::here('NUEVO/Data_calibracion/0B38DAE79059_juntos.rds'))[,2:4]))
+
+#CARGAMOS COORDENADAS DEL ANEMO
+Coord_ERA5_anemo<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_coord_0B38DAE79059.RDS'))
+
+#CORTAMOS DATOS ERA PARA EL PUNTO MAS CERCANO. MC
+ERA5_df_MC<- ERA5_df %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) 
+
+#JUNTAMOS LOS DATOS 
+DATOS_JUNTOS<- left_join(DATOS_ANEMOMETRO_UNI, ERA5_df_MC, by="Date")
+
+
+##### AÑADIMOS EL FACTOR K DEBIDO A LA ALTITUD
+
+zo=3 #[m] Centers of cities with tall buildings - Manwell pag 46, tabla 2.2
+z=155 + 3.5*6 + 1.5 #[m] Altura anemo = altitud segun google earth + altura edificio + altura poste anemo
+zr=401 + 10 #[m] Altura era = altitud segun google earth + 10m
+k=log(z/zo)/log(zr/zo)  #k=U(z)/U(zr)
+
+
+
+#CALCULO DE MEDIAS
+###HACIENDO MEDIA DE LOS DATOS DE LOS ANEMOS Y ERA_5 TENIENDO EN CUENTA 
+#EL PERIODO DE SOLAPAMIENTO
+DATOS_JUNTOS %>% .[complete.cases(.),] %>% summarise(Vmean=mean(Mean), Gust_mean=mean(Gust),
+                                                     ERA5_mean=mean(uv_wind), ERA5_mean_K=mean(uv_wind*k))
+
+
+
+#########HACIENDO MEDIAS DEL HISTÓRICO DE ERA5
+RDS_HISTORICO_ERA<-list.files(here::here('NUEVO/Data_ERA5/'), full.names = T) %>% 
+  .[1:40]
+
+ERA_mean<- vector()
+#ERA_mean_k<- vector()
+
+for (i in 1:length(RDS_HISTORICO_ERA) ) {
+  ERA_mean[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>% 
+    summarise(ERA_mean= mean(uv_wind, na.rm = T))
+  #ERA_mean_k[i]<- readRDS(RDS_HISTORICO_ERA[i]) %>% dplyr::filter(., lon==Coord_ERA5_anemo$lon & lat==Coord_ERA5_anemo$lat) %>%summarise(ERA_mean= mean(uv_wind*k, na.rm = T))
+  
+}
+
+
+
+# AQUÍ VIENE GGANIMATE!!!! ------------------------------------------------
+#OKEY, PARA ESTA SECCIÓN VAMOS A UTILIZAR DATOS_JUNTOS.R QUE LO SACAMOS JUSTO EN 
+# LA SECCIÓN ANTERIOR HE INTENTAR SACAR UN GIF CON UN VECTOR DE DIRECCIÓN. 
+# INCLUYENDO A PODER SER MAPAS Y ROLLOS 
+
+
+head(DATOS_JUNTOS)
+#UNO DE LOS PROBLEMILLAS QUE LE VEO ES QUE DIR Y DIR_UV_DWI NO SE QUIEREN LLEVAR MUY BIEN... 
+# HABRÁ QUE EQUIPARARLOS PRIMERO... ANTES DE INTENTAR NADA...
+
+
+labels_dir<- unique(DATOS_JUNTOS$Dir) %>% .[order(as.numeric(.))] %>% 
+  .[1:(length(.)-1)] %>% c(., "0")
+
+
+DATOS_JUNTOS$Dir_ERA<- cut(DATOS_JUNTOS$uv_dwi,
+            breaks = c(0,seq(11.25,360,by=22.50),361),
+            labels = labels_dir)
+
+
+#AHORA QUE YA TENEMOS LOS DATOS EKIPARADOS VAMOS A POR GGANIMATE
+#install.packages("gganimate")
+library(gganimate)
+
+
+#EN EL SCRIPT MAPS.R SE DESCARGAN LOS MAPAS AQUÍ, LOS BUSCAMOS PARA REPRESENTAR ENCIMA
+# LOS VECTORES
+mapfile<- find_mapfolder() %>% list.files(full.names = T) %>% .[1] %>% readRDS()
+
+#IMPORTAR TABLA DE REGISTRO PARA OBTENER LAS COORDENADAS DDE NUESTRO ANEMO
+if (!exists("t_reg")) {
+  t_reg<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"), sep=";")
+}
+
+Coord_anemo<- t_reg[1,c("lon","lat")]
+
+DATOS_JUNTOS$lon_anem<- as.numeric(as.character(Coord_anemo$lon) %>% str_replace(",","."))
+DATOS_JUNTOS$lat_anem<- as.numeric(as.character(Coord_anemo$lat) %>% str_replace(",","."))
+DATOS_JUNTOS<- DATOS_JUNTOS[complete.cases(DATOS_JUNTOS), ]
+
+DATOS_JUNTOS1<- DATOS_JUNTOS[DATOS_JUNTOS$Date>ymd("2018/12/01"),]
+
+DATOS_JUNTOS1$Dir<- as.numeric(as.character(DATOS_JUNTOS1$Dir))
+DATOS_JUNTOS1$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS1$Dir_ERA))
+
+
+
+FIXED_MODULE<- 0.01
+MODULE_MULTIPLIER<- 0.0025
+ARROW_LENGTH<- 0.5 # NO LE HARÍA MUCHO CASO
+ARROW_SIZE<- 1.5
+
+ ###
+
+rng<- range(DATOS_JUNTOS1$uv_wind,DATOS_JUNTOS1$Mean)
+
+animate_dir_fix<- autoplot(mapfile)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE,
+                                    colour=uv_wind),
+             arrow= arrow(ends = "last",  
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon_anem, y=lat_anem,
+                                    angle=(((-Dir)+90)-180)*pi/180,
+                                    radius=FIXED_MODULE,
+                                    colour=Mean),
+             arrow= arrow(ends = "last",
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  scale_colour_gradient2(low="aquamarine", mid="green", high="firebrick", #colors in the scale
+                         midpoint=mean(rng),    #same midpoint for plots (mean of the range)
+                         breaks=seq(0,max(rng),0.25), #breaks in the scale bar
+                         limits=c(floor(rng[1]), ceiling(rng[2])))
+
+animate_dir_var<- autoplot(mapfile)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon, y=lat, angle=(((-Dir_ERA)+90)-180)*pi/180,
+                                    radius=uv_wind*MODULE_MULTIPLIER*k,
+                                    colour=uv_wind),
+             arrow= arrow(ends = "last",  
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  geom_spoke(data=DATOS_JUNTOS1,aes(x=lon_anem, y=lat_anem,
+                                    angle=(((-Dir)+90)-180)*pi/180,
+                                    radius=Mean*MODULE_MULTIPLIER,colour=Mean),
+             arrow= arrow(ends = "last",
+                          length = unit(ARROW_LENGTH, "cm")),
+             size=ARROW_SIZE)+
+  scale_colour_gradient2(low="aquamarine", mid="green", high="firebrick", #colors in the scale
+                         midpoint=mean(rng),    #same midpoint for plots (mean of the range)
+                         breaks=seq(0,max(rng),0.25), #breaks in the scale bar
+                         limits=c(floor(rng[1]), ceiling(rng[2])))
+
+
+########SELECCIONAR MODULO CAMBIANTE O FIJO
+
+
+ANIMATE_DIRCLEAN<- animate_dir_fix+theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                  axis.text.y=element_blank(),axis.ticks=element_blank(),
+                  axis.title.x=element_blank(),
+                  axis.title.y=element_blank(),legend.position="none",
+                  panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                  panel.grid.minor=element_blank(),plot.background=element_blank())+
+  labs(title ="Date: {as.Date(frame_along)}") +
+  transition_reveal(Date)
+
+
+
+
+animate(ANIMATE_DIRCLEAN, fps=5,nframes = nrow(DATOS_JUNTOS1))
+
+path_animaciones<- here::here('GGanimate/')
+if(!dir.exists(path_animaciones)){dir.create(path_animaciones)}
+anim_save(paste0(path_animaciones,'ERA5_ANM_VEC_CM_sat.gif'))
+    
+
+
+
+
+
+# COMPROBACIÓN DATOS JUNTOS 2 ---------------------------------------------
+
+DATOS_JUNTOS2<- DATOS_JUNTOS1[3,]
+DATOS_JUNTOS2$Dir<- as.numeric(as.character(DATOS_JUNTOS2$Dir))
+DATOS_JUNTOS2$Dir_ERA<- as.numeric(as.character(DATOS_JUNTOS2$Dir_ERA))
+
+
+
+animate_dir_fix
+DATOS_JUNTOS2
+

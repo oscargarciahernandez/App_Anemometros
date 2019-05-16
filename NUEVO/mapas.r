@@ -17,10 +17,10 @@ if (!exists("t_reg")) {
 
 
 #Sacar todas las coordenadas ERA5 y guardarlas en un Rdata
-if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))) { 
-  load(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))}else{
+if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))) { 
+  Coordenadas_era<- readRDS(here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))}else{
     Coordenadas_era<- unique(ERA5_df[,c("lon","lat")])
-    save(Coordenadas_era, file=here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))
+    saveRDS(Coordenadas_era, file=here::here("NUEVO/Data_ERA5/ERA5_coord.RDS"))
   }
 
 
@@ -28,8 +28,8 @@ if (file.exists(here::here("NUEVO/Data_ERA5/ERA5_coord.Rdata"))) {
 
 
 #Sacar coordenadas anemos de la tabla de registro
-Coordenadas_anemos<- as.data.frame(cbind(as.numeric(sub(",",".",as.character(t_reg$LON))),
-                                         as.numeric(sub(",",".",as.character(t_reg$LAT)))))
+Coordenadas_anemos<- as.data.frame(cbind(as.numeric(sub(",",".",as.character(t_reg$lon))),
+                                         as.numeric(sub(",",".",as.character(t_reg$lat)))))
 colnames(Coordenadas_anemos)=c("lon","lat")
 
 #Seleccionar anemo
