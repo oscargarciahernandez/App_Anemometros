@@ -134,13 +134,19 @@ Dirlab_round_ERA<- function(ERA_df){
               breaks = c(0,seq(11.25,360,by=22.50),361),
               labels = c("N","NNE","NE","NEE","E",
                          "SEE","SE","SSE","S","SSW","SW",
-                         "SWW","W","NWW","NW","NNW","N"))
+                         "SWW","W","NWW","NW","NNW","N1"))
+  a_dwi<- ifelse(a_dwi=="N1", "N",a_dwi)
+  
   
   a_uv_dwi<- cut(ERA_df$uv_dwi,
                  breaks = c(0,seq(11.25,360,by=22.50),361),
                  labels = c("N","NNE","NE","NEE","E",
                             "SEE","SE","SSE","S","SSW","SW",
-                            "SWW","W","NWW","NW","NNW","N"))
+                            "SWW","W","NWW","NW","NNW","N1"))
+  
+  a_uv_dwi<- ifelse(a_uv_dwi=="N1", "N",a_uv_dwi)
+  
+  
   
   tabla<- as.data.frame(cbind(ERA_df,a_dwi,a_uv_dwi))
   colnames(tabla)<- c(names(ERA_df), "Dir_dwi","Dir_uv_dwi")
