@@ -4,6 +4,62 @@ source(here::here("NUEVO/Libraries.R"))
 
 HACER_HISTORICO<- TRUE
 
+# CONSTRUIR HISTÓRICO ERA5 ------------------------------------------------
+# HAY QUE TENER LOS .NC DE ERA5 SITUADOS EN LA CARPETA /APP_ANEMOMETROS/PYTHON/ERA5
+#HAY QUE TENER INSTALADO EL PAQUETE PARALLEL 
+
+#install.packages("parallel")
+library(parallel)
+
+
+if(HACER_HISTORICO){
+  ERA5_allfiles<- here::here('python/ERA5/') %>% list.files(full.names = T)
+  NC_files<- ERA5_allfiles %>% str_split("/") %>% 
+    lapply(function(x){x[length(x)]}) %>% 
+    str_remove_all("Data_|.nc") 
+  
+  RDS_files<- here::here('NUEVO/Data_ERA5/') %>%  list.files(full.names = T)%>% str_split("/") %>% 
+    lapply(function(x){x[length(x)]}) %>% 
+    str_remove_all("Data_|.RDS") 
+  
+  
+  MAKE_historico_fun<- function(ERA5_file){
+    #Importar
+    data_ERA<- open.nc(ERA5_file)
+    
+    #Crear lista
+    data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
+    
+    #Cerrar ERA 
+    close.nc(data_ERA)
+    
+    #Modificar fecha
+    data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
+    
+    #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
+    ERA5_df<- ls_to_df_ERA(data_ERA_ls)
+    
+    #metemos las etiquetas de direccion y redondeamSos los valores
+    ERA5_df<-Dirlab_round_ERA(ERA5_df)
+    
+    file_name<- ERA5_file %>% str_split("/") %>% .[[1]] %>%
+      .[length(.)] %>% str_remove(".nc") %>% paste0(.,".RDS")
+    
+    path_ERA<- here::here("NUEVO/Data_ERA5/")
+    if(!dir.exists(path_ERA)){dir.create(path_ERA)}
+    
+    saveRDS(ERA5_df, file=paste0(path_ERA, file_name))
+    rm("data_ERA_ls", "ERA5_df","data_ERA")
+    
+    
+    
+    
+  }
+  mclapply(ERA5_allfiles[!NC_files%in%RDS_files], print,
+           mc.cores = getOption("mc.cores", parallel::detectCores()/2))
+}
+
+
 EJECUTAR_PROCESO_OBSOLETO<- FALSE
 # Importación de datos ----------------------------------------------------
 
@@ -66,61 +122,6 @@ if(!file.exists(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))){
   rm("Data_2018","Data_2019")
 }else{ERA5_df<- readRDS(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))}
 
-
-# CONSTRUIR HISTÓRICO ERA5 ------------------------------------------------
-# HAY QUE TENER LOS .NC DE ERA5 SITUADOS EN LA CARPETA /APP_ANEMOMETROS/PYTHON/ERA5
-#HAY QUE TENER INSTALADO EL PAQUETE PARALLEL 
-
-#install.packages("parallel")
-library(parallel)
-
-
-if(HACER_HISTORICO){
-  ERA5_allfiles<- here::here('python/ERA5/') %>% list.files(full.names = T)
-  NC_files<- ERA5_allfiles %>% str_split("/") %>% 
-    lapply(function(x){x[length(x)]}) %>% 
-    str_remove_all("Data_|.nc") 
-  
-  RDS_files<- here::here('NUEVO/Data_ERA5/') %>%  list.files(full.names = T)%>% str_split("/") %>% 
-    lapply(function(x){x[length(x)]}) %>% 
-    str_remove_all("Data_|.RDS") 
-  
-  
-  MAKE_historico_fun<- function(ERA5_file){
-    #Importar
-    data_ERA<- open.nc(ERA5_file)
-    
-    #Crear lista
-    data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
-    
-    #Cerrar ERA 
-    close.nc(data_ERA)
-    
-    #Modificar fecha
-    data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
-    
-    #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
-    ERA5_df<- ls_to_df_ERA(data_ERA_ls)
-    
-    #metemos las etiquetas de direccion y redondeamSos los valores
-    ERA5_df<-Dirlab_round_ERA(ERA5_df)
-    
-    file_name<- ERA5_file %>% str_split("/") %>% .[[1]] %>%
-      .[length(.)] %>% str_remove(".nc") %>% paste0(.,".RDS")
-    
-    path_ERA<- here::here("NUEVO/Data_ERA5/")
-    if(!dir.exists(path_ERA)){dir.create(path_ERA)}
-    
-    saveRDS(ERA5_df, file=paste0(path_ERA, file_name))
-    rm("data_ERA_ls", "ERA5_df","data_ERA")
-    
-    
-    
-    
-  }
-  mclapply(ERA5_allfiles[!NC_files%in%RDS_files], print,
-           mc.cores = getOption("mc.cores", parallel::detectCores()/2))
-}
 
 
 
