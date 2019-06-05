@@ -2,6 +2,7 @@ library(RCurl)
 library(request)
 library(XML)
 library(rvest)
+library(stringr)
 bdown=function(url, file){
   
   f = CFILE(file, mode="wb")
@@ -21,21 +22,6 @@ CARPETAS_DISPONIBLES<- Tabla_gfs[Tabla_gfs$Name %>% as.character()%>%
 
 URLS_CARPETAS<- CARPETAS_DISPONIBLES %>% paste0(url_gfs_http,.)
 
-
-
-
-CONTENIDO_CARPETAS<- URLS_CARPETAS[20] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),] %>% .[.$Name %>% as.character()%>%
-                               str_detect("[:digit:]{8}"),]$Name %>% 
-  na.omit() %>% 
-  as.character() 
-
-URLS_SUBCARPETAS<- CONTENIDO_CARPETAS %>% paste0(URLS_CARPETAS,.)
-
-
-if(nrow(CONTENIDO_CARPETAS)==1){}else{}
-
-
 # ¡¡¡¡¡INCISO¡¡¡¡---USER-AGENTS -------------------------------------------
 
 USER_AGENTS <- read_html("http://www.useragentstring.com/pages/useragentstring.php?typ=Browser") %>%
@@ -43,6 +29,44 @@ USER_AGENTS <- read_html("http://www.useragentstring.com/pages/useragentstring.p
 
 
 
+
+
+CONTENIDO_CARPETAS<- URLS_CARPETAS[20] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+  .[3:nrow(.),]  %>% 
+  .[.$Name %>% as.character()%>%
+      str_detect("[:digit:]{6}"),"Name"] %>% 
+  na.omit() %>% 
+  as.character() 
+
+URLS_SUBCARPETAS<- CONTENIDO_CARPETAS %>% paste0(URLS_CARPETAS[20],.)
+
+
+if(nrow(CONTENIDO_CARPETAS)==1){}else{}
+
+
+#SOLO KEREMOS LOS GFS DE 48 h
+Gribs_hasta48<- URLS_SUBCARPETAS[1] %>% 
+  GET(add_headers("user-agent" = USER_AGENTS[5])) %>%
+  htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+  .[3:nrow(.),]  %>% .$Name %>% .[str_detect(.,"grb2")] %>%
+                         str_extract("[[:digit:]]{3}.grb2")  %>% 
+                         str_remove(".grb2") %>% 
+                         as.numeric()<50
+URLS_SUBCARPETAS[1] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+  .[3:nrow(.),]  %>% .$Name %>% .[Gribs_hasta48]
+
+  na.omit() %>% 
+  as.character() 
+
+
+
+
+URLS_SUBCARPETAS[1] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+  .[3:nrow(.),]  %>% 
+  .[.$Name %>% .[str_detect(.,"grb2")] %>%
+      str_extract("[[:digit:]]{3}.grb2") ,"Name"] %>% 
+  na.omit() %>% 
+  as.character() 
 
 
 
