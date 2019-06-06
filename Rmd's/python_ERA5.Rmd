@@ -14,11 +14,11 @@ library(knitr)
 # Intro
 <br />
 <br />
-Esto pretende ser una guía escueta de los cositas necesarias para descargar los datos del ERA5. En principio estos datos se deberían descargar de la página oficial del [ECMWF](https://confluence.ecmwf.int/display/CKB/How+to+download+ERA5+data+via+the+ECMWF+Web+API). Lo que pasa es que los datos del ERA5 están disponibles por 2 vías posibles: 
+Esto pretende ser una guía escueta de los cositas necesarias para descargar los datos del ERA5. ¿Por qué ERA5?... pues por [esto](https://www.researchgate.net/publication/320084119_ERA5_The_new_champion_of_wind_power_modelling). En principio estos datos se deberían descargar de la página oficial del [ECMWF](https://confluence.ecmwf.int/display/CKB/How+to+download+ERA5+data+via+the+ECMWF+Web+API). Lo que pasa es que los datos del ERA5 están disponibles por 2 vías posibles: 
 <br />
 <br />
 
-+ Mediante la API del ECMWF
++ Mediante la API del ECMWF (**OBSOLETO**)
 + Mediante la API del Copernicus Climate Change Service's Climate Data Store (CDS) (**Vamos a usar este método**)
 
 <br />
@@ -41,7 +41,7 @@ Hay que tener en cuenta que esta guía está pensada para realizar todo el proce
 <br />
 
 
-#Instalar permisos
+# Instalar permisos
 
 <br />
 <br />
@@ -52,7 +52,7 @@ Hay que tener en cuenta que esta guía está pensada para realizar todo el proce
 **Nosotros ya tenemos.** 
 ```{r eval=FALSE}
 usuario=  proyectoroseo@gmail.com
-contraseña= euskanarias
+contraseña= ********* #PORSIAKA
 ```
 
 <br />
@@ -80,7 +80,7 @@ Me explico:
 <br />
 <br />
 ```{r echo=FALSE, fig.align='center'}
-include_graphics(here::here("imagenes/CDSAPI/4.png"))
+include_graphics(here::here("imagenes/CDSAPI/4.PNG"))
 
 ```
 <br />
@@ -157,13 +157,14 @@ c = cdsapi.Client()
 c.retrieve(
     'reanalysis-era5-single-levels',
     {
-        'variable':[
-            '10m_u_component_of_neutral_wind','10m_u_component_of_wind','10m_v_component_of_neutral_wind',
-            '10m_v_component_of_wind','10m_wind_direction','10m_wind_gust_since_previous_post_processing',
-            '10m_wind_speed','2m_temperature','instantaneous_10m_wind_gust'
-        ],
         'product_type':'reanalysis',
-        'year':'2000',
+        'format':'netcdf',
+        'variable':[
+            '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
+        ],
+        'year':'1979',
         'month':[
             '01','02','03',
             '04','05','06',
@@ -192,8 +193,7 @@ c.retrieve(
             '15:00','16:00','17:00',
             '18:00','19:00','20:00',
             '21:00','22:00','23:00'
-        ],
-        'format':'netcdf'
+        ]
     },
     'download.nc')
 
@@ -202,7 +202,12 @@ c.retrieve(
 <br />
 <br />
 
-#Límites de las peticiones 
+**NOTA: ESTA REQUEST ESTÁ PENSADA PARA DESCARGAR TODOS LOS DATOS RELACIONADOS CON EL VIENTO PERO, SEGURAMENTE NO NECESITAMOS TODAS ESTAS VARIABLES. YA TE ADELANTO QUE LAS VARIABLES "NEUTRAL" NO NOS VALEN PARA NADA.** 
+
+<br />
+<br />
+
+# Límites de las peticiones 
 Cuando estas seleccionando los datos que quieres y te pasas del máximo al final de la página te aparece un mensajito de este estilo. Esto es útil para ver donde está el límite de datos que puedes pedir, es interesante hacer request o peticiones con un peso cercano al máximo. OPTIMIZA TIEMPO. 
 <br />
 <br />
@@ -217,18 +222,18 @@ Para la petición que yo estaba haciendo me di cuenta de que el límite está en
 <br />
 <br />
 
-#Automatizando las peticiones.
+# Automatizando las peticiones.
 <br />
 <br />
 
-##Bucle for
+## Bucle for
 <br />
 <br />
 Se puede hacer un bucle (*for*). pero que pasa: las request tardan mogollón, a mi de media, me tardó  55 mins cada petición individual y si hacemos un bulce (*for*) lo que va  a ir haciendo es esperar hasta que acabe el anterior para hacer la siguiente petición. **Esto no es la mejor opción**. 
 <br />
 <br />
 
-##Procesos paralelos
+## Procesos paralelos
 <br />
 <br />
 Como se pueden hacer muchas peticiones a la vez, siempre y cuando no superen el límite, lo que vamos a hacer para ahorrar tiempo es realizar todas las peticiones en procesos paralelos de esta manera todas las peticiones se están haciendo al mismo tiempo. *mucho más eficiente*. 
@@ -259,45 +264,46 @@ import cdsapi
 def req(year):
         
         c = cdsapi.Client()
-        c.retrieve(
-        'reanalysis-era5-single-levels',
-        {
-            'variable':[
-                '10m_u_component_of_neutral_wind','10m_u_component_of_wind','10m_v_component_of_neutral_wind',
-                '10m_v_component_of_wind','10m_wind_direction','10m_wind_gust_since_previous_post_processing',
-                '10m_wind_speed','2m_temperature','instantaneous_10m_wind_gust'
-            ],
-            'product_type':'reanalysis',
-            'year': year,
-            'month':[
-                '01','02','03',
-                '04','05','06',
-                '07','08','09',
-                '10','11','12'
-            ],
-            'day':[
-                '01','02','03',
-                '04','05','06',
-                '07','08','09',
-                '10','11','12',
-                '13','14','15',
-                '16','17','18',
-                '19','20','21',
-                '22','23','24',
-                '25','26','27',
-                '28','29','30',
-                '31'
-            ],
-            'time':[
-                '00:00','01:00','02:00',
-                '03:00','04:00','05:00',
-                '06:00','07:00','08:00',
-                '09:00','10:00','11:00',
-                '12:00','13:00','14:00',
-                '15:00','16:00','17:00',
-                '18:00','19:00','20:00',
-                '21:00','22:00','23:00'
-            ],
+       c.retrieve(
+    'reanalysis-era5-single-levels',
+    {
+        'product_type':'reanalysis',
+        'format':'netcdf',
+        'variable':[
+            '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
+        ],
+        'year': year,
+        'month':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12'
+        ],
+        'day':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12',
+            '13','14','15',
+            '16','17','18',
+            '19','20','21',
+            '22','23','24',
+            '25','26','27',
+            '28','29','30',
+            '31'
+        ],
+        'time':[
+            '00:00','01:00','02:00',
+            '03:00','04:00','05:00',
+            '06:00','07:00','08:00',
+            '09:00','10:00','11:00',
+            '12:00','13:00','14:00',
+            '15:00','16:00','17:00',
+            '18:00','19:00','20:00',
+            '21:00','22:00','23:00'
+        ],
             'format':'netcdf',
             'area' : '45/-4/41/-1', #N/W/S/E
             'grid' : '0.1/0.1'

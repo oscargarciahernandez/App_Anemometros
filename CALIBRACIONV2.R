@@ -214,21 +214,81 @@ saveRDS(DATOS_JUNTOS,paste0(path_anemo, "/",nombre_archivo) )
 
 
 
+# A PARTIR DE AQUÍ CALIBRACION  -------------------------------------------
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
 DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
 #PLOTEOS PARA COMPROBAR SIMILITUD ENTRE ERA5 Y ANEMOMETRO
-'''
-DATOS_JUNTOS_LISTA[[1]] %>% .[which(month(.$Date)==8),] %>%  ggplot( aes(x=Date)) + 
+
+'
+DATOS_JUNTOS_LISTA[[1]] %>%
+.[which(month(.$Date)==8),] %>%  
+ggplot( aes(x=Date)) + 
   geom_line(aes(y=ERAWS)) + 
   geom_line(aes(y=WS_N), col="red")+
   ylab("Wind Speed [m/s]")+
   theme_light()
 
-DATOS_JUNTOS_LISTA[[1]] %>% .[which(month(.$Date)==8 & day(.$Date)>15),] %>%  ggplot( aes(x=Date)) + 
+DATOS_JUNTOS_LISTA[[1]] %>% 
+.[which(month(.$Date)==8 & day(.$Date)>15),] %>% 
+ggplot( aes(x=Date)) + 
   geom_line(aes(y=WS_st), col="green") +
   geom_line(aes(y=WS_l), col="blue") + 
   geom_line(aes(y=WS_N), col="red")+
   ylab("Wind Speed [m/s]")+
   theme_light()
-'''
+'
 
+Tabla_cor<- DATOS_JUNTOS_LISTA %>% lapply(function(y){
+  x<- y %>%  .[complete.cases(.),]
+  Tabla_cor<- cbind(cor(x$ERAWS, x$WS_l),
+  cor(x$ERAWS, x$WS_st),
+  cor(x$ERAWS, x$WS_N),
+  cor(x$ERAWS, x$WS_sp)) %>% as.data.frame()
+  colnames(Tabla_cor)<- c("linear", "stine",
+                          "nearest", "spline")
+  
+  return(Tabla_cor)
+  
+}) %>% bind_rows()
+
+rownames(Tabla_cor)<- sapply(DATOS_JUNTOS_LISTA, function(x){
+  paste(c(x$ERAlon %>% unique() %>% round(2),
+          x$ERAlat %>% unique()) %>% round(2),
+        collapse = "_") %>% 
+    str_replace_all("-","m")
+})
+
+#MEDIAS DE CORRELACIÓN
+Tabla_cor %>% summarise_all(mean)
+
+
+SMA_table<- DATOS_JUNTOS_LISTA %>% lapply(function(x) x %>% .[complete.cases(.),] %>%
+                                            mutate(SMA_l=  SMA(WS_l, n = 3),
+                                                   SMA_N=  SMA(WS_N, n = 3),
+                                                   SMA_ERA=  SMA(ERAWS, n = 3)))
+
+Tabla_cor_SMA<- SMA_table %>% lapply(function(y){
+  x<- y %>%  .[complete.cases(.),]
+  Tabla_cor<- cbind(cor(x$SMA_ERA, x$SMA_l),
+                    cor(x$SMA_ERA, x$SMA_N))%>% 
+    as.data.frame()
+  colnames(Tabla_cor)<- c("linear",
+                          "nearest")
+  
+  return(Tabla_cor)
+  
+}) %>% bind_rows()
+rownames(Tabla_cor_SMA)<- sapply(DATOS_JUNTOS_LISTA, function(x){
+  paste(c(x$ERAlon %>% unique() %>% round(2),
+          x$ERAlat %>% unique()) %>% round(2),
+        collapse = "_") %>% 
+    str_replace_all("-","m")
+})
+Tabla_cor_SMA %>% summarise_all(mean)
 

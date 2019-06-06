@@ -3,6 +3,13 @@ library(request)
 library(XML)
 library(rvest)
 library(stringr)
+
+# CHANGE USER-AGENT -------------------------------------------
+
+USER_AGENTS <- read_html("http://www.useragentstring.com/pages/useragentstring.php?typ=Browser") %>%
+  html_nodes( "li") %>% html_text()
+
+#DOWNLOAD DATA
 bdown=function(url, file){
   
   f = CFILE(file, mode="wb")
@@ -11,6 +18,9 @@ bdown=function(url, file){
   return(a)
 }
 
+
+
+# DESCARGA DE GRIBS -------------------------------------------------------
 url_gfs_http<- "https://nomads.ncdc.noaa.gov/data/gfs4/"
 Tabla_gfs<- url_gfs_http %>% GET() %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
   .[3:nrow(.),]
@@ -22,76 +32,59 @@ CARPETAS_DISPONIBLES<- Tabla_gfs[Tabla_gfs$Name %>% as.character()%>%
 
 URLS_CARPETAS<- CARPETAS_DISPONIBLES %>% paste0(url_gfs_http,.)
 
-# ¡¡¡¡¡INCISO¡¡¡¡---USER-AGENTS -------------------------------------------
-
-USER_AGENTS <- read_html("http://www.useragentstring.com/pages/useragentstring.php?typ=Browser") %>%
-  html_nodes( "li") %>% html_text()
-
-
-
-
-
-CONTENIDO_CARPETAS<- URLS_CARPETAS[20] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),]  %>% 
-  .[.$Name %>% as.character()%>%
-      str_detect("[:digit:]{6}"),"Name"] %>% 
-  na.omit() %>% 
-  as.character() 
-
-URLS_SUBCARPETAS<- CONTENIDO_CARPETAS %>% paste0(URLS_CARPETAS[20],.)
-
-
-if(nrow(CONTENIDO_CARPETAS)==1){}else{}
-
-
-#SOLO KEREMOS LOS GFS DE 48 h
-Gribs_hasta48<- URLS_SUBCARPETAS[1] %>% 
-  GET(add_headers("user-agent" = USER_AGENTS[5])) %>%
-  htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),]  %>% .$Name %>% .[str_detect(.,"grb2")] %>%
-                         str_extract("[[:digit:]]{3}.grb2")  %>% 
-                         str_remove(".grb2") %>% 
-                         as.numeric()<50
-URLS_SUBCARPETAS[1] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),]  %>% .$Name %>% .[Gribs_hasta48]
-
-  na.omit() %>% 
-  as.character() 
-
-
-
-
-URLS_SUBCARPETAS[1] %>% GET(add_headers("user-agent" = USER_AGENTS[5])) %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),]  %>% 
-  .[.$Name %>% .[str_detect(.,"grb2")] %>%
-      str_extract("[[:digit:]]{3}.grb2") ,"Name"] %>% 
-  na.omit() %>% 
-  as.character() 
-
-
-
-Gribs<- Tabla_gfs2$Name %>% as.character() %>%  .[str_detect(., ".grb2")] %>% .[complete.cases(.)]
-
-#48 es la position 17
-Gribs %>% str_extract("[[:digit:]]{3}.grb2") %>% str_remove(".grb2") %>%
-  as.numeric() 
-
-path_gribs<- here::here('Gribs/')
-if(!dir.exists(path_gribs<- here::here('Gribs/'))){dir.create(path_gribs<- here::here('Gribs/'))}
-
-
-##MUY LENTO
-'
-for (i in 1:17) {
-  download.file(paste0(url_gfs_http, Gribs[i]), destfile = paste0(path_gribs, Gribs[i]))
+for (i in 1:length(CARPETAS_DISPONIBLES)) {
   
-}
-'
-
-for (i in 1:17) {
-  bdown(paste0(url_gfs_http, Gribs[i]), file = paste0(path_gribs, Gribs[i]))
+  CONTENIDO_CARPETAS<- URLS_CARPETAS[i] %>% 
+    GET(add_headers("user-agent" = USER_AGENTS[i])) %>%
+    htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+    .[3:nrow(.),]  %>% 
+    .[.$Name %>% as.character()%>%
+        str_detect("[:digit:]{6}"),"Name"] %>% 
+    na.omit() %>% 
+    as.character() 
   
+  URLS_SUBCARPETAS<- CONTENIDO_CARPETAS %>% paste0(URLS_CARPETAS[i],.)
+  
+  
+  if(length(CONTENIDO_CARPETAS)==0){cat(URLS_CARPETAS[i], " VACIO")}else{
+    
+    #SOLO KEREMOS LOS GFS DE 48 h
+    ALL_ARCH<- URLS_SUBCARPETAS[i] %>% 
+      GET(add_headers("user-agent" = USER_AGENTS[i+1])) %>%
+      htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+      .[3:nrow(.),] 
+    
+    Gribs_hasta48<- ALL_ARCH %>% .$Name  %>%
+      str_extract("[[:digit:]]{3}.grb2")  %>% 
+      str_remove(".grb2") %>% 
+      as.numeric()<50 
+    
+    ARCHIVOS_GRIB<- ALL_ARCH$Name[Gribs_hasta48] %>% na.omit() %>% 
+      as.character() 
+    
+    
+    SUBGRIB_FOLDER<- URLS_SUBCARPETAS[i] %>% str_split("/") %>% .[[1]] %>% .[length(.)-1]
+    
+    path_gribs<- paste0(here::here('Gribs/'), SUBGRIB_FOLDER,"/")
+    if(!dir.exists(path_gribs)){dir.create(path_gribs, recursive = T)}
+    
+    
+    for (j in 1:length(ARCHIVOS_GRIB)) {
+      bdown(paste0(URLS_SUBCARPETAS[j],
+                   ARCHIVOS_GRIB), 
+            file = paste0(path_gribs, 
+                          ARCHIVOS_GRIB[i]))
+      Sys.sleep(100)
+      
+    }
+  }
 }
+
+
+
+
+
+# RENAME GRIBS TO FIT WRF -------------------------------------------------
 
 
 ######FORMATO NAME
@@ -125,3 +118,5 @@ DIA<- list.files(path_gribs, full.name=T) %>% str_split("/") %>% sapply(function
 new_name<- paste0(DIA, NOMBRE_PARTE_FIJA, Horas)
 
 file.rename(from =list.files(path_gribs, full.name=T), to= paste0(path_gribs, new_name) )
+
+
