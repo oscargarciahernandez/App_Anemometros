@@ -74,7 +74,7 @@ for (i in 1:length(CARPETAS_DISPONIBLES)) {
                    ARCHIVOS_GRIB), 
             file = paste0(path_gribs, 
                           ARCHIVOS_GRIB[i]))
-      Sys.sleep(100)
+      Sys.sleep(0.5)
       
     }
   }
