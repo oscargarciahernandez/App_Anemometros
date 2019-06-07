@@ -1,0 +1,540 @@
+---
+title: "CRIPTO-GANK"
+author: "Oscar Garcia Hernandez"
+date: "21/5/2019"
+output: html_document
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      eval=FALSE,
+                      warning = FALSE)
+library(request) 
+library(XML)
+library(here)
+library(lubridate)
+library(stringr)
+library(dplyr)
+library(TTR)
+library(shiny)
+library(ggplot2)
+library(magrittr)
+library(OpenStreetMap)
+library(RColorBrewer)
+library(geosphere)
+```
+
+
+```{r eval=TRUE}
+download_maps<- function(ul,lr, 
+                         maptyp=NULL,
+                         res=40){
+  
+  #SI NO INTRODUCIMOS TIPO DE MAPA SE DESCARGAN LOS SIGUIENTES MAPAS
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }else{
+    maptypes<- c("waze", "bing",
+                 "esri","esri-topo", "nps", 
+                 "apple-iphoto", "skobbler",
+                 "hillshade")
+  }
+  
+  
+  if(length(maptypes)>1){
+    res1<- res
+    for (i in 1:length(maptypes)) {
+      res<- res1
+      
+      
+      tryCatch({
+        while(TRUE){
+          tryCatch({
+            map1<- openmap(ul,lr, minNumTiles=res,
+                           type=maptypes[i],
+                           zoom=NULL)
+            
+          },error=function(e){cat("Error Java")})
+          
+          if(!exists("map1")){
+            res<- res-1
+            print("Bajando minNumtiles")
+            if(res<1){break}
+          }else{
+            print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
+            break}
+        }
+        map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        rm(map1)
+       
+        if(!dir.exists(here::here("NUEVO/Mapas/"))){dir.create(here::here("NUEVO/Mapas/"))}
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        
+        if(!dir.exists(dirpath)){dir.create(dirpath)}
+        
+        saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".RDS"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".RDS")))
+        rm(map1) 
+          
+       
+      }, error=function(e){print(paste0(maptypes[i],": No descargado"))})
+    }
+    
+  }else{
+    while(TRUE){
+      tryCatch({
+        #INTENTAMOS DESCARGAR MAPA Y SI HAY FALLO BAJAMOS LA RESOLUCION Y VOLVEMOS A INTENTAR
+        map1<- openmap(ul,lr, minNumTiles=res,
+                      type=maptypes,
+                      zoom=NULL)
+        
+      },error=function(e){cat("Error Java")})
+      
+      
+      if(!exists("map1")){
+        res<- res-1
+        print("Bajando minNumtiles")
+        if(res<1){break}
+      }else{
+        print(paste0(maptypes,": Descargado con minNumtiles=", res))
+        break}
+    }
+    
+    #TRANSFORMACION DE COORDEANDAS PARA TENERLO EN FORMATO "NORMAL"
+    map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    rm(map1)
+    
+    
+    #CREAMOS DIRECTORIO
+    dir_raiz<- here::here("Mapas/")
+    dirpath<- paste0(dir_raiz,ul[1],"_",lr[2],"/")
+    
+    if(!dir.exists(dirpath)){dir.create(dirpath, recursive = T)}
+    
+    #GUARDAMOS MAPA
+    saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes,res,".RDS"))
+    return(paste0(dirpath,"/",maptypes,res,".RDS"))
+      
+    }
+    
+}
+
+
+
+
+plot.windrose <- function(data,
+                          spd,
+                          dir,
+                          spdres = 0.5,
+                          dirres = 22.5,
+                          spdmin = 0,
+                          spdmax = 15,
+                          spdseq = NULL,
+                          palette,
+                          countmax = NA,
+                          opacity=0.6,
+                          border_color="NA",
+                          border_size=0.001){
+  
+  
+  # Look to see what data was passed in to the function
+  if (is.numeric(spd) & is.numeric(dir)){
+    # assume that we've been given vectors of the speed and direction vectors
+    data <- data.frame(spd = spd,
+                       dir = dir)
+    spd = "spd"
+    dir = "dir"
+  }
+  # Tidy up input data ----
+  n.in <- NROW(data)
+  dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
+  data[[spd]][dnu] <- NA
+  data[[dir]][dnu] <- NA
+  data<-data[,c(spd,dir)]
+  
+  # figure out the wind speed bins ----
+  if (missing(spdseq)){
+    spdseq <- seq(spdmin,spdmax,spdres)
+  } 
+  # get some information about the number of bins, etc.
+  n.spd.seq <- length(spdseq)
+  n.colors.in.range <- n.spd.seq - 1
+  
+  # create the color map
+  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),
+                                                min(9,n.colors.in.range)),
+                                            palette ))(n.colors.in.range)
+  
+  if (max(data[[spd]],na.rm = TRUE) > spdmax){    
+    spd.breaks <- c(spdseq,
+                    max(data[[spd]],na.rm = TRUE))
+    spd.labels <- c(paste(c(spdseq[1:n.spd.seq-1]),
+                          '-',
+                          c(spdseq[2:n.spd.seq])),
+                    paste(spdmax,
+                          "-",
+                          max(data[[spd]],na.rm = TRUE)))
+    spd.colors <- c(spd.colors, "grey50")
+  } else{
+    spd.breaks <- spdseq
+    spd.labels <- paste(c(spdseq[1:n.spd.seq-1]),
+                        '-',
+                        c(spdseq[2:n.spd.seq]))    
+  }
+  data$spd.binned <- cut(x = data[[spd]],
+                         breaks = spd.breaks,
+                         labels = spd.labels,
+                         ordered_result = TRUE)
+  # clean up the data
+  data <- na.omit(data)
+  
+  # figure out the wind direction bins
+  dir.breaks <- c(-dirres/2,
+                  seq(dirres/2, 360-dirres/2, by = dirres),
+                  360+dirres/2)  
+  dir.labels <- c(paste(360-dirres/2,"-",dirres/2),
+                  paste(seq(dirres/2, 360-3*dirres/2, by = dirres),
+                        "-",
+                        seq(3*dirres/2, 360-dirres/2, by = dirres)),
+                  paste(360-dirres/2,"-",dirres/2))
+  # assign each wind direction to a bin
+  dir.binned <- cut(data[[dir]],
+                    breaks = dir.breaks,
+                    ordered_result = TRUE)
+  levels(dir.binned) <- dir.labels
+  data$dir.binned <- dir.binned
+  
+  
+  
+  # deal with change in ordering introduced somewhere around version 2.2
+  if(packageVersion("ggplot2") > "2.2"){    
+    cat("ggplot2 version > V2.2")
+    data$spd.binned = with(data, factor(spd.binned, levels = rev(levels(spd.binned))))
+    spd.colors = rev(spd.colors)
+  }
+  
+  # create the plot ----
+  p.windrose <- ggplot(data = data,
+                       aes(x = dir.binned,
+                           fill = spd.binned)) +
+    geom_bar(width = 1,color=border_color, size=border_size, alpha=opacity) + 
+    scale_x_discrete(drop = FALSE,
+                     labels = waiver()) + 
+    theme(legend.position = "none",
+          plot.background = element_rect(fill= "transparent", colour= NA),
+          panel.background = element_rect(fill= "transparent", colour = NA),
+          panel.grid.major = element_line(colour = "NA"), 
+          axis.line = element_line(colour = NA),
+          axis.text.y=element_blank(), 
+          axis.ticks.y = element_blank(), 
+          axis.text.x = element_blank()) +
+    xlab("")+ ylab("") +
+    coord_polar(start = -((dirres/2)/360) * 2*pi)+
+    scale_fill_manual(name = "Wind Speed (m/s)", 
+                      values = spd.colors,
+                      drop = FALSE)
+  
+  # adjust axes if required
+  if (!is.na(countmax)){
+    p.windrose <- p.windrose +
+      ylim(c(0,countmax))
+  }
+  
+  # print the plot
+  print(p.windrose)  
+  
+  # return the handle to the wind rose
+  return(p.windrose)
+}
+
+WR_parameters2<- function(data,
+                         anchura=0.06, 
+                         opacidad=0.5, 
+                         paleta,
+                         lon_pos,
+                         lat_pos,
+                         spd_name,
+                         dir_name,
+                         border_size=0.5){
+  p_ros<-data %>% group_by(., lon,lat)%>% do(subplots = plot.windrose(., spd = spd_name,
+                                    dir=dir_name,
+                                    dirres = 22.5,
+                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                    palette = paleta,
+                                    opacity = opacidad,
+                                    border_color = "white",
+                                    border_size = border_size)) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = lon_pos-anchura,      # change from 1 to other 
+                                           y = lat_pos-anchura,      # values if necessary,
+                                           xmax = lon_pos+anchura,   # depending on the map's
+                                           ymax = lat_pos+anchura))) # resolution.
+
+
+  
+  return(p_ros)
+}
+```
+
+
+
+```{r echo=FALSE, eval=TRUE}
+### CARGAMOS DATOS
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+
+Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% unique, x$ERAlat %>% unique()) %>% as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+  distm(x, c(DATOS_JUNTOS_LISTA[[1]]$lon %>% unique,
+             DATOS_JUNTOS_LISTA[[1]]$lat %>% unique))
+}) 
+
+DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks = c(0,seq(11.5,349.5,22.5),360, 361), 
+                         labels = c(0,seq(11.5,349.5,22.5),0) %>% as.factor()))
+
+
+
+#################A PARTIR DE AQUI, SHINY
+
+inputPanel(
+  selectInput("Interpolation", 
+              label = "Fit ERA method",
+              choices = c("linear", "spline", "stine", "Nearest"),
+              selected = "Nearest"),
+  
+  checkboxInput("GUST",
+                label = "MAXIMAS ANEMOMETRO",
+                value = TRUE),
+  
+  
+  dateRangeInput("Date_range",
+                      label = "Periodo",
+                 start =DATOS_JUNTOS_LISTA[[1]] %>%
+                        as.data.frame() %>% 
+                        .$Date %>% min(),
+                 end = DATOS_JUNTOS_LISTA[[1]] %>%
+                        as.data.frame() %>% 
+                        .$Date %>% max()),
+  
+    sliderInput("SMA_value", label = "Valores de MA en horas",
+              min =1,
+              max = 144,
+              step = 2,
+              value =1 ),
+
+  
+        selectInput("SELECTOR", 
+              label = "Tipo de Gráfica",
+              choices = c("Comparativa", 
+                          "Cross-correlation", 
+                          "Rosa de los vientos"),
+              selected = "Cross_correlation"))
+
+conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
+             sliderInput("anchura_rosa", label = "Tamaño rosa de los vientos",
+              min =0.001,
+              max = 0.01,
+              step = 0.001,
+              value =0.001 ))
+
+conditionalPanel('input.SELECTOR=="Cross-correlation"',
+            selectInput("type_corr", 
+              label = "Metodo comparativo",
+              choices = c("correlation", "covariance"),
+              selected = "correlation"))
+
+
+   plotData <- reactive({
+     DATOS_PLOT %>% .[complete.cases(.),] %>%  mutate(ERAWS=SMA(ERAWS, input$SMA_value),
+                                     WS_l=SMA(WS_l, input$SMA_value),
+                                     WS_sp=SMA(WS_sp, input$SMA_value),
+                                     WS_N=SMA(WS_N, input$SMA_value),
+                                     WS_st=SMA(WS_st, input$SMA_value),
+                                     WSMAX_l=SMA(WSMAX_l, input$SMA_value),
+                                     WSMAX_sp=SMA(WSMAX_sp, input$SMA_value),
+                                     WSMAX_N=SMA(WSMAX_N, input$SMA_value),
+                                     WSMAX_st=SMA(WSMAX_st, input$SMA_value)) %>%
+  filter(. , Date>ymd(input$Date_range[1])) %>% 
+  filter(. , Date<ymd(input$Date_range[2])) %>% 
+  mutate(ANEM_selected= ifelse(rep(input$Interpolation=="linear",nrow(.)),DATOS_PLOT$WS_l,
+                               ifelse(rep(input$Interpolation=="spline",nrow(.)), WS_sp,
+                                      ifelse(rep(input$Interpolation=="stine",nrow(.)), WS_st,
+                                             ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA))))) %>% 
+  mutate(GUST= ifelse(!input$GUST,ANEM_selected,
+                      ifelse(rep(input$Interpolation=="linear",nrow(.)),WSMAX_l,
+                             ifelse(rep(input$Interpolation=="spline",nrow(.)), WSMAX_sp,
+                                    ifelse(rep(input$Interpolation=="stine",nrow(.)), WSMAX_st,
+                                           ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WSMAX_N,NA))))))
+     
+   })
+
+
+
+
+
+ conditionalPanel('input.SELECTOR=="Comparativa"',
+  renderPlot({
+
+plotData() %>% 
+  ggplot(aes(x=Date)) + 
+  geom_line(aes(y=ERAWS), 
+            size=1.2,
+            color="blue")+
+  geom_text(aes(x=Date,y=8,
+                               angle=ERA_binDir, 
+                               label="→"), 
+            color="blue", 
+            alpha=0.5,
+            size=15)+
+  geom_line(aes(y=ANEM_selected),
+            size=1.2, color="red")+
+  geom_line(aes(y=GUST),
+            size=0.9, 
+            color="red",
+            linetype="longdash")+
+  geom_text(aes(x=Date,y=6,
+                angle=WD_N, 
+                label="→"),
+            color="red", 
+            alpha=0.5,
+            size=15)+
+  ylim(0,10)+theme(panel.background = element_blank(),
+                   panel.border = element_rect(linetype = "dashed", fill = NA),
+                   panel.grid.major = element_line(colour = "grey50"),
+                   axis.text = element_text(size=20,face="bold"),
+                   axis.title = element_text(size = 25, face="bold"))+
+  labs(y= "Wind speed (m/s)",
+       x= "")
+
+
+
+}))
+ 
+ 
+ conditionalPanel('input.SELECTOR=="Cross-correlation"',
+                 renderPlot({
+                  DATOS_modify<- plotData()
+                   cross_corr<- ccf(DATOS_modify$ERAWS,
+                       DATOS_modify$ANEM_selected, 
+                       na.action = na.pass,
+                       type=input$type_corr,
+                       lag.max = 500,
+                       plot = F)
+                   
+                   ccf(DATOS_modify$ERAWS,
+                       DATOS_modify$ANEM_selected, 
+                       na.action = na.pass,
+                       type=input$type_corr,
+                       main=paste("MAX VALUE=",round(max(cross_corr$acf, na.rm = T), 3),"\nDESFASE=",
+                                  cross_corr$lag[which.max(cross_corr$acf)]),
+                       xlab="LAG (Horas)",
+                       ylab=input$type_corr,
+                       lag.max = 500)
+                 }))
+
+
+  conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
+                   renderPlot({
+DATOS_modify<- plotData()
+
+#POSICION DE LA ROSA DE LOS VIENTOS
+TIPO_MAPA<- "bing"
+resolucion<- 40
+
+
+#PARAMETROS PARA DESCARGAR MAPA. 
+
+#SI SOLO REPRESENTAMOS UNA ROSA N=S Y E=W
+n<- max(DATOS_modify$ERAlat %>% unique,
+        DATOS_modify$lat)
+s<- min(DATOS_modify$ERAlat %>% unique,
+        DATOS_modify$lat)
+
+e<- max(DATOS_modify$ERAlon %>% unique,
+        DATOS_modify$lon)
+w<- min(DATOS_modify$ERAlon %>% unique,
+        DATOS_modify$lon)
+
+#AÑADIMOS UN INCREMENTO AL REDEDOR DEL MAPA QUE VAMOS A REPRESENTAR
+incr_lat<- abs(DATOS_modify$ERAlat %>% unique - DATOS_modify$lat %>% unique())
+incr_lon<- abs(DATOS_modify$ERAlon %>% unique - DATOS_modify$lon %>% unique())
+incr<- max(c(incr_lat,incr_lon))
+
+if(n > 0){n<- n + incr}else{n<- n + incr}
+if(s > 0){s<- s - incr}else{s<- s- incr}
+if(e > 0){e<- e + incr}else{e<- e + incr}
+if(w > 0){w<- w - incr}else{w<- w- incr}
+
+
+#REDONDEAMOS Y MONTAMOS UL Y LR
+ul <- round(c(n,w),digits = 2)  #Upper Left
+lr <- round(c(s,e), digits = 2)  #Lower Right
+
+
+dir_raiz<- here::here("Mapas/")
+dirpath<- paste0(dir_raiz,ul[1],"_",lr[2],"/")
+    
+  
+  if(!file.exists(paste0(dirpath,"/",TIPO_MAPA,resolucion,".RDS"))){
+    PATH_MAPA<- download_maps(ul,lr, 
+                res=resolucion, 
+                maptyp = TIPO_MAPA)
+    mapa<- readRDS(PATH_MAPA)
+    }else{
+    mapa<- readRDS(paste0(dirpath,"/",TIPO_MAPA,resolucion,".RDS"))}
+  #DESCARGAMOS MAPA "bing" (IMAGEN SATELITE)
+
+
+#REPRESENTAMOS MAPA A PELO, SIN EJES NI NADA ELEMENT_BLANK FTW
+pmap<- autoplot(mapa)+ 
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        legend.position="none",
+        panel.background=element_blank(),
+        panel.border=element_blank(),
+        panel.grid.major=element_blank(),
+        panel.grid.minor=element_blank(),
+        plot.background=element_blank())
+
+
+#REPRESENTAMOS ROSA
+p_rosERA<- WR_parameters2(data = DATOS_modify, 
+                      anchura = incr+input$anchura_rosa, 
+                      paleta = "YlGnBu",
+                      opacidad = 0.5, 
+                      lon_pos = DATOS_modify$ERAlon %>% unique(), 
+                      lat_pos = DATOS_modify$ERAlat %>% unique(), 
+                      spd_name = "ERAWS",
+                      dir_name = "ERAWD",
+                      border_size = 0.1)
+
+p_rosANEM<- WR_parameters2(data = DATOS_modify, 
+                      anchura = incr+input$anchura_rosa, 
+                      paleta = "YlGnBu",
+                      opacidad = 0.5, 
+                      lon_pos = DATOS_modify$lon %>% unique(), 
+                      lat_pos = DATOS_modify$lat %>% unique(), 
+                      spd_name = "ANEM_selected",
+                      dir_name = "WD_N",
+                      border_size = 0.1)
+
+
+pmap+p_rosERA$subgrobs+p_rosANEM$subgrobs
+                     
+                   })
+
+)
+ 
+```
+

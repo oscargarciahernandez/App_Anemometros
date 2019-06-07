@@ -1,0 +1,17 @@
+---
+title: "Correlacion por direcciones"
+author: "Óscar García Hernández"
+date: "13 de enero de 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Intro
+
+Viendo los valores de corrrelacion tan bajos que obtuvimos realizando una comparacion con todos los datos habrá que cambiar de estrategia. Como dijo Alain el siguiente paso será comprobar la correlación para cada direccion del viento. Una vez ya veamos que ocurre con la correlacion para cada direccion iremos metiendo *Moving Average* que ya comprobamos que nos servia para aumentar la correlacion.
+
+#Código
+El código que he empleado es el siguiente, nos sirve para ir haciendo cositas con **dplyr** y conocer el mágico *pipe*, que viene dentro del paqute **magrittr** y que funciona de maravilla conbinandolo con el paquete *dplyr*. 

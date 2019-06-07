@@ -1,0 +1,290 @@
+---
+title: "Guía básica de R"
+subtitle: "Bucles , if, Diagramas de barras y gráficos combinados"
+author: "Óscar García Hernández"
+date: "5 de noviembre de 2018"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#Intro  
+<br />
+<br />
+Hola de nuevo¡, Si soy sincero se me acababan las ideas para seguir esta guía. sobre todo, como seguir. Por ello, voy a pediros que me vallan  diciendo cuales son los puntos en los que se ven más flojos a la hora de programar. En esta guía vamos a empezar a crear funciones. 
+<br />
+<br />
+siempre que usamos un comando de R, Lo que estamos haciendo es recurrir a funciones que el software ya tienen definidas o que se han definido a la hora de instalar un paquete. 
+<br />
+<br />
+Pero es útil saber que nosotros tambien podemos crear nuestras propias funciones. Es una manera de organizar nuestro código en bloques más pequeños. De esta manera podemos tener un script donde definamos nuestras propias funciones y otro script para usar dichas funciones. Sin ir más lejos el código de la descarga de los datos de los sensores está organizado de esta manera: 
+<br />
+<br />
+
++ **Funciones**: un script para definir las funciones que vamos a ir usando. *"funciones_app_anemometros.R"*
++ **Código**: un script para aplicar dichas funciones. *"Descarga_datos_anemometros.R"*
+
+<br />
+<br />
+
+# Crear funciones propias
+<br />
+<br />
+A continuación vamos a empezar a crear nuestras propias funciones. Como base para empezar, podemos decir que haremos una función para que a raiz de unos objetos y parámetros, sea capaz de realizar un proceso o calculo y finalmente nos devuelva un resultado. 
+<br />
+<br />
+Por ejemplo, se me ocurre que podemos crear una funcion sencilla para comprender el funcionamiento de una funcion antes de pasar a trabajar con los datos de los sensores. 
+<br />
+<br />
+Vamos a crear una función que, añadiendole dos números, nos devuelva la suma y la multiplicación de ambos números. 
+<br />
+<br />
+```{r}
+#Definimos el nombre de la funcion y los parámetros de entrada
+suma_multiplica <- function(a,b) {
+  
+  #realizamos las acciones de sumar y multiplicar con los parámetros
+  suma <- a+b
+  multiplica <- a*b
+  
+  #el return marca lo que la funcion devuelve
+  return(c(suma, multiplica))
+  
+}
+```
+<br />
+<br />
+Una vez hemos ejecutamos la función se ve reflejada en nuestro *enviroment*, como una función.Una vez ya hemos definido la función podemos usarla. 
+
+<br />
+<br />
+```{r}
+suma_multiplica(15,3)
+```
+<br />
+<br />
+Normalmente, se declaran funciones para poder programar de manera más limpia y ordenada. Por ello os animo a que empleen funciones siempre que puedan para ir cojiendole callo. 
+<br />
+<br />
+
+# Funciones de ejemplo
+<br />
+<br />
+
+Lo que vamos a hacer es emplear los datos de nuestros sensores para desarrollar funciones más complejas que nos puedan ayudar en un futuro.
+<br />
+<br />
+Se me ocurre que: uno de los problemas que estamos teniendo con los datos es el tipo de objeto, siempre estamos cambiando de tipo caracter a numérico y noseque¡¡ pues para ahorrar tiempo vamos a crear una función que lo que haga sea cambiar todos los objetos de tipo y así nos olvidamos. 
+<br />
+<br />
+```{r}
+library(rlist)
+library(here)
+
+Datos<- list.load(here::here("data/Datos_anemometros.rdata"))
+```
+<br />
+<br />
+Tendremos que tener en cuenta que, Datos es una lista de tablas, pero cada sensor tiene una manera de organizar los datos diferente, quiero decir que no podemos usar el mismo algoritmo para la tabla de los anemometros y los pluviometros. Esto me sirve para sugerir otro paquete muy interesante. Este paquete es **stringr**. Especialmente diseñado para trabajar con palabras o carácteres. 
+<br />
+<br />
+Voy a proponer que la diferenciación entre los sensores se realice mediante el análisis de los nombres de las variables usando este paquete: *stringr*.
+<br />
+<br />
+```{r}
+names(Datos)
+```
+<br />
+<br />
+Analizando los nombres de las listas, se me ocurre que simplemente empleando la primera letra del nombre, yo ya puedo saber a que sensor nos referimos. Es decir, mi código va a analizar la primera letra del nombre de la lista. 
+<br />
+<br />
+```{r}
+library(stringr)
+
+str_sub(names(Datos[1]),1,1)
+```
+<br />
+<br />
+Hay muchisimos comandos (str_comando) que son dignos de mirar por lo menos una vez. 
+<br />
+<br />
+MANOS A LA OBRA. Para empezar fuerte, se me ha ocurrido que vamos a hacer funciones independientes para cada tipo de sensor, que van a estar utilizadas en un función única. 
+<br />
+<br />
+```{r}
+Formatos_columna <- function(Lista_datos){
+  
+  numero_sensores <- length(Lista_datos)
+  
+  for (i in 1:numero_sensores) {
+    
+    #obtenemos la primera letra
+    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
+    
+    #usamos el ya visto ifelse 
+    ifelse(letra_nombre=="a",funcion_anemo(lista_datos[[i]]),
+           letra_nombre=="p",funcion_pluv(lista_datos[[i]]),
+           letra_nombre="t",funcion,term_hig(lista_datos[[i]]))
+
+  }
+  
+}
+```
+<br />
+<br />
+pequeño inciso: El ifelse tiene la ventaja que se pueden poner condiciones encadenadas de manera ordenada y fácil. Vamos a dejar un momento de lado la función principal y vamos a hacer las funciones de cada sensor. 
+<br />
+<br />
+```{r}
+funcion_anemo <- function(Tabla_sf){
+  library(lubridate)
+  
+  Tabla <- Tabla_sf 
+  #Cambiamos el formato de las columnas numericas
+  Tabla$Mean <- as.numeric(as.character(Tabla$Mean))
+  Tabla$Max <- as.numeric(as.character(Tabla$Max))
+  Tabla$Dir_deg <- as.numeric(as.character(Tabla$Dir_deg))
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(as.data.frame(Tabla))
+  
+}
+```
+<br />
+<br />
+```{r}
+funcion_pluv <- function(Tabla_sf){
+    library(lubridate)
+  Tabla <- Tabla_sf 
+
+  
+  #Cambiamos el formato de las columnas numericas
+  Tabla$`rain (mm)` <- as.numeric(as.character(Tabla$`rain (mm)`))
+  
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(as.data.frame(Tabla))
+  
+}
+```
+<br />
+<br />
+```{r}
+funcion_term_hig <- function(Tabla_sf){
+    library(lubridate)
+  Tabla <- Tabla_sf 
+
+  
+  #Cambiamos el formato de las columnas numericas
+  Tabla[,3]<- as.numeric(as.character(Tabla[,3]))
+  Tabla[,4] <- as.numeric(as.character(Tabla[,4]))
+
+  
+  #cambiamos el formato de la fecha
+  Tabla$date_string_hour <- dmy_hms(as.character(Tabla$date_string_hour))
+  
+  return(as.data.frame(Tabla))
+  
+}
+```
+<br />
+<br />
+una vez ya hemos definido las funciones vamos a volver a la función principal. 
+<br />
+<br />
+```{r}
+Formatos_columna <- function(lista_datos){
+  numero_sensores <- length(lista_datos)
+  
+  lista_actualizada <- list()
+  for (i in 1:numero_sensores) {
+    
+    #obtenemos la primera letra
+    letra_nombre <- str_sub(names(lista_datos[i]),1,1)
+    
+    #usamos el ya visto ifelse 
+    ifelse(
+      letra_nombre=="a",tabla_actualizada<-funcion_anemo(lista_datos[[i]]),
+      ifelse(
+        letra_nombre=="p",tabla_actualizada<-funcion_pluv(lista_datos[[i]]),
+        ifelse(
+          letra_nombre=="t",tabla_actualizada<-funcion_term_hig(lista_datos[[i]]),-31)))
+    
+    
+    #Guardamos en nueva lista
+    lista_actualizada[[names(lista_datos[i])]] <- tabla_actualizada
+  }
+  
+  return(lista_actualizada)
+  
+}
+```
+<br />
+<br />
+Okey, ahora que ya tenemos hecha la función la ejecutamos y la ponemos a prueba. 
+<br />
+<br />
+```{r error=TRUE}
+Formatos_columna(Datos)
+```
+<br />
+<br />
+Vemos que da error...  otra cosa buena de separar el código en muchas funciones es que los errores son más fáciles de encontrar. Bueno, ya os digo que el problema está en que en la lista *Datos*, tienen un elemento llamado *term_hig3* que está vacio, y la función no sabe tratar con tablas que no sean iguales que las que hemos supuesto. Por lo tanto para abordar estos problemas podemos tomar varias estrategias. Por ejemplo, decir que si la función da error, seguir ejecutando la función. 
+<br />
+<br />
+esto lo permite hacer el comando possibly del paquetee purrr
+<br />
+<br />
+
+```{r}
+library(purrr)
+```
+<br />
+<br />
+```{r}
+funcion_anemo <- possibly(funcion_anemo,otherwise = NA)
+
+funcion_pluv <- possibly(funcion_pluv,otherwise = NA)
+
+funcion_term_hig <- possibly(funcion_term_hig,otherwise = NA)
+```
+
+<br />
+<br />
+
+Es la misma función, pero en caso de error, no devuelve un mensaje de error sino un valor **NA**. Esto puede ser muy util en nuestro caso, ya que, ya sabemos que term_hig3 esta vacio, pero de esta manera obtendremos el resultado esperado para el resto de sensores, independientemente de que la función no haya podido ejecutarse para ese elemento. 
+<br />
+<br />
+
+```{r}
+Tabla_con_formato <- Formatos_columna(Datos)
+
+```
+<br />
+<br />
+De esta manera guardamos el resultado de nuestra función en una nueva variable. 
+<br />
+<br />
+Este capitulo de la guía esta enfocado a que os deis cuenta de que todo lo que programamos, puede ser ejecutado dentro de una funció, obtendremos los mismos resultados y tendremos un codigo más limpio y más fácil de analizar en busca de fallos y puntos debiles. **OS ANIMO A PENSAR EN UNA PROGRAMACIÓN BASADA EN FUNCIONES, NOS VA A FACILITAR MUCHO EL TRABAJO**. 
+<br />
+<br />
+En las funciones tambien se pueden añadir parametros modificables. o incluso parámetros modificables con un valor por defecto. Es decir, en caso de no especificar el valor de dicho parámetro, la función  se ejecutará con un valor preestablecido. 
+<br />
+<br />
+Otra de las cosas que van a ser útiles para nuestra herramienta serán; 
+
++ Función para crear una tabla unicamente con los datos horarios. Es decir, un tabla que presente el dato más cercano a las horas en punto. Para poder compararlos o calibrarlos con los datos del ERA5. Que nos ofrece datos horarios. 
+
++ Funcion troceadora de datos en series temporales. Una funcion que me devuelva informacion resumida de semanas, meses, dias, horas. como hicimos en el capitulo anterior con los datos pluviometricos. 
+
++ Funcion actualizadora de datos. Una funcion que sea capaz de descargar los datos de internet, ver cuales son los que faltan en el dataset original y meter los valores que faltan. Esto va a ser necesario porque, depende del sensor, el servidor solamente guarda datos de unos pocos meses. Por lo tanto es importante mantener un Dataset original que valla acumulando datos con cada actualización. 

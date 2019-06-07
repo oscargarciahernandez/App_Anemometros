@@ -5,10 +5,10 @@ library(rvest)
 library(stringr)
 
 # CHANGE USER-AGENT -------------------------------------------
-
+'
 USER_AGENTS <- read_html("http://www.useragentstring.com/pages/useragentstring.php?typ=Browser") %>%
   html_nodes( "li") %>% html_text()
-
+'
 #DOWNLOAD DATA
 bdown=function(url, file){
   
@@ -21,64 +21,61 @@ bdown=function(url, file){
 
 
 # DESCARGA DE GRIBS -------------------------------------------------------
-url_gfs_http<- "https://nomads.ncdc.noaa.gov/data/gfs4/"
-Tabla_gfs<- url_gfs_http %>% GET() %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-  .[3:nrow(.),]
+url_gfs_http<- "https://www.ncei.noaa.gov/thredds/catalog/gfs-004-files/catalog.html"
+CARPETAS_DISPONIBLES<- url_gfs_http %>% GET() %>% htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
+  .[3:nrow(.),1] %>% str_extract("[:digit:]{6}")
 
-CARPETAS_DISPONIBLES<- Tabla_gfs[Tabla_gfs$Name %>% as.character()%>%
-            str_detect("[:digit:]{5}"),]$Name %>% 
-  na.omit() %>% 
-  as.character() 
+URLS_CARPETAS_MES<- CARPETAS_DISPONIBLES %>% 
+  paste0(url_gfs_http %>%
+           str_remove("catalog.html"),., "/catalog.html")
 
-URLS_CARPETAS<- CARPETAS_DISPONIBLES %>% paste0(url_gfs_http,.)
+n<- here::here('Gribs/') %>% list.dirs(recursive = F) %>% length()
 
-for (i in 1:length(CARPETAS_DISPONIBLES)) {
+for (i in 8:(n-1)) {
   
-  CONTENIDO_CARPETAS<- URLS_CARPETAS[i] %>% 
-    GET(add_headers("user-agent" = USER_AGENTS[i])) %>%
-    htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-    .[3:nrow(.),]  %>% 
-    .[.$Name %>% as.character()%>%
-        str_detect("[:digit:]{6}"),"Name"] %>% 
-    na.omit() %>% 
-    as.character() 
+  DIAS_DISPONIBLES<- URLS_CARPETAS_MES[i] %>% GET()%>% htmlParse() %>% readHTMLTable() %>% 
+    .[[1]] %>% 
+    .[2:nrow(.),1] %>% 
+    str_extract("[:digit:]{8}")
   
-  URLS_SUBCARPETAS<- CONTENIDO_CARPETAS %>% paste0(URLS_CARPETAS[i],.)
+  URLS_DIAS<- DIAS_DISPONIBLES %>% paste0(URLS_CARPETAS_MES[i] %>%
+                                            str_remove("catalog.html"),., "/catalog.html")
   
-  
-  if(length(CONTENIDO_CARPETAS)==0){cat(URLS_CARPETAS[i], " VACIO")}else{
+  for (dias in 1:length(URLS_DIAS)) {
     
-    #SOLO KEREMOS LOS GFS DE 48 h
-    ALL_ARCH<- URLS_SUBCARPETAS[i] %>% 
-      GET(add_headers("user-agent" = USER_AGENTS[i+1])) %>%
-      htmlParse() %>% readHTMLTable() %>% .[[1]] %>% 
-      .[3:nrow(.),] 
+    ARCHIVOS_DISPONIBLES<- URLS_DIAS[dias] %>% GET()%>% htmlParse() %>% readHTMLTable() %>% 
+      .[[1]] %>% .[2:nrow(.),1] %>% str_remove("\r\nGFS Grid 4  ") %>% str_trim()
     
-    Gribs_hasta48<- ALL_ARCH %>% .$Name  %>%
-      str_extract("[[:digit:]]{3}.grb2")  %>% 
-      str_remove(".grb2") %>% 
-      as.numeric()<50 
-    
-    ARCHIVOS_GRIB<- ALL_ARCH$Name[Gribs_hasta48] %>% na.omit() %>% 
-      as.character() 
+    ARCHIVOS_HASTA_48<- ARCHIVOS_DISPONIBLES %>%
+      .[str_detect(.,"00:00")] %>% 
+      .[(length(.)-16):length(.)]%>% 
+      sapply(function(x){
+        x %>%  
+          str_replace_all("-", "") %>% 
+          str_replace_all(" ", "_") %>% 
+          str_remove("UTC_fct:") %>% str_replace(":","")}) %>% paste0("gfs_4_",.)
     
     
-    SUBGRIB_FOLDER<- URLS_SUBCARPETAS[i] %>% str_split("/") %>% .[[1]] %>% .[length(.)-1]
+    URLS_DESCARGA<- paste0("https://www.ncei.noaa.gov/thredds/fileServer/gfs-004-files/",
+                           CARPETAS_DISPONIBLES[i],"/",
+                           DIAS_DISPONIBLES[dias], "/",
+                           ARCHIVOS_HASTA_48)
     
-    path_gribs<- paste0(here::here('Gribs/'), SUBGRIB_FOLDER,"/")
-    if(!dir.exists(path_gribs)){dir.create(path_gribs, recursive = T)}
     
+    path_gribs<- paste0(here::here('Gribs/'), DIAS_DISPONIBLES[dias])
     
-    for (j in 1:length(ARCHIVOS_GRIB)) {
-      bdown(paste0(URLS_SUBCARPETAS[j],
-                   ARCHIVOS_GRIB), 
-            file = paste0(path_gribs, 
-                          ARCHIVOS_GRIB[i]))
+    for (j in 1:length(URLS_DESCARGA)) {
+      if(!dir.exists(path_gribs)){dir.create(path_gribs, recursive = T)}
+      
+      bdown(URLS_DESCARGA[j], 
+            file = paste0(path_gribs,"/",
+                          ARCHIVOS_HASTA_48[j]))
       Sys.sleep(0.5)
       
     }
+    
   }
-}
+  }
 
 
 

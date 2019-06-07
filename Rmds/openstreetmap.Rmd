@@ -1,0 +1,485 @@
+---
+title: "Rosas de los vientos sobre mapas"
+author: "Oscar Garcia Hernandez"
+date: "4/6/2019"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+  
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache = TRUE)
+```
+
+# Oliiiii
+
+<br/><br/>
+
+
+Te paso el código y así ojeas como estoy haciendo las cosas... para que me ayudes a mejorar. Si quieres ver el resultado directamente salta al final del documento y listo. He generado la rosa de los vientos con datos aleatorios... principalmente porque los datos del ERA5 tardan  bastante en descargarse (no porque pesen sino porque la API funciona con tiempos de espera) y sería interesante saber que necesitamos: ¿datos recientes o histórico?,  ¿necesitamos alguna variable más a parte de velocidad del viento?,  etc. 
+
+<br/><br/>
+
+
+# AVISO
+
+<br/><br/>
+
+Para los mapas yo estoy usando Openstreemap porque los cabrones de google ha puesto su API en rollo privativo.... creo que es gratis pero hay que darse de alta y noseque... asi que Openstreetmap y punto. Otra cosita es que openstreetmap necesita como dependencia **rJava**. Y esto a mi siempre me ha dado dolores de cabeza... Y la verdad que aquí no te puedo ayudar... hay muchos errores relacionados en stackoverflow y cada uno es distinto, seguro que encuentras algo que te valga. 
+
+<br/><br/>
+
+
+```{r warning=FALSE, message=FALSE}
+library(OpenStreetMap)
+library(ggplot2)
+library(here)
+library(magrittr)
+library(dplyr)
+library(RColorBrewer)
+```
+
+<br/><br/>
+
+
+# DESCARGAR LOS MAPAS
+
+<br/><br/>
+
+La siguiente funcion sirve para descargar los mapas usando el paquete Openstreetmap. En si, lo puedes hacer ejecutando la función **openmap**. Pero yo esta función la hice para descargar el mismo mapa en varios estilos diferentes. Hay que introducir: 
+
+<br/><br/>
+
++ **ul (upper-left)**: punto superior izquiero en formato (north,west) y con coordenadas "normales" latitud= (-90,90) y longitud= (-180,180)
+
++ **lr (lower-rigth)**: lo mismo que el anterior (s,e)
+
++ **maptyp**: tipo de mapa que queremos... si lo dejamos vacio descarga una lista de mapas. ESOS MAPAS QUE YO TENGO HAY ES PORQUE SON LOS QUE ME GUSTAN PERO HAY MÁS. [Estilos disponibles](https://www.r-bloggers.com/the-openstreetmap-package-opens-up/)
+
++ **res**: resolucion. Lo tengo por defecto en 40 pero con resoluciones mucho menores se ve muy bien. 
+<br/><br/>
+
+NOTA: A VECES DA FALLO, POR ESO TENGO EL PROCESO DE DESCARGA METIDO DENTRO DE UN TRYCATCH QUE LO QUE HACE ES BAJAR LA RESOLUCIÓN POCO A POCO HASTA QUE SE PUEDE DESCARGAR EL MAPA. ME HE DADO CUENTA DE QUE HACIENDO ALGO TAN SECILLO COMO **REDONDEAR LAS COORDENADAS DE ENTRADA A 2 DIGITOS ESE FALLO DEL QUE HABLO NO EXISTE... SE LÍA SI METEMOS COORDENADAS CON MUCHOS DECIMALES**, PORQUE SE DEDICA A DESCARGAR EL MAPA EN TILES (CUADRADITOS). ESTO ME LO HE SACADO DE LA MANGA... IGUAL FALLA POR OTRO MOTIVO
+
+<br/><br/>
+
+SUBNOTA: TENGO ESTA FUNCION PREPARADA PARA GUARDAR TODOS LOS MAPAS DESCARGADOS EN UN DIRECTORIO CUYO NOMBRE SON LAS COORDENADAS INTRODUCIDAS. **HABRÁ QUE CAMBIAR EL DIRECTORIO RAIZ** PARA DESCARGAR LOS MAPAS. 
+
+<br/><br/>
+
+
+```{r}
+download_maps<- function(ul,lr, 
+                         maptyp=NULL,
+                         res=40){
+  
+  #SI NO INTRODUCIMOS TIPO DE MAPA SE DESCARGAN LOS SIGUIENTES MAPAS
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }else{
+    maptypes<- c("waze", "bing",
+                 "esri","esri-topo", "nps", 
+                 "apple-iphoto", "skobbler",
+                 "hillshade")
+  }
+  
+  
+  if(length(maptypes)>1){
+    res1<- res
+    for (i in 1:length(maptypes)) {
+      res<- res1
+      
+      
+      tryCatch({
+        while(TRUE){
+          tryCatch({
+            map1<- openmap(ul,lr, minNumTiles=res,
+                           type=maptypes[i],
+                           zoom=NULL)
+            
+          },error=function(e){cat("Error Java")})
+          
+          if(!exists("map1")){
+            res<- res-1
+            print("Bajando minNumtiles")
+            if(res<1){break}
+          }else{
+            print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
+            break}
+        }
+        map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        rm(map1)
+       
+        if(!dir.exists(here::here("NUEVO/Mapas/"))){dir.create(here::here("NUEVO/Mapas/"))}
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        
+        if(!dir.exists(dirpath)){dir.create(dirpath)}
+        
+        saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".RDS"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".RDS")))
+        rm(map1) 
+          
+       
+      }, error=function(e){print(paste0(maptypes[i],": No descargado"))})
+    }
+    
+  }else{
+    while(TRUE){
+      tryCatch({
+        #INTENTAMOS DESCARGAR MAPA Y SI HAY FALLO BAJAMOS LA RESOLUCION Y VOLVEMOS A INTENTAR
+        map1<- openmap(ul,lr, minNumTiles=res,
+                      type=maptypes,
+                      zoom=NULL)
+        
+      },error=function(e){cat("Error Java")})
+      
+      
+      if(!exists("map1")){
+        res<- res-1
+        print("Bajando minNumtiles")
+        if(res<1){break}
+      }else{
+        print(paste0(maptypes,": Descargado con minNumtiles=", res))
+        break}
+    }
+    
+    #TRANSFORMACION DE COORDEANDAS PARA TENERLO EN FORMATO "NORMAL"
+    map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    rm(map1)
+    
+    
+    #CREAMOS DIRECTORIO
+    dir_raiz<- here::here("Mapas/")
+    dirpath<- paste0(dir_raiz,ul[1],"_",lr[2],"/")
+    
+    if(!dir.exists(dirpath)){dir.create(dirpath, recursive = T)}
+    
+    #GUARDAMOS MAPA
+    saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes,res,".RDS"))
+    print(paste0("Guardado ",paste0(dirpath,"/",maptypes,res,".RDS")))
+      
+    }
+    
+}
+  
+
+```
+
+<br/><br/>
+
+
+# ROSA DE LOS VIENTOS
+
+<br/><br/>
+
+Esta rosa de los vientos está hecha con **ggplot2**. en principio yo esta funcion no la tocaría. Si queremos cambiar el formato de la rosa lo haremos en la siguiente funcion. 
+
+<br/><br/>
+
+```{r}
+plot.windrose <- function(data,
+                          spd,
+                          dir,
+                          spdres = 0.5,
+                          dirres = 22.5,
+                          spdmin = 0,
+                          spdmax = 15,
+                          spdseq = NULL,
+                          palette,
+                          countmax = NA,
+                          opacity=0.6,
+                          border_color="NA",
+                          border_size=0.001){
+  
+  
+  # Look to see what data was passed in to the function
+  if (is.numeric(spd) & is.numeric(dir)){
+    # assume that we've been given vectors of the speed and direction vectors
+    data <- data.frame(spd = spd,
+                       dir = dir)
+    spd = "spd"
+    dir = "dir"
+  }
+  # Tidy up input data ----
+  n.in <- NROW(data)
+  dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
+  data[[spd]][dnu] <- NA
+  data[[dir]][dnu] <- NA
+  data<-data[,c(spd,dir)]
+  
+  # figure out the wind speed bins ----
+  if (missing(spdseq)){
+    spdseq <- seq(spdmin,spdmax,spdres)
+  } 
+  # get some information about the number of bins, etc.
+  n.spd.seq <- length(spdseq)
+  n.colors.in.range <- n.spd.seq - 1
+  
+  # create the color map
+  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),
+                                                min(9,n.colors.in.range)),
+                                            palette ))(n.colors.in.range)
+  
+  if (max(data[[spd]],na.rm = TRUE) > spdmax){    
+    spd.breaks <- c(spdseq,
+                    max(data[[spd]],na.rm = TRUE))
+    spd.labels <- c(paste(c(spdseq[1:n.spd.seq-1]),
+                          '-',
+                          c(spdseq[2:n.spd.seq])),
+                    paste(spdmax,
+                          "-",
+                          max(data[[spd]],na.rm = TRUE)))
+    spd.colors <- c(spd.colors, "grey50")
+  } else{
+    spd.breaks <- spdseq
+    spd.labels <- paste(c(spdseq[1:n.spd.seq-1]),
+                        '-',
+                        c(spdseq[2:n.spd.seq]))    
+  }
+  data$spd.binned <- cut(x = data[[spd]],
+                         breaks = spd.breaks,
+                         labels = spd.labels,
+                         ordered_result = TRUE)
+  # clean up the data
+  data <- na.omit(data)
+  
+  # figure out the wind direction bins
+  dir.breaks <- c(-dirres/2,
+                  seq(dirres/2, 360-dirres/2, by = dirres),
+                  360+dirres/2)  
+  dir.labels <- c(paste(360-dirres/2,"-",dirres/2),
+                  paste(seq(dirres/2, 360-3*dirres/2, by = dirres),
+                        "-",
+                        seq(3*dirres/2, 360-dirres/2, by = dirres)),
+                  paste(360-dirres/2,"-",dirres/2))
+  # assign each wind direction to a bin
+  dir.binned <- cut(data[[dir]],
+                    breaks = dir.breaks,
+                    ordered_result = TRUE)
+  levels(dir.binned) <- dir.labels
+  data$dir.binned <- dir.binned
+  
+  
+  
+  # deal with change in ordering introduced somewhere around version 2.2
+  if(packageVersion("ggplot2") > "2.2"){    
+    cat("ggplot2 version > V2.2")
+    data$spd.binned = with(data, factor(spd.binned, levels = rev(levels(spd.binned))))
+    spd.colors = rev(spd.colors)
+  }
+  
+  # create the plot ----
+  p.windrose <- ggplot(data = data,
+                       aes(x = dir.binned,
+                           fill = spd.binned)) +
+    geom_bar(width = 1,color=border_color, size=border_size, alpha=opacity) + 
+    scale_x_discrete(drop = FALSE,
+                     labels = waiver()) + 
+    theme(legend.position = "none",
+          plot.background = element_rect(fill= "transparent", colour= NA),
+          panel.background = element_rect(fill= "transparent", colour = NA),
+          panel.grid.major = element_line(colour = "NA"), 
+          axis.line = element_line(colour = NA),
+          axis.text.y=element_blank(), 
+          axis.ticks.y = element_blank(), 
+          axis.text.x = element_blank()) +
+    xlab("")+ ylab("") +
+    coord_polar(start = -((dirres/2)/360) * 2*pi)+
+    scale_fill_manual(name = "Wind Speed (m/s)", 
+                      values = spd.colors,
+                      drop = FALSE)
+  
+  # adjust axes if required
+  if (!is.na(countmax)){
+    p.windrose <- p.windrose +
+      ylim(c(0,countmax))
+  }
+  
+  # print the plot
+  print(p.windrose)  
+  
+  # return the handle to the wind rose
+  return(p.windrose)
+}
+```
+
+<br/><br/>
+
+
+# PREPARAMOS ROSA DE LOS VIENTOS PARA REPRESENTAR SOBRE EL MAPA
+
+<br/><br/>
+
+
+
+Esta fución está preparada para cambiar parámetros de la rosa de los vientos. Paleta de colores, tamaño (importante, mapas más grandes anchura más grande), etc. Los parámetros de esta funcion son los siguientes: 
+
+<br/><br/>
+
+
++ Data: dataframe con nuestos datos de dirección y velocidad del viento. NUMERICO
++ anchura: tamaño de la rosa sobre el mapa. 
++ opacidad: opacidad-transparecia de la rosa sobre el mapa. 
++ Paleta de colores de la rosa. 
++ lon_pos: coordenada longitud de la rosa
++ lat_pos: coordenada latitud de la rosa
++ spd_name: nombre de columna de velocidad del viento
++ dir_name: nomre de la columna de direccion del viento
++ border size: tamaño del borde de la rosa de los vientos. 
+
+<br/><br/>
+
+
+**NOTA: EN EL DATAFRAME "data" DEBE HABER COLUMNA "lon" Y "lat" ESTO ES ASI PORQUE ESTÁ PREPARADO PARA REPRESENTAR VARIAS ROSAS USANDO GROUP_BY.** 
+
+
+<br/><br/>
+
+```{r}
+WR_parameters2<- function(data,
+                         anchura=0.06, 
+                         opacidad=0.5, 
+                         paleta,
+                         lon_pos,
+                         lat_pos,
+                         spd_name,
+                         dir_name,
+                         border_size=0.5){
+  p_ros<-data %>% group_by(., lon,lat)%>% do(subplots = plot.windrose(., spd = spd_name,
+                                    dir=dir_name,
+                                    dirres = 22.5,
+                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                    palette = paleta,
+                                    opacity = opacidad,
+                                    border_color = "white",
+                                    border_size = border_size)) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = lon_pos-anchura,      # change from 1 to other 
+                                           y = lat_pos-anchura,      # values if necessary,
+                                           xmax = lon_pos+anchura,   # depending on the map's
+                                           ymax = lat_pos+anchura))) # resolution.
+
+
+  
+  return(p_ros)
+}
+
+
+```
+
+<br/><br/>
+
+
+# EJEMPLO
+
+<br/><br/>
+
+
+Ejemplillo sin más. Teniendo en cuenta que el punto que nos interesa se encuentra en: 
+
+<br/><br/>
+
+
++ Latitud: 41.785694
++ Longitud: -1.272778
+
+<br/><br/>
+
+
+
+```{r}
+
+#POSICION DE LA ROSA DE LOS VIENTOS
+lat_ros<- 41.785694
+lon_ros<- -1.272778
+
+
+#PARAMETROS PARA DESCARGAR MAPA. 
+
+#SI SOLO REPRESENTAMOS UNA ROSA N=S Y E=W
+n<- lat_ros
+s<- lat_ros
+
+e<- lon_ros
+w<- lon_ros
+
+#AÑADIMOS UN INCREMENTO AL REDEDOR DEL MAPA QUE VAMOS A REPRESENTAR
+incr<- 0.0275
+
+
+if(n > 0){n<- n + incr}else{n<- n + incr}
+if(s > 0){s<- s - incr}else{s<- s- incr}
+if(e > 0){e<- e + incr}else{e<- e + incr}
+if(w > 0){w<- w - incr}else{w<- w- incr}
+
+
+#REDONDEAMOS Y MONTAMOS UL Y LR
+ul <- round(c(n,w),digits = 3)  #Upper Left
+lr <- round(c(s,e), digits = 3)  #Lower Right
+
+
+#DESCARGAMOS MAPA "bing" (IMAGEN SATELITE)
+download_maps(ul,lr, res=30, maptyp = c("bing"))
+
+
+```
+```{r}
+#CARGAMOS MAPA
+mapa<- readRDS("/home/oscar/Escritorio/Mapas/41.813_-1.245//bing30.RDS")
+
+#REPRESENTAMOS MAPA A PELO, SIN EJES NI NADA ELEMENT_BLANK FTW
+pmap<- autoplot(mapa)+ theme(axis.line=element_blank(),axis.text.x=element_blank(),
+                                     axis.text.y=element_blank(),axis.ticks=element_blank(),
+                                     axis.title.x=element_blank(),
+                                     axis.title.y=element_blank(),legend.position="none",
+                                     panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+                                     panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+
+#MOSTRAMOS
+pmap
+```
+
+<br/><br/>
+
+
+
+
+```{r}
+#CREAMOS TABLA DATA 
+# WIND DIR 0-360 TENIENDO EN CUENTA QUE:
+#  VIENTO PROVIENTE DEL NORTE 0º
+#   VIENTO DEL OESTE 270º 
+speed<- runif(150, min = 0, max = 23) #WIND SPEED
+dir<- runif(150, min = 0, max = 360) 
+lon<- rep(w, 150)
+lat<- rep(n, 150)
+
+
+#MONTAMOS TABLA
+tabla_viento<- cbind(speed, dir, lon, lat) %>% as.data.frame()
+colnames(tabla_viento)<- c("columna_viento", "columna_dir", "lon", "lat")
+
+
+#REPRESENTAMOS ROSA
+p_ros<- WR_parameters2(data = tabla_viento, 
+                      anchura = 0.03, 
+                      paleta = "YlGnBu",
+                      opacidad = 0.5, 
+                      lon_pos = lon_ros, 
+                      lat_pos = lat_ros, 
+                      spd_name = "columna_viento",
+                      dir_name = "columna_dir")
+
+
+
+#JUNTAMOS ROSA Y MAPA
+pmap+p_ros$subgrobs
+
+
+
+
+```
+

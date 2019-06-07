@@ -11,3 +11,4 @@
 *.csv
 *.tiff
 !TABLA_REGISTRO.csv
+Gribs/

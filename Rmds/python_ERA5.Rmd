@@ -1,0 +1,340 @@
+---
+title: "Python y ERA5"
+author: "Óscar García Hernández"
+date: "20 de noviembre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(knitr)
+```
+
+# Intro
+<br />
+<br />
+Esto pretende ser una guía escueta de los cositas necesarias para descargar los datos del ERA5. ¿Por qué ERA5?... pues por [esto](https://www.researchgate.net/publication/320084119_ERA5_The_new_champion_of_wind_power_modelling). En principio estos datos se deberían descargar de la página oficial del [ECMWF](https://confluence.ecmwf.int/display/CKB/How+to+download+ERA5+data+via+the+ECMWF+Web+API). Lo que pasa es que los datos del ERA5 están disponibles por 2 vías posibles: 
+<br />
+<br />
+
++ Mediante la API del ECMWF (**OBSOLETO**)
++ Mediante la API del Copernicus Climate Change Service's Climate Data Store (CDS) (**Vamos a usar este método**)
+
+<br />
+<br />
+Lo que pasa es que la API del ECMWF va a quedar obsoleta en breves y ellos mismos recomiendan utilizar el servicio del [CDS](https://cds.climate.copernicus.eu/#!/home). En esa página existe una guía de como preparar todo lo necesario para descargar los datos mediante la API. [Aquí](https://cds.climate.copernicus.eu/api-how-to#install-the-cds-api-key)
+<br />
+<br />
+**Los datos se pueden descargar directamente de la página de Copernicus. **
+<br />
+<br />
+**¿Si mediante la página web se pueden descargar los datos para que me voy a complicar a hacerlo mediante python?**
+<br />
+<br />
+Fácil, los datos que podemos descargar están limitados a un peso específico, es decir, dependiendo de las variables que pidamos, el intervalo, el área que abarquemos etc, la cantidad de archivos va a pesar más o menos y existe un límite. Al hacerlo mediante python podemos automatizar el proceso, ahorrando tiempo. 
+<br />
+<br />
+Hay que tener en cuenta que esta guía está pensada para realizar todo el proceso en **WINDOWS 10**, si usas otro sistema operativo es posbible que algunos métodos cambien, todo es preguntarle a *Misisss internet*. Pero esta guía te será útil igualmente. 
+
+<br />
+<br />
+
+
+# Instalar permisos
+
+<br />
+<br />
+
++ Lo primero es **crearse una cuenta** en esa página web. [Aquí](https://cds.climate.copernicus.eu/user/register?destination=%2F%23!%2Fhome) 
+<br />
+<br />
+**Nosotros ya tenemos.** 
+```{r eval=FALSE}
+usuario=  proyectoroseo@gmail.com
+contraseña= ********* #PORSIAKA
+```
+
+<br />
+<br />
+
++ Una vez que tengamos la cuenta y estemos *logeados*. Ellos nos ofrecerán en [esta página](https://cds.climate.copernicus.eu/api-how-to#install-the-cds-api-key) una url y una *key*. Esta es la nuestra (ROSEO): 
+<br />
+<br />
+```{r eval=FALSE}
+url: https://cds.climate.copernicus.eu/api/v2
+key: 4660:4a53cc4d-36ec-45b4-b00c-4eb2a36ea424
+
+```
+<br />
+<br />
+Esta *key* es como un permiso que tendremos guardado y nuestro pc y que tendremos que guardar como .cdsapirc (ese debe ser el nombre del archivo). 
+<br />
+<br />
+Me explico: 
+
++ Abrimos un bloc de notas 
++ Copiamos url y *key*, tal cual viene en el recuadro anterior
++ Guardamos normalmente como archivo .txt
++ Cambiamos el nombre para que se llame *.cdsapirc*. Es decir, se guardará como archivo CDSAPIRC. Si tienes problemas para cambiar la extensión del archivo como yo, pulsa [aquí](https://www.xataka.com/basics/como-cambiar-la-extension-de-un-archivo-en-windows)
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/CDSAPI/4.PNG"))
+
+```
+<br />
+<br />
+**Importante**:Este archivo (.cdsapirc) tiene que estar guardado en Home. Para mi, home es **"C:\\Users\\Oscar"**. Esto es como una llave personal que nos permite tener acceso a la API. Para saber cual es mi carpeta *home* introducimos por consola (CMD o símbolo del sistema) el siguiente comando (**EN WINDOWS¡¡**). 
+
+```{r eval=FALSE}
+%USERPROFILE%
+```
+
+<br />
+<br />
+
+# Python
+<br />
+<br />
+A partir de aquí ya hay que tener instalado [python](https://www.python.org/downloads/).
+<br />
+<br />
+Hay una cosita curiosa con python y es que existen unas pequeñas diferencias entre la version 2.7 y la 3, para aclararnos,se podría decir que se consideran programas diferentes con sus respectivas actualizaciones (*esto ultimo cogidito con pinzas*).  **Yo uso la 2.7 y funciona.** 
+<br />
+<br />
+Debemos instalar un paquete de python especifico creado para pedir datos a esta página web de copernicus. 
+<br />
+<br />
+
+```{r eval=FALSE}
+pip install cdsapi
+```
+<br />
+<br />
+Para poder hacer esto es necesario haber instalado **pip**, que es un comando que nos permite instalar paquetes de python, pero se puede instalar por otros métodos. Todas estas cosas son mucho más fáciles e intuitivas en linux si como yo tienes windows da algún que otro problema. [Instalar pip](https://stackoverflow.com/questions/4750806/how-do-i-install-pip-on-windows). 
+<br />
+<br />
+Una vez ya hemos instalado el paquete cdsapi (CDS-API), ya podemos pasar a pedir datos. 
+<br />
+<br />
+Mi recomendación es usar el servicio ofrecido por la página web para obtener un petición o *request* de base. 
+<br />
+<br />
+En la página del CDS es posible pedir datos manualmente a través de la página. Además existen multitud de datasets, nosotros nos vamos a centrar en [ERA5](https://cds.climate.copernicus.eu/cdsapp#!/search?type=dataset&text=ERA5). 
+
+<br />
+<br />
+Vemos que tenemos dos opciones **pressure levels o single levels**. Yo use *single levels*. 
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/CDSAPI/1.PNG"))
+
+```
+<br />
+<br />
+Pinchamos en ERA5 single levels y en [*dowload data*](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-single-levels?tab=form) podemos seleccionar todas las variables que queremos descargar, el año, formato, etc... 
+<br />
+<br />
+Una vez hayamos seleccionado todas las variables que queremos al final de la página hay una opción muy interesante para nosotrxs. Y es que esta página nos ofrece el formato que debe tener el script de python. 
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/CDSAPI/2.PNG"))
+
+```
+<br />
+<br />
+Pulsamos ahí y obtenemos esto. muy útil como punto de partida. 
+<br />
+<br />
+```{r eval=FALSE}
+import cdsapi
+
+c = cdsapi.Client()
+
+c.retrieve(
+    'reanalysis-era5-single-levels',
+    {
+        'product_type':'reanalysis',
+        'format':'netcdf',
+        'variable':[
+            '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
+        ],
+        'year':'1979',
+        'month':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12'
+        ],
+        'day':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12',
+            '13','14','15',
+            '16','17','18',
+            '19','20','21',
+            '22','23','24',
+            '25','26','27',
+            '28','29','30',
+            '31'
+        ],
+        'time':[
+            '00:00','01:00','02:00',
+            '03:00','04:00','05:00',
+            '06:00','07:00','08:00',
+            '09:00','10:00','11:00',
+            '12:00','13:00','14:00',
+            '15:00','16:00','17:00',
+            '18:00','19:00','20:00',
+            '21:00','22:00','23:00'
+        ]
+    },
+    'download.nc')
+
+```
+
+<br />
+<br />
+
+**NOTA: ESTA REQUEST ESTÁ PENSADA PARA DESCARGAR TODOS LOS DATOS RELACIONADOS CON EL VIENTO PERO, SEGURAMENTE NO NECESITAMOS TODAS ESTAS VARIABLES. YA TE ADELANTO QUE LAS VARIABLES "NEUTRAL" NO NOS VALEN PARA NADA.** 
+
+<br />
+<br />
+
+# Límites de las peticiones 
+Cuando estas seleccionando los datos que quieres y te pasas del máximo al final de la página te aparece un mensajito de este estilo. Esto es útil para ver donde está el límite de datos que puedes pedir, es interesante hacer request o peticiones con un peso cercano al máximo. OPTIMIZA TIEMPO. 
+<br />
+<br />
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/CDSAPI/3.PNG"))
+
+```
+<br />
+<br />
+
+Para la petición que yo estaba haciendo me di cuenta de que el límite está en 1 año y poco. Por lo tanto lo que voy a hacer es hacer un petición igual para todos los años. Es verdad que esto lo puedo hacer vía web, repitiendo el proceso 18 veces (porque hay 18 años de datos [20/11/2018]) pero se puede automatizar el proceso usando un script de python. 
+<br />
+<br />
+
+# Automatizando las peticiones.
+<br />
+<br />
+
+## Bucle for
+<br />
+<br />
+Se puede hacer un bucle (*for*). pero que pasa: las request tardan mogollón, a mi de media, me tardó  55 mins cada petición individual y si hacemos un bulce (*for*) lo que va  a ir haciendo es esperar hasta que acabe el anterior para hacer la siguiente petición. **Esto no es la mejor opción**. 
+<br />
+<br />
+
+## Procesos paralelos
+<br />
+<br />
+Como se pueden hacer muchas peticiones a la vez, siempre y cuando no superen el límite, lo que vamos a hacer para ahorrar tiempo es realizar todas las peticiones en procesos paralelos de esta manera todas las peticiones se están haciendo al mismo tiempo. *mucho más eficiente*. 
+<br />
+<br />
+Para ello hay un paquete de python que se encarga de elaborar estos procesos paralelos. el paquete se llama **multiprocessing**. Hay que instalarlo.
+
+<br />
+<br />
+
+```{r eval=FALSE}
+pip install multiprocessing
+
+```
+
+
+<br />
+<br />
+
+Sabiendo esto el script final queda como:
+
+<br />
+<br />
+```{r eval=FALSE}
+import multiprocessing
+import cdsapi
+
+def req(year):
+        
+        c = cdsapi.Client()
+       c.retrieve(
+    'reanalysis-era5-single-levels',
+    {
+        'product_type':'reanalysis',
+        'format':'netcdf',
+        'variable':[
+            '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
+        ],
+        'year': year,
+        'month':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12'
+        ],
+        'day':[
+            '01','02','03',
+            '04','05','06',
+            '07','08','09',
+            '10','11','12',
+            '13','14','15',
+            '16','17','18',
+            '19','20','21',
+            '22','23','24',
+            '25','26','27',
+            '28','29','30',
+            '31'
+        ],
+        'time':[
+            '00:00','01:00','02:00',
+            '03:00','04:00','05:00',
+            '06:00','07:00','08:00',
+            '09:00','10:00','11:00',
+            '12:00','13:00','14:00',
+            '15:00','16:00','17:00',
+            '18:00','19:00','20:00',
+            '21:00','22:00','23:00'
+        ],
+            'format':'netcdf',
+            'area' : '45/-4/41/-1', #N/W/S/E
+            'grid' : '0.1/0.1'
+        },
+        'Data_{}.nc'.format(year))
+             
+
+
+
+
+   
+   
+
+
+from multiprocessing import Pool
+if __name__ == "__main__":
+
+    r=Pool(4)
+    r.map(req,['2011','2013','2015','2017'])
+
+```
+<br />
+<br />
+Lo que se ha hecho es: 
+<br />
+<br />
+
++ Importar los paquetes necesarios usando *import*
++ Meter la petición de datos dentro de una función *def*
++ Ejecutar la función con todos los valores que queramos (en nuestro caso la variable es *year*). Usando **Pool.map** del paquete *multiprocessing*.
+<br />
+<br />
+
+Esto nos permitirá realizar todas las peticiones paralelas que queramos. Tardarán lo mismo, entorno a 1 hora, pero en una hora tendremos todos los datos a nuestra disposición. 

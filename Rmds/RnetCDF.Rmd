@@ -1,0 +1,329 @@
+---
+title: "Guía básica R"
+subtitle: "Paquete RnetCDF"
+author: "Óscar García Hernández"
+date: "20 de noviembre de 2018"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,fig.align='center')
+library(mapdata)
+library(maps)
+library(RNetCDF)
+library(knitr)
+library(stringr)
+```
+
+# Introducción
+<br />
+<br />
+Buenas chicxs¡. Este apartado de la guía estará enfocado a trabajar con los datos del ERA5. Base de datos proporcionada por el [ECMWF](https://es.wikipedia.org/wiki/Centro_Europeo_de_Previsiones_Meteorológicas_a_Plazo_Medio). Hay que tener en cuenta que estos datos son proporcionados mediante un reanálisis atmosférico, es decir, usan datos empíricos proporcionados por sensores por todo el mundo y hacen una super simulación. Hasta ahora los datos más utilizados era los proporcionados por el ERA-interim, el ERA5 es una versión mejorada de este, las mejoras se pueden ver [aquí](https://confluence.ecmwf.int//pages/viewpage.action?pageId=74764925). Básicamente ofrece una mejor resolución espacial y temporal, es decir, el ERA-interim ofrecía un dato cada 6 horas, el ERA5 porporciona un dato horario. En lo referido a la resolución espacial, el ERA5 ofrece más "puntos". 
+<br />
+<br />
+Sin más, eso es para que tengan una idea general. Comentar que ERA5 aun no está terminado, me explico: ERA5 porporcionará datos desde 1950 hasta la actualidad, a día  de hoy(20/11/2018) únicamente están disponibles desde el año 2000 hasta 2018.  
+<br />
+<br />
+
+# NetCDF
+
+<br />
+<br />
+Los datos proporcionados por el ECMWF vienen en formato [netCDF](https://pro.arcgis.com/es/pro-app/help/data/multidimensional/what-is-netcdf-data.htm). Es un formato muy utilizado en temas meteorológicos porque permite adjuntar gran cantidad de información extra, o *meta-datos*, y además permite acceder de manera sencilla a datos *multidimensionales*. Podríamos hacer un símil con un archivo comprimido o .zip/.rar, porque hay que "extraer" la información que contiene. Para ello nosotros emplearemos un paquete de R, llamado **RnetCDF** (hay varios paquetes que cumplen esta función).
+<br />
+<br />
+Antes de nada comentar que el volumen de datos con el que vamos a trabajar es bastante exagerado. Cada año de datos ocupan 200 megas (sin descomprimir OJO). Por lo tanto desde el 2000 hasta ahora tenemos 9 Gb's de datos. Tambien es verdad que no emplearemos toda la información contenida, con suerte estaremos trabajando con volumenes de datos de entorno a 3 Gb's. Para hacer un pequeño entrenamiento con los datos del ERA5 he dejado en nuestro drive 1 año de datos. [Aquí](https://drive.google.com/drive/u/0/folders/1Ey9hCdTy9bMlJY_W7_7MXJ_QwuIdD8ie?ogsrc=32)
+<br />
+<br />
+Como siempre, instalar y ejecutar. 
+<br />
+<br />
+```{r eval=FALSE}
+install.packages("RNetCDF")
+
+library(RNetCDF)
+```
+<br />
+<br />
+
+# RnetCDF, comandos principales. 
+<br />
+<br />
+Como ya hemos dicho, se puede hacer un símil con archivos .zip, por ello a la hora de tratar con un .nc hay que "abrirlo", "extraerlo". Para ello usamos **open.nc** 
+<br />
+<br />
+```{r}
+#Nótese que he guardado Data_2000 en la carpeta python del Repo
+#Uds pueden guardarlo donde quieran y cambiar el "path".
+
+data_ERA<- open.nc(here::here("python/Data_2000.nc"))
+```
+<br />
+<br />
+Una vez lo hemos extraído podemos leerlo. Primeramente podemos ejecutar un **print.nc**, para que nos de un resumen del contenido. 
+<br />
+<br />
+```{r}
+print.nc(data_ERA)
+
+```
+<br />
+<br />
+Con este print podemos ver que variables contienen el archivo, cuantas longitudes y latitudes, cuantos archivos temporales y muy importante, **las unidades de cada variables**. Es curioso remarcar que los datos temporales tienen unas unidades que no habíamos visto hata ahora: **"hours since 1900-01-01 00:00:0.0"**.*Se pueden observar factores de escala y offset, pero que veremos más adelante que no nos afectarán para nada*. Tambien vemos que en cuanto a el viento hay muchas variables. Fallo mío, he descargado todo lo referido al viento, pero igual no nos vale todo. Las variables las vamos a agrupar de la siguiente manera, luego explicaré por qué. 
+<br />
+<br />
+
++ "10 metre U wind component" y "10 metre V wind component"
+
++ "Neutral wind at 10 m u-component" y "Neutral wind at 10 m v-component"
+
++ "10 metre wind speed" y "10 metre wind direction"
+
++ "10 metre wind gust since previous post-processing"
+
++ "Instantaneous 10 metre wind gust"
+
++ "2 metre temperature"
+
+<br />
+<br />
+Es muy recurrente en datos meteorológicos ofrecer la informacion de la velocidad y dirección del viento en coponentes U y V. O lo que es lo mismo, componente zonal y meridional.  
+<br />
+<br />
+
+```{r echo=FALSE, fig.align='center'}
+include_graphics(here::here("imagenes/RnetCDF/1.PNG"))
+
+```
+<br />
+<br />
+A partir de estas componentes podemos ser capaces de obtener tanto el módulo como la dirección del vector viento. 
+<br />
+<br />
+Yo hasta ahora solamente había visto esta manera de proporcionar los datos ofrecido por el ECMWF, pero como ya hemos visto, proporcionan dos variables interesantes: **"10 metre wind speed" y "10 metre wind direction" **, tendremos que comprobar si ambos datos son iguales. partiendo de los datos en formato componentes y los datos de velocidad y dirección. 
+<br />
+<br />
+Por otro lado, no tengo ni idea de lo que significa "neutral", ni lo que representa esa variable. No he encontrado información concluyente al respecto. **Igual es el momento de concretar una tutoría con Alain, que nos va a venir bien y seguro que le hace ilusión hacer un seguimiento de los progresos que están consiguiendo.** 
+<br />
+<br />
+
+#Extraer todas las variables a una lista.
+<br />
+<br />
+Aun queda un paso para poder tener los datos en un formato que podamos interpretar. Lo que hacemos es utilizar un **read.nc**, para extraer toda la información a un objeto tipo lista. 
+<br />
+<br />
+
+
+```{r}
+data_ERA_ls<- read.nc(data_ERA, unpack = TRUE)
+```
+<br />
+<br />
+Nótese que estamos empleando dentro del read.nc un atributo llamado **unpack = TRUE**, super importante. Al ejecutar el print vemos que todas las variables tienen su propio factor de escala y su propio offset, esto quiere decir que el valor ofrecido en la variable tiene que ser multiplicado por el factor de escala y se le suma el offset. si directamente usamos *unpack=TRUE* estas operaciones se realizan automáticamente, lo cual es un puntazo. 
+<br />
+<br />
+Vamos a fijarnos en cuanto pesa la lista, su tamaño ha aumentado. 
+<br />
+<br />
+```{r}
+format(object.size(data_ERA_ls), units = "GB")
+```
+<br />
+<br />
+
+# Analizando las variables 
+<br />
+<br />
+Otra de las cosas que son curiosas de analizar es el caracter multidimensional de las variables. Excepto la variable longitud, latitud y tiempo, todas son multidimensionales. 
+<br />
+<br />
+```{r}
+dim(data_ERA_ls$time)
+dim(data_ERA_ls$longitude)
+dim(data_ERA_ls$latitude)
+
+#componente horizontal del viento
+
+dim(data_ERA_ls$u10)
+```
+<br />
+<br />
+Vemos que tienen 3 dimensiones.Por lo tanto para acceder a una variable tenemos que introducir longitud, latitud, tiempo. Por ejemplo vamos a ver todos los datos del año de una posición concreta. 
+<br />
+<br />
+```{r eval=FALSE}
+data_ERA_ls$u10[1,1,]
+```
+<br />
+<br />
+La posición longitud 1 y latitud 1 es: 
+
+```{r}
+data_ERA_ls$longitud[1]
+
+data_ERA_ls$latitude[1]
+```
+
+<br />
+<br />
+
+El paquete RnetCDF nos ofrece un comando para facilmente convertir el formato del tiempo, de horas desde 1900 a un formato más legible. Sabiendo esto y apoyandonos en el ya conocido *paquete lubridate* podemos convertir estas fechas a un formato conocido para nostoros como es el formato POSIXct, mucho más manejable. 
+<br />
+<br />
+```{r}
+time_1<-utcal.nc("hours since 1900-01-01 00:00:0.0",
+                   data_ERA_ls$time, type = "n")
+
+
+library(lubridate)
+
+  ymd_1<-paste(time_1[,1],time_1[,2],time_1[,3],sep = "-")
+  hms_1<- paste(time_1[,4],time_1[,5],time_1[,6],sep = "-")
+  time_2<-ymd_hms(paste0(ymd_1," ",hms_1))
+```
+<br />
+<br />
+```{r}
+head(time_2)
+```
+<br />
+<br />
+De esta manera nos cercioramos de que realmente tenemos datos horarios. 
+<br />
+<br />
+
+## Introducción a los mapas. 
+<br />
+<br />
+Imagino que ya habrán usado en clase. pero el paquete **mapdata** ofrece la posibilidad de representar mapas ligeros de manera sencilla. 
+<br />
+<br />
+```{r eval=FALSE}
+install.packages("mapdata")
+install.packages("maps")
+library(mapdata)
+library(maps)
+```
+```{r}
+map("worldHires")
+
+```
+
+<br />
+<br />
+
+```{r}
+map("worldHires", xlim = c(-10,5),
+    ylim = c(35,50), 
+    fill = TRUE,
+    col = "grey")
+
+#Para añadir ejes y caja
+box();axis(1);axis(2)
+```
+<br />
+<br />
+Es interesante para poder ver todo lo que abarca los datos que hemos descargado. El comando *range* es muy útil para ver entre que valores se maneja un vector, o mejor dicho, su rango. 
+<br />
+<br />
+```{r}
+range(data_ERA_ls$latitude)
+range(data_ERA_ls$longitude)
+```
+<br />
+<br />
+En R podemos representar poligonos, indicando las vértices del mismo. 
+<br />
+<br />
+```{r}
+map("worldHires", xlim = c(-8,2),
+    ylim = c(38,47), 
+    fill = TRUE,
+    col = "grey")
+
+box();axis(1);axis(2)
+
+
+#añadimos poligono indicando la zona de información
+polygon(c(-4,-4,-1,-1), 
+        c(41,45,45,41), 
+        density = 40,
+        col = "red")
+```
+<br />
+<br />
+**Esto de los mapas yo creo que se merece un capítulo a parte**, con todas las posibilidades que ofrecen. dependiendo del paquete podríamos incluso plotear las fronteras de las comunidades autónomas y demás. Además existen muchas formas diferentes de lograr depende que propósitos, incluso es posible descargar datos de google.maps y realizar plots con imagenes de satélite muy atractivos a la vista. 
+<br />
+<br />
+Con que más o menos ubiquemos que contamos con un área de datos que abarca todo euskalherria me vale. ya profundizaremos en la **optimizacíon de la descarga de los datos**, para de esta manera acelerar el proceso de descarga **usando python y R trabajando de la mano.** tiempo al tiempo
+<br />
+<br />
+
+# Organización de datos
+<br />
+<br />
+Se me ha ocurrido que una buena manera de organizar los datos es por localización, es decir, crear un tabla por localización que contenga todas las variables con las que contamos. Claro que esto es muy subjetivo, estos datos se pueden organizar como uno quiera y le sea más cómodo trabajar, incluso puede ser una opción trabajar directamente con la lista **data_ERA_ls** sin modificar. <br />
+<br />
+Organizando por localizaciones quedaría algo así:
+<br />
+<br />
+```{r}
+longitud<- as.vector(data_ERA_ls$longitude)
+latitud<- as.vector(data_ERA_ls$latitude)
+lista_pos <- list()
+k<- 1 
+for (lon in 1:length(longitud)) {
+   
+  for (lat in 1:length(latitud)) {
+      x <- lon
+      y <- lat 
+      tabla<- data.frame(cbind(longitud[x],
+                               latitud[y],
+                               data_ERA_ls$time,
+                               data_ERA_ls$u10n[x,y,],data_ERA_ls$u10[x,y,],
+                               data_ERA_ls$v10n[x,y,],data_ERA_ls$v10[x,y,],
+                               data_ERA_ls$dwi[x,y,],data_ERA_ls$fg10[x,y,], 
+                               data_ERA_ls$wind[x,y,],data_ERA_ls$t2m[x,y,],
+                               data_ERA_ls$i10fg[x,y,]))
+                               
+                              
+                              
+     
+      nombre<- paste0(round(longitud[x],digits = 1),"_",
+                      round(latitud[y],digits = 1))
+      lista_pos[[nombre]]<- tabla
+      k<-k+1
+      }
+  }
+
+
+# Nombramos columnas con el nombre completo 
+
+colum_names<- vector()
+for (i in 1:length(names(data_ERA_ls))) {
+    var <- names(data_ERA_ls)[i]
+    colum_names[i]<- str_replace_all(att.get.nc(data_ERA,var,
+                                                "long_name"),
+                                     fixed(" "), "")
+    }
+for (i in 1:length(lista_pos)) {
+    colnames(lista_pos[[i]])<- colum_names
+  }
+  
+ 
+```
+<br />
+<br />
+Este tipo de organización puede llegar a ser un poco caótica, dense cuenta que contamos con 1271 elementos (31*41). Es una idea, seguro que logramos una manera de trabajar más eficiente. 
+<br />
+<br />
+
+
+# Outro
+<br />
+<br />
+Creo que como introducción a los datos .nc es suficiente. Una vez ya hemos extraído la información de manera correcta tenemos datos en formato lista que vamos a tratar igual que los demás datos. Asi que no tiene más misterio. Como dije antes será interesante qué cree un capitulo enfocado a mapas exclusivamente. Un abrazo¡ 
