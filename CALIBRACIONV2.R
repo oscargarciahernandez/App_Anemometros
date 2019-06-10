@@ -146,7 +146,7 @@ ifelse(dir.exists(path_anemo),NA, dir.create(path_anemo,recursive = T))
 # LA TABLA
 nombre_archivo<- paste0(anemo_elegido,"_",
                         ANEMOS_TABLA$Date %>% max() %>% 
-                          str_split(" ") %>% .[[1]] %>% .[1])
+                          str_split(" ") %>% .[[1]] %>% .[1], ".RDS")
 saveRDS(ANEMOS_TABLA_ADDROWS,paste0(path_anemo, "/",nombre_archivo) )
 
 
@@ -208,7 +208,7 @@ DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
 path_anemo<- here::here('NUEVO/Data_calibracion/') %>% paste0(anemo_elegido)
 nombre_archivo<- paste0("ERA5_",
                         DATOS_JUNTOS$Date %>% max() %>% 
-                          str_split(" ") %>% .[[1]] %>% .[1])
+                          str_split(" ") %>% .[[1]] %>% .[1], ".RDS")
 saveRDS(DATOS_JUNTOS,paste0(path_anemo, "/",nombre_archivo) )
 
 
