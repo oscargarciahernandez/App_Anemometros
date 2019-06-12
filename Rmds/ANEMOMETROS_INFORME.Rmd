@@ -1,5 +1,5 @@
 ---
-title: "CRIPTO-GANK"
+title: "INFORME INTERACTIVO CALIBRACION"
 author: "Oscar Garcia Hernandez"
 date: "21/5/2019"
 output: html_document
@@ -298,6 +298,7 @@ DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
   mutate(ERA_binDir= cut(ERAWD ,
                          breaks = c(0,seq(11.5,349.5,22.5),360, 361), 
                          labels = c(0,seq(11.5,349.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
 
 
 
@@ -328,6 +329,9 @@ inputPanel(
               max = 144,
               step = 2,
               value =1 ),
+  checkboxInput("filter",
+                "¿Filtrado por direccionies?",
+                value = FALSE),
 
   
         selectInput("SELECTOR", 
@@ -335,7 +339,7 @@ inputPanel(
               choices = c("Comparativa", 
                           "Cross-correlation", 
                           "Rosa de los vientos"),
-              selected = "Cross_correlation"))
+              selected = "Comparativa"))
 
 conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
              sliderInput("anchura_rosa", label = "Tamaño rosa de los vientos",
@@ -343,6 +347,12 @@ conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
               max = 0.01,
               step = 0.001,
               value =0.001 ))
+
+conditionalPanel('input.filter',
+             selectInput("filtrado_anemo", 
+              label = "Filtrado por direccion del anemometro",
+              choices = DATOS_PLOT$WD_N %>% unique() %>% as.character() ,
+              selected = "247.5"))
 
 conditionalPanel('input.SELECTOR=="Cross-correlation"',
             selectInput("type_corr", 
@@ -352,7 +362,7 @@ conditionalPanel('input.SELECTOR=="Cross-correlation"',
 
 
    plotData <- reactive({
-     DATOS_PLOT %>% .[complete.cases(.),] %>%  mutate(ERAWS=SMA(ERAWS, input$SMA_value),
+     x<- DATOS_PLOT %>% .[complete.cases(.),] %>%  mutate(ERAWS=SMA(ERAWS, input$SMA_value),
                                      WS_l=SMA(WS_l, input$SMA_value),
                                      WS_sp=SMA(WS_sp, input$SMA_value),
                                      WS_N=SMA(WS_N, input$SMA_value),
@@ -366,15 +376,26 @@ conditionalPanel('input.SELECTOR=="Cross-correlation"',
   mutate(ANEM_selected= ifelse(rep(input$Interpolation=="linear",nrow(.)),DATOS_PLOT$WS_l,
                                ifelse(rep(input$Interpolation=="spline",nrow(.)), WS_sp,
                                       ifelse(rep(input$Interpolation=="stine",nrow(.)), WS_st,
-                                             ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA))))) %>% 
-  mutate(GUST= ifelse(!input$GUST,ANEM_selected,
-                      ifelse(rep(input$Interpolation=="linear",nrow(.)),WSMAX_l,
-                             ifelse(rep(input$Interpolation=="spline",nrow(.)), WSMAX_sp,
-                                    ifelse(rep(input$Interpolation=="stine",nrow(.)), WSMAX_st,
-                                           ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WSMAX_N,NA))))))
+                                             ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA)))))
+     
+ if(input$filter){
+   x<- x %>% filter(WD_N==input$filtrado_anemo %>% as.numeric()); x}else{
+   x
+ }
+
+ if(input$GUST){
+    x<- x %>% mutate(GUST= ifelse(rep(input$Interpolation=="linear",nrow(.)),WSMAX_l,
+                         ifelse(rep(input$Interpolation=="spline",nrow(.)), WSMAX_sp,
+                                ifelse(rep(input$Interpolation=="stine",nrow(.)), WSMAX_st,
+                                       ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WSMAX_N,NA))))); x
+   
+ }
+ else{
+   x$GUST<- x$ANEM_selected
+   x}
+      
      
    })
-
 
 
 
@@ -388,7 +409,7 @@ plotData() %>%
             size=1.2,
             color="blue")+
   geom_text(aes(x=Date,y=8,
-                               angle=ERA_binDir, 
+                               angle=(-ERA_binDir+90)+180, 
                                label="→"), 
             color="blue", 
             alpha=0.5,
@@ -396,11 +417,12 @@ plotData() %>%
   geom_line(aes(y=ANEM_selected),
             size=1.2, color="red")+
   geom_line(aes(y=GUST),
-            size=0.9, 
+            size=0.6, 
             color="red",
-            linetype="longdash")+
+            linetype="longdash", 
+            alpha=0.6)+
   geom_text(aes(x=Date,y=6,
-                angle=WD_N, 
+                angle=(-WD_N+90)+180, 
                 label="→"),
             color="red", 
             alpha=0.5,
@@ -536,5 +558,10 @@ pmap+p_rosERA$subgrobs+p_rosANEM$subgrobs
 
 )
  
+```
+
+```{r}
+
+
 ```
 
