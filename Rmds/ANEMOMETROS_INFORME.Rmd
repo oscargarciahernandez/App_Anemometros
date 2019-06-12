@@ -301,9 +301,9 @@ DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
                          breaks = c(0,seq(11.5,349.5,22.5),360, 361), 
                          labels = c(0,seq(11.5,349.5,22.5),0) %>% as.factor()))
 DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
- East<- c(225.0,247.5,270.0,292.5,315.0)
+ West<- c(225.0,247.5,270.0,292.5,315.0)
 North<- c(0.0,22.5,45.0,315.0,337.5)
-West<- c(45.0,67.5,90,112.5,135.0)
+East<- c(45.0,67.5,90,112.5,135.0)
 South<- c(135.0, 155.0,180.0, 202.5,225.0)
 
 #################A PARTIR DE AQUI, SHINY
@@ -387,7 +387,7 @@ conditionalPanel('input.SELECTOR=="Cross-correlation"',
                                      WSMAX_st=SMA(WSMAX_st, input$SMA_value)) %>%
   filter(. , Date>ymd(input$Date_range[1])) %>% 
   filter(. , Date<ymd(input$Date_range[2])) %>% 
-  mutate(ANEM_selected= ifelse(rep(input$Interpolation=="linear",nrow(.)),DATOS_PLOT$WS_l,
+  mutate(ANEM_selected= ifelse(rep(input$Interpolation=="linear",nrow(.)),WS_l,
                                ifelse(rep(input$Interpolation=="spline",nrow(.)), WS_sp,
                                       ifelse(rep(input$Interpolation=="stine",nrow(.)), WS_st,
                                              ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA)))))
