@@ -277,7 +277,9 @@ WR_parameters2<- function(data,
 }
 ```
 
+# GRÁFICO INTERACTVIVO 
 
+Sin miedo, este gráfico interactivo tiene el propósito de permitirnos interactuar con nuestros datos, como una manera de poder entender mejor como se comportan. Después se irán presentando los resultados previos a la calibración del bias. Empleando diferentes métodos. 
 
 ```{r echo=FALSE, eval=TRUE}
 ### CARGAMOS DATOS
@@ -299,8 +301,10 @@ DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
                          breaks = c(0,seq(11.5,349.5,22.5),360, 361), 
                          labels = c(0,seq(11.5,349.5,22.5),0) %>% as.factor()))
 DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
-
-
+ East<- c(225.0,247.5,270.0,292.5,315.0)
+North<- c(0.0,22.5,45.0,315.0,337.5)
+West<- c(45.0,67.5,90,112.5,135.0)
+South<- c(135.0, 155.0,180.0, 202.5,225.0)
 
 #################A PARTIR DE AQUI, SHINY
 
@@ -349,10 +353,20 @@ conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
               value =0.001 ))
 
 conditionalPanel('input.filter',
+             checkboxInput("NSWE", 
+              label = "¿Agrupar direcciones?",
+              value = FALSE))
+
+conditionalPanel('!input.NSWE',
              selectInput("filtrado_anemo", 
               label = "Filtrado por direccion del anemometro",
               choices = DATOS_PLOT$WD_N %>% unique() %>% as.character() ,
               selected = "247.5"))
+conditionalPanel('input.NSWE',
+             selectInput("filtrado_anemo_agrup", 
+              label = "Filtrado por direccion del anemometro",
+              choices = c("N", "S", "W", "E"),
+              selected = "N"))
 
 conditionalPanel('input.SELECTOR=="Cross-correlation"',
             selectInput("type_corr", 
@@ -377,11 +391,22 @@ conditionalPanel('input.SELECTOR=="Cross-correlation"',
                                ifelse(rep(input$Interpolation=="spline",nrow(.)), WS_sp,
                                       ifelse(rep(input$Interpolation=="stine",nrow(.)), WS_st,
                                              ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA)))))
-     
- if(input$filter){
-   x<- x %>% filter(WD_N==input$filtrado_anemo %>% as.numeric()); x}else{
+y<-x
+if(input$filter){
+   if(!input$NSWE){
+   x<- x %>% filter(WD_N==input$filtrado_anemo %>% as.numeric())
+   x
+   }else{
+    
+   x<- x %>% filter(WD_N%in%ifelse(rep(input$filtrado_anemo_agrup=="N",5),
+                                   North,
+                                   ifelse(rep(input$filtrado_anemo_agrup=="E",5),
+                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",5),
+                                                      South,ifelse(rep(input$filtrado_anemo_agrup=="W",5),
+                                                                   West)))))
    x
  }
+}else{}
 
  if(input$GUST){
     x<- x %>% mutate(GUST= ifelse(rep(input$Interpolation=="linear",nrow(.)),WSMAX_l,
@@ -560,8 +585,9 @@ pmap+p_rosERA$subgrobs+p_rosANEM$subgrobs
  
 ```
 
-```{r}
+# Conclusiones preliminares. 
 
+Tras bastante cacharrear se aprecia que realizando un filtrado de los datos por direcciones del anemometro se consigue aumentar la correlación filtrando por las direcciones Este-SurEste, que resulta que además son las direcciones que mayor número de datos tienen. ¿Casualidad?, no lo creo. Además, añadiendo el factor del moving average (media móvil) se logra aumentar considerablemente los resultados de correlación. En cuanto a la manera de interpolar... llego a la conclusión que no se consiguen mejores resultados empleando "stine" o "spline", la única interpolación que tienen sentido entre las elegidas es la interpolación lineal, que, en algunos casos logra mejorar incluso la correlación. 
 
-```
-
+Ya hemos visto que los datos hablando de modulo son muy satisfactorios. Pero aun falta entender la relación que existe con las direcciones.
+Una de las conclusiones preliminares hablando de correlacion en las direcciones es que sa puede apreciar es que cuando el anemómetro experimentadirección Este-Sureste-Noreste ERA5 si que está captando bien esa tendencia. 
