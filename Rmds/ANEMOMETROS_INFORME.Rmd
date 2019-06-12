@@ -348,23 +348,17 @@ inputPanel(
                           "Rosa de los vientos"),
               selected = "Comparativa"))
 
-conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
-             sliderInput("anchura_rosa", label = "Tamaño rosa de los vientos",
-              min =0.001,
-              max = 0.01,
-              step = 0.001,
-              value =0.001 ))
 
 conditionalPanel('!(input.filter=="Nada")',
              checkboxInput("NSWE", 
               label = "¿Agrupar direcciones?",
               value = FALSE))
 
-conditionalPanel('!input.NSWE',
+conditionalPanel('!(input.filter=="Nada")',conditionalPanel('!input.NSWE',
              selectInput("filtrado_anemo", 
               label = "Filtrado por direccion del anemometro",
               choices = DATOS_PLOT$WD_N %>% unique() %>% as.character() ,
-              selected = "247.5"))
+              selected = "247.5")))
 conditionalPanel('input.NSWE',
              selectInput("filtrado_anemo_agrup", 
               label = "Filtrado por direccion del anemometro",
@@ -578,7 +572,7 @@ pmap<- autoplot(mapa)+
 
 #REPRESENTAMOS ROSA
 p_rosERA<- WR_parameters2(data = DATOS_modify, 
-                      anchura = incr+input$anchura_rosa, 
+                      anchura = incr, 
                       paleta = "YlGnBu",
                       opacidad = 0.5, 
                       lon_pos = DATOS_modify$ERAlon %>% unique(), 
@@ -588,7 +582,7 @@ p_rosERA<- WR_parameters2(data = DATOS_modify,
                       border_size = 0.1)
 
 p_rosANEM<- WR_parameters2(data = DATOS_modify, 
-                      anchura = incr+input$anchura_rosa, 
+                      anchura = incr, 
                       paleta = "YlGnBu",
                       opacidad = 0.5, 
                       lon_pos = DATOS_modify$lon %>% unique(), 
@@ -600,7 +594,7 @@ p_rosANEM<- WR_parameters2(data = DATOS_modify,
 
 pmap+p_rosERA$subgrobs+p_rosANEM$subgrobs
                      
-                   })
+                   }, width = 1000, height = 1000)
 
 )
  
@@ -611,4 +605,6 @@ pmap+p_rosERA$subgrobs+p_rosANEM$subgrobs
 Tras bastante cacharrear se aprecia que realizando un filtrado de los datos por direcciones del anemometro se consigue aumentar la correlación filtrando por las direcciones Este-SurEste, que resulta que además son las direcciones que mayor número de datos tienen. ¿Casualidad?, no lo creo. Además, añadiendo el factor del moving average (media móvil) se logra aumentar considerablemente los resultados de correlación. En cuanto a la manera de interpolar... llego a la conclusión que no se consiguen mejores resultados empleando "stine" o "spline", la única interpolación que tienen sentido entre las elegidas es la interpolación lineal, que, en algunos casos logra mejorar incluso la correlación. 
 
 Ya hemos visto que los datos hablando de modulo son muy satisfactorios. Pero aun falta entender la relación que existe con las direcciones.
-Una de las conclusiones preliminares hablando de correlacion en las direcciones es que sa puede apreciar es que cuando el anemómetro experimentadirección Este-Sureste-Noreste ERA5 si que está captando bien esa tendencia. 
+Una de las conclusiones preliminares hablando de correlacion en las direcciones es que sa puede apreciar es que cuando el anemómetro experimenta dirección Este-Sureste-Noreste ERA5 si que está captando bien esa tendencia. 
+
+Esto último es interesante a la hora de realizar la correción.
