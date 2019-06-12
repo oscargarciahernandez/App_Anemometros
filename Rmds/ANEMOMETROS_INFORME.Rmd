@@ -298,8 +298,8 @@ Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% un
 
 DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
   mutate(ERA_binDir= cut(ERAWD ,
-                         breaks = c(0,seq(11.5,349.5,22.5),360, 361), 
-                         labels = c(0,seq(11.5,349.5,22.5),0) %>% as.factor()))
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
 DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
  West<- c(225.0,247.5,270.0,292.5,315.0)
 North<- c(0.0,22.5,45.0,315.0,337.5)
@@ -333,9 +333,12 @@ inputPanel(
               max = 144,
               step = 2,
               value =1 ),
-  checkboxInput("filter",
+  selectInput("filter",
                 "¿Filtrado por direccionies?",
-                value = FALSE),
+              choices = c("Direcciones anemometro",
+                          "Direcciones ERA5",
+                          "Nada"),
+              selected = "Nada"),
 
   
         selectInput("SELECTOR", 
@@ -352,7 +355,7 @@ conditionalPanel('input.SELECTOR=="Rosa de los vientos"',
               step = 0.001,
               value =0.001 ))
 
-conditionalPanel('input.filter',
+conditionalPanel('!(input.filter=="Nada")',
              checkboxInput("NSWE", 
               label = "¿Agrupar direcciones?",
               value = FALSE))
@@ -392,8 +395,9 @@ conditionalPanel('input.SELECTOR=="Cross-correlation"',
                                       ifelse(rep(input$Interpolation=="stine",nrow(.)), WS_st,
                                              ifelse(rep(input$Interpolation=="Nearest",nrow(.)), WS_N,NA)))))
 y<-x
-if(input$filter){
-   if(!input$NSWE){
+if(!input$filter=="Nada"){
+  if(input$filter=="Direcciones anemometro"){
+    if(!input$NSWE){
    x<- x %>% filter(WD_N==input$filtrado_anemo %>% as.numeric())
    x
    }else{
@@ -406,6 +410,23 @@ if(input$filter){
                                                                    West)))))
    x
  }
+  }else{
+        if(!input$NSWE){
+   x<- x %>% filter(ERA_binDir==input$filtrado_anemo %>% as.numeric())
+   x
+   }else{
+    
+   x<- x %>% filter(ERA_binDir%in%ifelse(rep(input$filtrado_anemo_agrup=="N",5),
+                                   North,
+                                   ifelse(rep(input$filtrado_anemo_agrup=="E",5),
+                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",5),
+                                                      South,ifelse(rep(input$filtrado_anemo_agrup=="W",5),
+                                                                   West)))))
+   x
+ }
+
+  }
+   
 }else{}
 
  if(input$GUST){
@@ -563,7 +584,7 @@ p_rosERA<- WR_parameters2(data = DATOS_modify,
                       lon_pos = DATOS_modify$ERAlon %>% unique(), 
                       lat_pos = DATOS_modify$ERAlat %>% unique(), 
                       spd_name = "ERAWS",
-                      dir_name = "ERAWD",
+                      dir_name = "ERA_binDir",
                       border_size = 0.1)
 
 p_rosANEM<- WR_parameters2(data = DATOS_modify, 
