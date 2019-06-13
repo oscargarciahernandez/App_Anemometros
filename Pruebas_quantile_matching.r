@@ -49,11 +49,17 @@ calibracion_todo_2 <- doQmapQUANT(datos_juntos$uv_wind1,ftrans_mitad_2)
 #Hora de analizar los resultados
 cor(calibracion_mitad_1,mitad_1$Mean)
 cor(mitad_1$Mean,mitad_1$uv_wind1)
+<<<<<<< HEAD
 cor(calibracion_mitad_1,mitad_1$uv_wind1)
 
 cor(calibracion_mitad_2,mitad_2$Mean)
 cor(mitad_2$Mean,mitad_2$uv_wind1)
 cor(calibracion_mitad_2,mitad_2$uv_wind1)
+=======
+
+cor(calibracion_mitad_2,mitad_2$Mean)
+cor(mitad_2$Mean,mitad_2$uv_wind1)
+>>>>>>> 5c4bb9d05a0437459b74142fc6356b8f1fc70092
 
 cor(calibracion_todo_1,datos_juntos$Mean)
 cor(calibracion_todo_2,datos_juntos$Mean)
@@ -62,6 +68,7 @@ cor(datos_juntos$uv_wind1,datos_juntos$Mean)
 remove(mitad_1,mitad_2,calibracion_mitad_1,calibracion_mitad_2,calibracion_todo_1,calibracion_todo_2,ftrans_mitad_1,ftrans_mitad_2)
 
 #TERCER EJERCICIO. Dividir datos por la mitad y hacer una calibracion para cada direccion de era.
+
 #Columnas 5 (Date1=fecha de era), 2 (Mean=medicion), 8 (uv_wind1=modelado/era) y 9 (uv_dwi1=direccion era)
 mitad_1=datos_juntos[1:(nrow(datos_juntos)/2),c(5,2,8,9)]
 mitad_2=datos_juntos[-(1:(nrow(datos_juntos)/2)),c(5,2,8,9)]
