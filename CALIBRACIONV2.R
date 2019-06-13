@@ -325,7 +325,7 @@ taylor.diagram(ref,model,add=FALSE,col="red",pch=19,pos.cor=TRUE,
                pcex=1,cex.axis=1,normalize=FALSE,mar=c(5,4,6,6),...)
 
 #FILTRADO POR DIRECCIONES
-West<- c(247.5,270.0,292.5,)
+West<- c(247.5,270.0,292.5)
 North_west<-c(292.5,315.0,337.5)
 South_west<- c(202.5, 225.0, 247.5)
 North<- c(0.0,22.5,337.5)
@@ -335,6 +335,65 @@ South_east<- c(112.5,135.0,157.5)
 South<- c(135.0, 155.0,180.0, 202.5,225.0)
 
 DATOS_PLOT_fil<- DATOS_PLOT %>% filter(month(Date)==1, WD_N%in%c(225.0,247.5,270.0,292.5,315.0))
+
+#ANTES DE TAYLOR VAMOS A HACER WEIBULL
+library(data.table)
+library(reshape)
+library(reshape2)
+library(MASS)
+DATOS_weibull<- DATOS_PLOT %>% .[complete.cases(.), ] 
+
+fitweibull <- function(column) {
+  x <- seq(0,7,by=0.1)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+
+shape_factor<- 1
+
+DATOS_weibull %>% 
+  ggplot() + 
+  geom_histogram(aes(x=ERAWS), binwidth = 0.1,
+                 alpha=0.6,col="red")+
+  geom_histogram(aes(x=WS_N), binwidth = 0.1,
+                 alpha=0.6,col="blue")+
+  geom_line(aes(x=seq(0,7,by=0.1),
+                y=fitweibull(DATOS_weibull$ERAWS)*shape_factor))+
+    geom_line(aes(x=seq(0,7,by=0.1),
+                  y=fitweibull(ifelse(DATOS_weibull$WS_N==0,
+                                      0.1,
+                                      DATOS_weibull$WS_N))*shape_factor), 
+              col="darkblue")
+
+
+
+  
+  
+  DATOS_PLOT %>% 
+  ggplot(aes(x=ERAWS)) + 
+  geom_histogram(aes(y = ..density..), 
+                 breaks= seq(0.1,max(DATOS_PLOT$ERAWS, na.rm = T), by=0.1),
+                 fill="blue",
+                 alpha=0.5) + 
+  geom_density(col="darkblue")+
+  xlim(0, max(DATOS_PLOT$ERAWS, na.rm = T))+
+  theme_light()+ 
+  geom_histogram(data = DATOS_PLOT,aes(x=WS_N, y = ..density..), 
+                 breaks= seq(0.1,max(DATOS_PLOT$WS_N, na.rm = T), by=0.1),
+                 fill="red",
+                 alpha=0.5) + 
+  geom_density(col="darkred")
+
+
+
+
+
+
+
+
+
 
 taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
                as.vector(DATOS_PLOT_fil$WS_N))
