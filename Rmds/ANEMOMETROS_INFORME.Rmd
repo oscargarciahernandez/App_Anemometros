@@ -301,10 +301,14 @@ DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
                          breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
                          labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
 DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
- West<- c(225.0,247.5,270.0,292.5,315.0)
-North<- c(0.0,22.5,45.0,315.0,337.5)
-East<- c(45.0,67.5,90,112.5,135.0)
-South<- c(135.0, 155.0,180.0, 202.5,225.0)
+West<- c(247.5, 270.0, 292.5)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(155.0,180.0, 202.5)
 
 #################A PARTIR DE AQUI, SHINY
 
@@ -362,7 +366,7 @@ conditionalPanel('!(input.filter=="Nada")',conditionalPanel('!input.NSWE',
 conditionalPanel('input.NSWE',
              selectInput("filtrado_anemo_agrup", 
               label = "Filtrado por direccion del anemometro",
-              choices = c("N", "S", "W", "E"),
+              choices = c("N", "NW","NE","S","SW", "SE","W", "E"),
               selected = "N"))
 
 conditionalPanel('input.SELECTOR=="Cross-correlation"',
@@ -396,12 +400,20 @@ if(!input$filter=="Nada"){
    x
    }else{
     
-   x<- x %>% filter(WD_N%in%ifelse(rep(input$filtrado_anemo_agrup=="N",5),
-                                   North,
-                                   ifelse(rep(input$filtrado_anemo_agrup=="E",5),
-                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",5),
-                                                      South,ifelse(rep(input$filtrado_anemo_agrup=="W",5),
-                                                                   West)))))
+      x<- x %>% filter(WD_N%in%ifelse(rep(input$filtrado_anemo_agrup=="N",3),
+                                   North,ifelse(rep(input$filtrado_anemo_agrup=="E",3),
+                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",3),
+                                                      South,
+                                                      ifelse(rep(input$filtrado_anemo_agrup=="W",3),
+                                                             West,
+                                                             ifelse(rep(input$filtrado_anemo_agrup=="NW",3),
+                                                                    North_west,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="NE",3),
+                                                                    North_east,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="SW",3),
+                                                                    South_west,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="SE",3),
+                                                                    South_east,NA)))))))))
    x
  }
   }else{
@@ -410,12 +422,20 @@ if(!input$filter=="Nada"){
    x
    }else{
     
-   x<- x %>% filter(ERA_binDir%in%ifelse(rep(input$filtrado_anemo_agrup=="N",5),
-                                   North,
-                                   ifelse(rep(input$filtrado_anemo_agrup=="E",5),
-                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",5),
-                                                      South,ifelse(rep(input$filtrado_anemo_agrup=="W",5),
-                                                                   West)))))
+   x<- x %>% filter(ERA_binDir%in%ifelse(rep(input$filtrado_anemo_agrup=="N",3),
+                                   North,ifelse(rep(input$filtrado_anemo_agrup=="E",3),
+                                          East,ifelse(rep(input$filtrado_anemo_agrup=="S",3),
+                                                      South,
+                                                      ifelse(rep(input$filtrado_anemo_agrup=="W",3),
+                                                             West,
+                                                             ifelse(rep(input$filtrado_anemo_agrup=="NW",3),
+                                                                    North_west,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="NE",3),
+                                                                    North_east,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="SW",3),
+                                                                    South_west,
+                                                                    ifelse(rep(input$filtrado_anemo_agrup=="SE",3),
+                                                                    South_east,NA)))))))))
    x
  }
 

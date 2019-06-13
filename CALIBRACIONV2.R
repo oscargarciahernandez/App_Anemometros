@@ -292,3 +292,52 @@ rownames(Tabla_cor_SMA)<- sapply(DATOS_JUNTOS_LISTA, function(x){
 })
 Tabla_cor_SMA %>% summarise_all(mean)
 
+# TAYLOR DIAGRAMS ---------------------------------------------------------
+
+library(plotrix)
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+#PLOTEOS PARA COMPROBAR SIMILITUD ENTRE ERA5 Y ANEMOMETRO
+
+Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% unique, x$ERAlat %>% unique()) %>% as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+  distm(x, c(DATOS_JUNTOS_LISTA[[1]]$lon %>% unique,
+             DATOS_JUNTOS_LISTA[[1]]$lat %>% unique))
+}) 
+
+DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+####TAYLOR
+
+taylor.diagram(ref,model,add=FALSE,col="red",pch=19,pos.cor=TRUE,
+               xlab="",ylab="",main="Taylor Diagram",show.gamma=TRUE,ngamma=3,
+               gamma.col=8,sd.arcs=0,ref.sd=FALSE,sd.method="sample",
+               grad.corr.lines=c(0.2,0.4,0.6,0.8,0.9),
+               pcex=1,cex.axis=1,normalize=FALSE,mar=c(5,4,6,6),...)
+
+#FILTRADO POR DIRECCIONES
+West<- c(247.5,270.0,292.5,)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(135.0, 155.0,180.0, 202.5,225.0)
+
+DATOS_PLOT_fil<- DATOS_PLOT %>% filter(month(Date)==1, WD_N%in%c(225.0,247.5,270.0,292.5,315.0))
+
+taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+               as.vector(DATOS_PLOT_fil$WS_N))
+
+taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+               as.vector(DATOS_PLOT_fil$ERAWS),add = TRUE)
