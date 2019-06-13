@@ -19,6 +19,6 @@ library(qmap)
 # guzti, todoel periodo de calibración
 
 
-fobj<-fitQmapQUANT(kal_oin, kal_behar[tarte] ) 
+fobj<-fitQmapQUANT(kal_base, kal_ERA[solap] ) 
 
-kal <- doQmapQUANT(kal_behar[guzti],  fobj)  
+kal <- doQmapQUANT(kal_ERA[todo],  fobj)  
