@@ -341,7 +341,6 @@ library(data.table)
 library(reshape)
 library(reshape2)
 library(MASS)
-DATOS_weibull<- DATOS_PLOT %>% .[complete.cases(.), ] 
 
 fitweibull <- function(column) {
   x <- seq(0,7,by=0.1)
@@ -351,23 +350,36 @@ fitweibull <- function(column) {
 }
 
 
-shape_factor<- 1
+shape_factor<- 1500
+bin_anch<- 0.2
+DATOS_weibull<- DATOS_PLOT %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,0.01,DATOS_weibull$WS_N)
 
-DATOS_weibull %>% 
+
   ggplot() + 
-  geom_histogram(aes(x=ERAWS), binwidth = 0.1,
-                 alpha=0.6,col="red")+
-  geom_histogram(aes(x=WS_N), binwidth = 0.1,
-                 alpha=0.6,col="blue")+
-  geom_line(aes(x=seq(0,7,by=0.1),
-                y=fitweibull(DATOS_weibull$ERAWS)*shape_factor))+
+    geom_histogram(data= DATOS_weibull, 
+                   aes(x=ERAWS),
+                   binwidth = bin_anch,
+                   alpha=0.4,
+                   fill="red",
+                   col="red")+
+    geom_histogram(data=DATOS_weibull,
+                   aes(x=WS_N),
+                   binwidth = bin_anch,
+                   alpha=0.4,
+                   fill="blue",
+                   col="blue")+
     geom_line(aes(x=seq(0,7,by=0.1),
-                  y=fitweibull(ifelse(DATOS_weibull$WS_N==0,
-                                      0.1,
-                                      DATOS_weibull$WS_N))*shape_factor), 
-              col="darkblue")
-
-
+                  y=fitweibull(DATOS_weibull$ERAWS)*shape_factor))+
+    geom_line(aes(x=seq(0,7,by=0.1),
+                  y=fitweibull(DATOS_weibull$WS_N)*shape_factor))+
+    ylab("")+
+    xlab("Wind Speed [m/s]")+
+    labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+    theme_light()
+  
+  
+  
 
   
   

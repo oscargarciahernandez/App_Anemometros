@@ -1,0 +1,121 @@
+---
+title: "PROBLEMA WEIBULL"
+author: "Oscar Garcia Hernandez"
+date: "13/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      cache = TRUE,
+                      message = FALSE,
+                      warning = FALSE)
+library(here)
+library(stringr)
+library(lubridate)
+library(rlist)
+library(RNetCDF)
+library(dplyr)
+library(magrittr)
+library(TTR)
+library(readr)
+library(htmltools)
+library(htmlwidgets)
+library(openair)
+library(ggplot2)
+library(ggmap)
+library(maps)
+library(mapdata)
+library(OpenStreetMap)
+library(rJava)
+library(rgdal)
+library(RColorBrewer)
+library(geosphere)
+```
+
+# PROBLEMITA CON WEIBULL
+ Aupa alain, estoy teniendo problemas a la hora de hacer el ajuste con weibull. principalmente porque la función de ajuste del weibull no me permite introducir 0. y nuestro dataset tienen mogollón de 0. Lo que se me ha ocurrido es sustituir los 0 por un valor pequeño... pero aki viene la sorpresa... porque para valores muy pequeños el ajuste empeora.... 
+ 
+## GRÁFICAS PARA DIFERENTES VALORES DE REEMPLAZO DE LOS 0. 
+
+#### ROJO---->ERA5     
+####AZUL------>ANEMOMETRO
+
+```{r warning=FALSE}
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+#PLOTEOS PARA COMPROBAR SIMILITUD ENTRE ERA5 Y ANEMOMETRO
+
+Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% unique, x$ERAlat %>% unique()) %>% as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+  distm(x, c(DATOS_JUNTOS_LISTA[[1]]$lon %>% unique,
+             DATOS_JUNTOS_LISTA[[1]]$lat %>% unique))
+}) 
+
+DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+#ANTES DE TAYLOR VAMOS A HACER WEIBULL
+library(data.table)
+library(reshape)
+library(reshape2)
+library(MASS)
+library(ggplot2)
+
+fitweibull <- function(column) {
+  x <- seq(0,7,by=0.1)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+
+
+
+shape_factor<- 1500
+replace_number<- c(0.00000001, 0.0001,0.01,0.05,0.1,0.2)
+bin_anch<- 0.2
+i<-1
+
+ploting_replace<- function(replace_number){
+  DATOS_weibull<- DATOS_PLOT %>% .[complete.cases(.), ] 
+
+  DATOS_weibull$WS_N<-ifelse(DATOS_weibull$WS_N==0,replace_number,DATOS_weibull$WS_N)
+  x<- ggplot() + 
+    geom_histogram(data= DATOS_weibull, 
+                   aes(x=ERAWS),
+                   binwidth = bin_anch,
+                   alpha=0.4,
+                   fill="red",
+                   col="red")+
+    geom_histogram(data=DATOS_weibull,
+                   aes(x=WS_N),
+                   binwidth = bin_anch,
+                   alpha=0.4,
+                   fill="blue",
+                   col="blue")+
+    geom_line(aes(x=seq(0,7,by=0.1),
+                  y=fitweibull(DATOS_weibull$ERAWS)*shape_factor))+
+    geom_line(aes(x=seq(0,7,by=0.1),
+                  y=fitweibull(DATOS_weibull$WS_N)*shape_factor))+
+    ylab("")+
+    xlab("Wind Speed [m/s]")+
+    labs(title = element_text(paste("Replace by", replace_number), hjust = 0.5))+
+    theme_light()
+  return(print(x))
+  
+}
+sapply(replace_number, ploting_replace)
+  
+
+  
+```
+
