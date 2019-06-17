@@ -9,7 +9,8 @@ runtime: shiny
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
                       eval=FALSE,
-                      warning = FALSE)
+                      warning = FALSE,
+                      fig.align = "center")
 library(request) 
 library(XML)
 library(here)
@@ -628,3 +629,298 @@ Ya hemos visto que los datos hablando de modulo son muy satisfactorios. Pero aun
 Una de las conclusiones preliminares hablando de correlacion en las direcciones es que sa puede apreciar es que cuando el anemómetro experimenta dirección Este-Sureste-Noreste ERA5 si que está captando bien esa tendencia. 
 
 Esto último es interesante a la hora de realizar la correción.
+
+# Weibull 
+
+A continuación se presentan las gráficas de distrubución de velocidades y su correspondiente ajuste con weibull. Esto nos servirá para ver como mejora el bias la técnica de quantile-mapping.
+
+```{r eval=TRUE}
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+#PLOTEOS PARA COMPROBAR SIMILITUD ENTRE ERA5 Y ANEMOMETRO
+
+Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% unique, x$ERAlat %>% unique()) %>% as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+  distm(x, c(DATOS_JUNTOS_LISTA[[1]]$lon %>% unique,
+             DATOS_JUNTOS_LISTA[[1]]$lat %>% unique))
+}) 
+
+DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+#ANTES DE TAYLOR VAMOS A HACER WEIBULL
+library(data.table)
+library(reshape)
+library(reshape2)
+library(MASS)
+
+bind_anch<- 0.25
+fitweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+
+shape_factor<- 1700
+DATOS_weibull<- DATOS_PLOT %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
+
+
+  ggplot() + 
+    geom_histogram(data= DATOS_weibull, 
+                   aes(x=ERAWS),
+                   binwidth = bind_anch,
+                   alpha=0.4,
+                   fill="red")+
+    geom_histogram(data=DATOS_weibull,
+                   aes(x=WS_N),
+                   binwidth = bind_anch,
+                   alpha=0.4,
+                   fill="blue")+
+    geom_line(aes(x=seq(0,10,by=bind_anch),
+                  y=fitweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+    geom_line(aes(x=seq(0,10,by=bind_anch),
+                  y=fitweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+    ylab("")+
+    xlab("Wind Speed [m/s]")+
+    labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+    theme_light()
+
+```
+
+```{r eval=TRUE}
+cdweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=1))
+  dd<- dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2])
+  dd <- cumsum(dd) * c(0, diff(x))
+  return(dd)
+}
+
+bind_anch<- 0.01
+bind_width<- 0.25
+
+
+shape_factor<- 1000
+ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Acumulated weibull distribution", hjust = 0.5))+
+  theme_light()
+  
+```
+
+# DIAGRAMAS DE TAYLOR
+
+A continuación se presentan los diagramas de taylor empleando diferentes estratégias. esto nos permite ver en un solo gráfico el RMSE.
+
+# FILTRANDO POR DIRECCIONES ANEMOMETRO
+```{r eval=TRUE, fig.height=6, fig.width=6}
+library(plotrix)
+library(DescTools)
+
+
+#FILTRADO POR DIRECCIONES
+West<- c(247.5,270.0,292.5)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(135.0, 155.0,180.0, 202.5,225.0)
+
+lista_dir<- list(W=West,NW= North_west,N= North, NE=North_east, 
+     E=East, SE=South_east,S=South, SW=South_west)
+
+
+tabla_taylor<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
+for (i in 1:length(lista_dir)) {
+  DATOS_PLOT_fil<- DATOS_PLOT %>% filter(WD_N%in%lista_dir[[i]]) %>%
+    .[complete.cases(.),]
+  
+  if (i==1) {taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                   as.vector(DATOS_PLOT_fil$WS_N), col = i)}else{
+                     taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                                    as.vector(DATOS_PLOT_fil$WS_N), col = i, add = TRUE)
+                   }
+  
+  taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                 as.vector(DATOS_PLOT_fil$ERAWS),add = TRUE,col = i)
+  
+  tabla_taylor[i,1]<- cor(DATOS_PLOT_fil$ERAWS,
+                          DATOS_PLOT_fil$WS_N)
+  tabla_taylor[i,2]<- sd(DATOS_PLOT_fil$ERAWS,
+                          DATOS_PLOT_fil$WS_N)
+  tabla_taylor[i,3]<- RMSE(DATOS_PLOT_fil$ERAWS,
+                         DATOS_PLOT_fil$WS_N,na.rm = TRUE)
+  tabla_taylor[i,4]<- MAPE(DATOS_PLOT_fil$WS_N,
+                           DATOS_PLOT_fil$ERAWS, na.rm = TRUE)
+  tabla_taylor[i,5]<- length(DATOS_PLOT_fil$WS_N)
+}
+
+# get approximate legend position
+lpos<-2*sd(DATOS_PLOT_fil$WS_N)
+# add a legend
+legend(lpos-0.1,lpos-0.7,legend=names(lista_dir),
+       pch=19,col=seq(1,length(lista_dir), by=1))
+
+
+colnames(tabla_taylor)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
+rownames(tabla_taylor)<- names(lista_dir)
+library(knitr)
+kable(tabla_taylor[order(tabla_taylor$Corr, decreasing = TRUE),])
+
+```
+
+## FILTRANDO POR DIRECCIONES ERA5
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+#filtrando por ERA5
+#filtrando por ERA5
+tabla_taylorERA<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
+for (i in 1:length(lista_dir)) {
+  DATOS_PLOT_fil<- DATOS_PLOT %>% filter(ERA_binDir%in%lista_dir[[i]]) %>%
+    .[complete.cases(.),]
+  
+  if (i==1) {taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                            as.vector(DATOS_PLOT_fil$WS_N), col = i)}else{
+                              taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                                             as.vector(DATOS_PLOT_fil$WS_N), col = i, add = TRUE)
+                            }
+  
+  taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
+                 as.vector(DATOS_PLOT_fil$ERAWS),add = TRUE,col = i)
+  
+  tabla_taylorERA[i,1]<- cor(DATOS_PLOT_fil$ERAWS,
+                          DATOS_PLOT_fil$WS_N)
+  tabla_taylorERA[i,2]<- sd(DATOS_PLOT_fil$ERAWS,
+                         DATOS_PLOT_fil$WS_N)
+  tabla_taylorERA[i,3]<- RMSE(DATOS_PLOT_fil$ERAWS,
+                           DATOS_PLOT_fil$WS_N,na.rm = TRUE)
+  tabla_taylorERA[i,4]<- MAPE(DATOS_PLOT_fil$WS_N,
+                           DATOS_PLOT_fil$ERAWS, na.rm = TRUE)
+  tabla_taylorERA[i,5]<- length(DATOS_PLOT_fil$WS_N)
+}
+
+# get approximate legend position
+lpos<-2*sd(DATOS_PLOT_fil$WS_N)
+# add a legend
+legend(lpos+0.2,lpos-0.7,legend=names(lista_dir),
+       pch=19,col=seq(1,length(lista_dir), by=1))
+
+
+colnames(tabla_taylorERA)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
+rownames(tabla_taylorERA)<- names(lista_dir)
+kable(tabla_taylorERA[order(tabla_taylorERA$Corr, decreasing = TRUE),])
+
+
+```
+
+
+### COMPARANDO RESULTADOS
+```{r eval=TRUE}
+
+ggplot()+
+  geom_histogram(aes(x=row.names(tabla_taylor),
+                     y=tabla_taylor$Corr), 
+                 stat = "identity",
+                 fill= "blue",
+                 alpha=0.5)+
+  geom_histogram(aes(x=row.names(tabla_taylorERA),
+                     y=tabla_taylorERA$Corr), 
+                 stat = "identity",
+                 fill= "red",
+                 alpha=0.5)+
+  xlab("Wind direction")+
+  ylab("Correlation")+
+  ggtitle("ERA5 (RED) Vs ANEMOMETER (BLUE)")+
+  theme_light()
+
+ggplot()+
+  geom_histogram(aes(x=row.names(tabla_taylor),
+                     y=tabla_taylor$SD), 
+                 stat = "identity",
+                 fill= "blue",
+                 alpha=0.5)+
+  geom_histogram(aes(x=row.names(tabla_taylorERA),
+                     y=tabla_taylorERA$SD), 
+                 stat = "identity",
+                 fill= "red",
+                 alpha=0.5)+
+  xlab("Wind direction")+
+  ylab("SD")+
+  theme_light()
+
+ggplot()+
+  geom_histogram(aes(x=row.names(tabla_taylor),
+                     y=tabla_taylor$RMSE), 
+                 stat = "identity",
+                 fill= "blue",
+                 alpha=0.5)+
+  geom_histogram(aes(x=row.names(tabla_taylorERA),
+                     y=tabla_taylorERA$RMSE), 
+                 stat = "identity",
+                 fill= "red",
+                 alpha=0.5)+
+  xlab("Wind direction")+
+  ylab("RMSE")+
+  theme_light()
+
+ggplot()+
+  geom_histogram(aes(x=row.names(tabla_taylor),
+                     y=tabla_taylor$MAPE), 
+                 stat = "identity",
+                 fill= "blue",
+                 alpha=0.5)+
+  geom_histogram(aes(x=row.names(tabla_taylorERA),
+                     y=tabla_taylorERA$MAPE), 
+                 stat = "identity",
+                 fill= "red",
+                 alpha=0.5)+
+  xlab("Wind direction")+
+  ylab("MAPE")+
+  theme_light()
+ggplot()+
+  geom_histogram(aes(x=row.names(tabla_taylor),
+                     y=tabla_taylor$Cases), 
+                 stat = "identity",
+                 fill= "blue",
+                 alpha=0.5)+
+  geom_histogram(aes(x=row.names(tabla_taylorERA),
+                     y=tabla_taylorERA$Cases), 
+                 stat = "identity",
+                 fill= "red",
+                 alpha=0.5)+
+  xlab("Wind direction")+
+  ylab("CASES")+
+  theme_light()
+
+```
+
