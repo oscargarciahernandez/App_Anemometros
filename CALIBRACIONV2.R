@@ -578,12 +578,12 @@ ggplot()+
 
 
 ######filtrando por anemometro
-lista_dir<- DATOS_PLOT$ERA_binDir %>% 
-  table() %>% .[order(., decreasing = T)] %>% 
-  names() %>% as.numeric()
-tabla_taylorERA<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
-EscalaGrises<- seq(8, 87, length.out = length(lista_dir)) %>% round() %>% paste0("gray",.)
-
+lista_dir<- DATOS_PLOT %>% group_split(WD_N) %>% lapply(function(x){
+  r<- cbind(x$WD_N %>% unique, sd(x$ERAWS, na.rm = TRUE)) %>% as.data.frame()
+  colnames(r)<- c("Dir", "SD")
+  return(r)
+}) %>% bind_rows() %>% .[order(.$SD, decreasing = T), 1]
+tabla_taylor<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
 
 
 for (i in 1:length(lista_dir)) {
@@ -591,60 +591,72 @@ for (i in 1:length(lista_dir)) {
     .[complete.cases(.),]
   
   if (i==1) {taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
-                            as.vector(DATOS_PLOT_fil$WS_N), col = EscalaGrises[i])}else{
+                            as.vector(DATOS_PLOT_fil$WS_N), 
+                            col = i,
+                            pch = i)}else{
                               taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
                                              as.vector(DATOS_PLOT_fil$WS_N),
-                                             col = EscalaGrises[i], add = TRUE)
+                                             col = i, 
+                                             add = TRUE,
+                                             pch = i)
                             }
   
   taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
-                 as.vector(DATOS_PLOT_fil$ERAWS),add = TRUE,col = EscalaGrises[i])
+                 as.vector(DATOS_PLOT_fil$ERAWS),
+                 add = TRUE,col = i,
+                 pch = i)
   
-  tabla_taylorERA[i,1]<- cor(DATOS_PLOT_fil$ERAWS,
+  tabla_taylor[i,1]<- cor(DATOS_PLOT_fil$ERAWS,
                              DATOS_PLOT_fil$WS_N)
-  tabla_taylorERA[i,2]<- sd(DATOS_PLOT_fil$ERAWS,
+  tabla_taylor[i,2]<- sd(DATOS_PLOT_fil$ERAWS,
                             DATOS_PLOT_fil$WS_N)
-  tabla_taylorERA[i,3]<- RMSE(DATOS_PLOT_fil$ERAWS,
+  tabla_taylor[i,3]<- RMSE(DATOS_PLOT_fil$ERAWS,
                               DATOS_PLOT_fil$WS_N,na.rm = TRUE)
-  tabla_taylorERA[i,4]<- MAPE(DATOS_PLOT_fil$WS_N,
+  tabla_taylor[i,4]<- MAPE(DATOS_PLOT_fil$WS_N,
                               DATOS_PLOT_fil$ERAWS, na.rm = TRUE)
-  tabla_taylorERA[i,5]<- length(DATOS_PLOT_fil$WS_N)
+  tabla_taylor[i,5]<- length(DATOS_PLOT_fil$WS_N)
 }
 
 # get approximate legend position
 lpos<-2*sd(DATOS_PLOT_fil$WS_N)
 # add a legend
-legend(lpos+0.5,lpos+0.3,legend=lista_dir %>% as.character(),
-       pch=19,col=EscalaGrises)
+legend(lpos+0.6,lpos+0.3,legend=lista_dir %>% as.character(),
+       pch=1:length(lista_dir),col=1:length(lista_dir))
 
 
-colnames(tabla_taylorERA)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
-rownames(tabla_taylorERA)<- names(lista_dir)
-tabla_taylorERA[order(tabla_taylorERA$Corr, decreasing = TRUE),]
+colnames(tabla_taylor)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
+rownames(tabla_taylor)<- lista_dir %>% as.character()
+tabla_taylor[order(tabla_taylor$Corr, decreasing = TRUE),]
 
 
 #filtrando por ERA5
-lista_dir<- DATOS_PLOT$ERA_binDir %>% 
-  table() %>% .[order(., decreasing = T)] %>% 
-  names() %>% as.numeric()
+lista_dir<- DATOS_PLOT %>% group_split(WD_N) %>% lapply(function(x){
+  r<- cbind(x$WD_N %>% unique, sd(x$ERAWS, na.rm = TRUE)) %>% as.data.frame()
+  colnames(r)<- c("Dir", "SD")
+  return(r)
+}) %>% bind_rows() %>% .[order(.$SD, decreasing = T), 1]
+
 tabla_taylorERA<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
-EscalaGrises<- seq(8, 87, length.out = length(lista_dir)) %>% round() %>% paste0("gray",.)
-
-
 
 for (i in 1:length(lista_dir)) {
   DATOS_PLOT_fil<- DATOS_PLOT %>% filter(ERA_binDir%in%lista_dir[[i]]) %>%
     .[complete.cases(.),]
   
   if (i==1) {taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
-                            as.vector(DATOS_PLOT_fil$WS_N), col = EscalaGrises[i])}else{
+                            as.vector(DATOS_PLOT_fil$WS_N), 
+                            col = i,
+                            pch = i)}else{
                               taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
                                              as.vector(DATOS_PLOT_fil$WS_N),
-                                             col = EscalaGrises[i], add = TRUE)
+                                             col = i, 
+                                             add = TRUE,
+                                             pch = i)
                             }
   
   taylor.diagram(as.vector(DATOS_PLOT_fil$WS_N), 
-                 as.vector(DATOS_PLOT_fil$ERAWS),add = TRUE,col = EscalaGrises[i])
+                 as.vector(DATOS_PLOT_fil$ERAWS),
+                 add = TRUE,col = i,
+                 pch = i)
   
   tabla_taylorERA[i,1]<- cor(DATOS_PLOT_fil$ERAWS,
                              DATOS_PLOT_fil$WS_N)
@@ -660,12 +672,12 @@ for (i in 1:length(lista_dir)) {
 # get approximate legend position
 lpos<-2*sd(DATOS_PLOT_fil$WS_N)
 # add a legend
-legend(lpos+0.5,lpos+0.3,legend=lista_dir %>% as.character(),
-       pch=19,col=EscalaGrises)
+legend(lpos+0.6,lpos+0.8,legend=lista_dir %>% as.character(),
+       pch=1:length(lista_dir),col=1:length(lista_dir))
 
 
 colnames(tabla_taylorERA)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
-rownames(tabla_taylorERA)<- names(lista_dir)
+rownames(tabla_taylorERA)<- lista_dir %>% as.character()
 tabla_taylorERA[order(tabla_taylorERA$Corr, decreasing = TRUE),]
 
 
@@ -675,11 +687,19 @@ ggplot()+
                  stat = "identity",
                  fill= "blue",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylor$Corr),
+                x=1:nrow(tabla_taylor)),
+            col="blue",
+            linetype= "longdash")+
   geom_histogram(aes(x=row.names(tabla_taylorERA),
                      y=tabla_taylorERA$Corr), 
                  stat = "identity",
                  fill= "red",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylorERA$Corr),
+                x=1:nrow(tabla_taylorERA)),
+            col="red",
+            linetype= "longdash")+
   xlab("Wind direction")+
   ylab("Correlation")+
   ggtitle("ERA5 (RED) Vs ANEMOMETER (BLUE)")+
@@ -691,11 +711,19 @@ ggplot()+
                  stat = "identity",
                  fill= "blue",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylor$SD),
+                x=1:nrow(tabla_taylor)),
+            col="blue",
+            linetype= "longdash")+
   geom_histogram(aes(x=row.names(tabla_taylorERA),
                      y=tabla_taylorERA$SD), 
                  stat = "identity",
                  fill= "red",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylorERA$SD),
+                x=1:nrow(tabla_taylorERA)),
+            col="red",
+            linetype= "longdash")+
   xlab("Wind direction")+
   ylab("SD")+
   theme_light()
@@ -706,11 +734,19 @@ ggplot()+
                  stat = "identity",
                  fill= "blue",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylor$RMSE),
+                x=1:nrow(tabla_taylor)),
+            col="blue",
+            linetype= "longdash")+
   geom_histogram(aes(x=row.names(tabla_taylorERA),
                      y=tabla_taylorERA$RMSE), 
                  stat = "identity",
                  fill= "red",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylorERA$RMSE),
+                x=1:nrow(tabla_taylorERA)),
+            col="red",
+            linetype= "longdash")+
   xlab("Wind direction")+
   ylab("RMSE")+
   theme_light()
@@ -721,11 +757,19 @@ ggplot()+
                  stat = "identity",
                  fill= "blue",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylor$MAPE),
+                x=1:nrow(tabla_taylor)),
+            col="blue",
+            linetype= "longdash")+
   geom_histogram(aes(x=row.names(tabla_taylorERA),
                      y=tabla_taylorERA$MAPE), 
                  stat = "identity",
                  fill= "red",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylorERA$MAPE),
+                x=1:nrow(tabla_taylorERA)),
+            col="red",
+            linetype= "longdash")+
   xlab("Wind direction")+
   ylab("MAPE")+
   theme_light()
@@ -735,11 +779,19 @@ ggplot()+
                  stat = "identity",
                  fill= "blue",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylor$Cases),
+                x=1:nrow(tabla_taylor)),
+            col="blue",
+            linetype= "longdash")+
   geom_histogram(aes(x=row.names(tabla_taylorERA),
                      y=tabla_taylorERA$Cases), 
                  stat = "identity",
                  fill= "red",
                  alpha=0.5)+
+  geom_line(aes(y=mean(tabla_taylorERA$Cases),
+                x=1:nrow(tabla_taylorERA)),
+            col="red",
+            linetype= "longdash")+
   xlab("Wind direction")+
   ylab("CASES")+
   theme_light()

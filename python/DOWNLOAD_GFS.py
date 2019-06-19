@@ -46,6 +46,8 @@ else:
 url = 'https://rda.ucar.edu/cgi-bin/login'
 values = {'email' : 'garcia96.oscar@gmail.com', 'passwd' : 'garcia96', 'action' : 'login'}
 # Authenticate
+session = requests.Session()
+session.trust_env = False
 ret = requests.post(url,data=values)
 if ret.status_code != 200:
     print('Bad Authentication')
@@ -57,7 +59,7 @@ year= 2019
 
 month= np.arange(1,3)
 day= np.arange(1,32)
-horas= np.arange(1,25)
+horas= [0,3,6,9,12,15,18,21,24]
 
 filelist=[]
 #for mes in np.arange(0,len(month)):
@@ -65,7 +67,7 @@ mes=0
 for dia in np.arange(0, len(day)):
     for hour in np.arange(0,len(horas)):
         x=format(year, '04d')+'/'+format(year, '04d')+format(month[mes], '02d')+format(day[dia], '02d')+ \
-        '/gfs.0p25.'+format(year, '04d')+format(month[mes], '04d')+format(day[dia], '02d')+'00.f'+\
+        '/gfs.0p25.'+format(year, '04d')+format(month[mes], '02d')+format(day[dia], '02d')+'00.f'+\
         format(horas[hour], '03d')+'.grib2'
         filelist.append(x)
 
@@ -77,7 +79,7 @@ for file in filelist:
     filename=dspath+file
     file_base = os.path.basename(file)
     print('Downloading',file_base)
-    req = requests.get(filename, cookies = ret.cookies, allow_redirects=True, stream=True)
+    req = session.get(filename, cookies = ret.cookies, allow_redirects=True, stream=True)
     filesize = int(req.headers['Content-length'])
     with open(file_base, 'wb') as outfile:
         chunk_size=1048576
@@ -87,3 +89,6 @@ for file in filelist:
                 check_file_status(file_base, filesize)
     check_file_status(file_base, filesize)
     print()
+
+
+
