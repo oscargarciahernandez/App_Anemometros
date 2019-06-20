@@ -865,3 +865,63 @@ WR_parameters2<- function(data,
 
 
 
+
+# Funciones graficos ----
+
+plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,leyenda=NULL){
+  
+  #IDEA: nos vendría bien en algun momento poder definir títulos de eje? Dos opciones: o definidas
+  #por usuario, oen el caso del eje horizontal poner primer y última fecha representadas en cada grafico.
+  
+  #Explicacion argumentos:
+  #n=número de gráficos entre los que se quieren dividir los datos
+  #x=vector con valores para el eje horizontal (normalmente fechas)
+  #...=vectores con valores para el eje vertical (normalmente velocidades de viento)
+  #col=vector con colores para cada vector de ...
+  #type=vector con tipos de graficos (de lineas, de puntos etc.) para cada vector de ...
+  #leyenda=vector de strings para la leyenda de los graficos. Si es NULL (opcion por defecto) no habrá leyenda
+  
+  y=list(...) #Todos los inputs sin nombrar se consideraran valores para el eje vertical. Guardar en lista.
+  
+  #Analizar los inputs.Errores?
+  
+  #Falta verificar el input x, pero ahora no se como hacerlo. Al parecer las columnas con fechas no son vectores.
+  
+  if (!is.numeric(n)) {stop("El input de numero de graficos (n) no es un número")}
+  
+  if (!is.vector(y)) {stop("Algun input de eje vertical (y) no es un vector")}
+  if (!is.numeric(unlist(y))) {stop("Algun input de eje vertical (y) no es un vector numérico")}
+  
+  if (!is.null(col) & !is.character(col)) {stop("El input de colores (col) no es de tipo character")}
+  if (sum(!(col %in% colors()))>0) {stop("Hay ",sum(!(col %in% colors()))," strings en el input de colores (col) que no son parte de la gama de colores de R. Usa colors() para ver colores posibles")}
+  
+  if (!is.null(type) & !is.character(type)) {stop("El input de tipo de grafico (type) no es de tipo character")}
+  if (sum(!(type %in% c("p","l","b","c","o","h","s","S","n")))>0) 
+  {stop("Hay ",sum(!(type %in% c("p","l","b","c","o","h","s","S","n")))," strings en el input de tipo de grafico (type) que no son aceptables. Usa help(\"plot\") para ver posibilidades")}
+  
+  #Falta verificar input leyenda
+  
+  #Definir color de cada gráfico. Vamos a usar primero los colores definidos por el usuario. Si no son suficientes, colores del arcoiris.
+  col=c(col,rainbow(length(y)-length(col)))
+  
+  #Definir tipo de cada gráfico.Vamos a usar primero los colores tipos por el usuario. Si no son suficientes, usamos lineas.
+  type=c(type,rep("l",(length(y)-length(type))))
+  
+  #IDEA:si se quiere usar esta función para trabajar con datos no ordenados cronológicamente, incorporar código que ordene todos los vectores de input segun order(x)
+  
+  for (i in 1:n) {
+    for (j in 1:length(y)) {
+      valores=((i-1)*length(x)/n):(i*length(x)/n) #Posiciones de los valores a plotear para cada grafico
+      if (j==1) {
+        plot(x[valores],y[[j]][valores],col=col[j],type=type[j],
+             ylim = c(0,max(unlist(y))),  #Cual es el valor mas alto a plotear? Usar como ylim de todos los graficos
+             xlab=paste0(min(x[valores])," - ",max(x[valores])),
+             ylab="",
+             main = paste0(i,"/",n)) 
+      }else{
+        lines(x[valores],y[[j]][valores],col=col[j],type=type[j])
+      }
+    }
+    legend("topright",legend = leyenda,fill = col)
+  }
+}
