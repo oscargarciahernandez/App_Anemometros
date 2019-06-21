@@ -868,7 +868,7 @@ WR_parameters2<- function(data,
 
 # Funciones graficos ----
 
-plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,leyenda=NULL){
+plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,main="",leyenda=NULL){
   
   #IDEA: nos vendría bien en algun momento poder definir títulos de eje? Dos opciones: o definidas
   #por usuario, oen el caso del eje horizontal poner primer y última fecha representadas en cada grafico.
@@ -879,6 +879,7 @@ plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,leyenda=NULL){
   #...=vectores con valores para el eje vertical (normalmente velocidades de viento)
   #col=vector con colores para cada vector de ...
   #type=vector con tipos de graficos (de lineas, de puntos etc.) para cada vector de ...
+  #main=string con el título para los gráficos
   #leyenda=vector de strings para la leyenda de los graficos. Si es NULL (opcion por defecto) no habrá leyenda
   
   y=list(...) #Todos los inputs sin nombrar se consideraran valores para el eje vertical. Guardar en lista.
@@ -899,6 +900,8 @@ plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,leyenda=NULL){
   if (sum(!(type %in% c("p","l","b","c","o","h","s","S","n")))>0) 
   {stop("Hay ",sum(!(type %in% c("p","l","b","c","o","h","s","S","n")))," strings en el input de tipo de grafico (type) que no son aceptables. Usa help(\"plot\") para ver posibilidades")}
   
+  #Falta verificar input main
+  
   #Falta verificar input leyenda
   
   #Definir color de cada gráfico. Vamos a usar primero los colores definidos por el usuario. Si no son suficientes, colores del arcoiris.
@@ -917,7 +920,7 @@ plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,leyenda=NULL){
              ylim = c(0,max(unlist(y))),  #Cual es el valor mas alto a plotear? Usar como ylim de todos los graficos
              xlab=paste0(min(x[valores])," - ",max(x[valores])),
              ylab="",
-             main = paste0(i,"/",n)) 
+             main = paste0(main," ",i,"/",n)) 
       }else{
         lines(x[valores],y[[j]][valores],col=col[j],type=type[j])
       }
