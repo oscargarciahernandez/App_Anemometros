@@ -19,13 +19,27 @@ datos_juntos$Dir=as.numeric(datos_juntos$Dir)
 #PRIMER EJERCICIO. Calibrar todo con todo----
 ftrans=fitQmapQUANT(datos_juntos$Mean,datos_juntos$uv_wind1)
 calibrado=doQmapQUANT(datos_juntos$uv_wind1,ftrans)
+
+#Hora de analizar los resultados
 summary(datos_juntos$Mean)
 summary(calibrado)
 #Vemos que los quantiles, el max y el min encajan, pero no la media
 cor(calibrado,datos_juntos$Mean)
 cor(datos_juntos$uv_wind1,datos_juntos$Mean)
 cor(calibrado,datos_juntos$uv_wind1)
-#Vemos que el calibrado se parece mucho  mas a era que al anemo
+
+#Mean absolute error=mean(abs(error)) [m/s]
+mean(abs(datos_juntos$Mean-datos_juntos$uv_wind1))
+mean(abs(datos_juntos$Mean-calibrado))
+
+#Root Mean Squared Error=sqrt(mean(error^2)) [m/s]
+sqrt(mean((datos_juntos$Mean-datos_juntos$uv_wind1)^2))
+sqrt(mean((datos_juntos$Mean-calibrado)^2))
+
+dev.off()
+plot_n_graficos(x=datos_juntos$Date1,n=14,datos_juntos$Mean,calibrado,datos_juntos$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 1")
+
+#Vemos que el calibrado se tiene valores parecidos a los del anemo, pero progresa como ERA.
 
 rm(ftrans,calibrado)
 
@@ -43,21 +57,39 @@ ftrans_mitad_2<-fitQmapQUANT(mitad_2$Mean,mitad_2$uv_wind1)
 calibrado_mitad_1 <- doQmapQUANT(mitad_1$uv_wind1,ftrans_mitad_2)
 calibrado_mitad_2 <- doQmapQUANT(mitad_2$uv_wind1,ftrans_mitad_1)
 
-#
-calibrado_todo_1 <- doQmapQUANT(datos_juntos$uv_wind1,ftrans_mitad_1)
-calibrado_todo_2 <- doQmapQUANT(datos_juntos$uv_wind1,ftrans_mitad_2)
-
-
-#Hora de analizar los resultados
+#Hora de analizar los resultados mitad_1
 cor(calibrado_mitad_1,mitad_1$Mean)
 cor(mitad_1$Mean,mitad_1$uv_wind1)
 cor(calibrado_mitad_1,mitad_1$uv_wind1)
 
+#Mean absolute error=mean(abs(error)) [m/s]
+mean(abs(mitad_1$Mean-mitad_1$uv_wind1))
+mean(abs(mitad_1$Mean-calibrado_mitad_1))
+
+#Root Mean Squared Error=sqrt(mean(error^2)) [m/s]
+sqrt(mean((mitad_1$Mean-mitad_1$uv_wind1)^2))
+sqrt(mean((mitad_1$Mean-calibrado_mitad_1)^2))
+
+dev.off()
+plot_n_graficos(x=mitad_1$Date1,n=7,mitad_1$Mean,calibrado_mitad_1,mitad_1$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 2 mitad_1")
+
+#Hora de analizar los resultados mitad_2
 cor(calibrado_mitad_2,mitad_2$Mean)
 cor(mitad_2$Mean,mitad_2$uv_wind1)
 cor(calibrado_mitad_2,mitad_2$uv_wind1)
 
-remove(mitad_1,mitad_2,calibrado_mitad_1,calibrado_mitad_2,calibrado_todo_1,calibrado_todo_2,ftrans_mitad_1,ftrans_mitad_2)
+#Mean absolute error=mean(abs(error)) [m/s]
+mean(abs(mitad_2$Mean-mitad_2$uv_wind1))
+mean(abs(mitad_2$Mean-calibrado_mitad_2))
+
+#Root Mean Squared Error=sqrt(mean(error^2)) [m/s]
+sqrt(mean((mitad_2$Mean-mitad_1$uv_wind1)^2))
+sqrt(mean((mitad_2$Mean-calibrado_mitad_2)^2))
+
+dev.off()
+plot_n_graficos(x=mitad_2$Date1,n=7,mitad_2$Mean,calibrado_mitad_2,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 2 mitad_2")
+
+remove(mitad_1,mitad_2,calibrado_mitad_1,calibrado_mitad_2,ftrans_mitad_1,ftrans_mitad_2)
 
 #TERCER EJERCICIO. Dividir datos por la mitad y hacer una calibracion para cada direccion de era.----
 
@@ -124,26 +156,61 @@ mitad_2=mitad_2[order(mitad_2$Date1),]
 mitad_1=mitad_1[c("Date1","Mean","Cal","uv_wind1","uv_dwi1")] #Reordenar columnas
 mitad_2=mitad_2[c("Date1","Mean","Cal","uv_wind1","uv_dwi1")]
 
-#Hora de analizar los resultados
+#Hora de analizar los resultados mitad_1
 cor(mitad_1$Cal,mitad_1$Mean)
 cor(mitad_1$Mean,mitad_1$uv_wind1)
 cor(mitad_1$Cal,mitad_1$uv_wind1)
 
+#Mean absolute error=mean(abs(error)) [m/s]
+mean(abs(mitad_1$Mean-mitad_1$uv_wind1))
+mean(abs(mitad_1$Mean-mitad_1$Cal))
+
+#Root Mean Squared Error=sqrt(mean(error^2)) [m/s]
+sqrt(mean((mitad_1$Mean-mitad_1$uv_wind1)^2))
+sqrt(mean((mitad_1$Mean-mitad_1$Cal)^2))
+
+dev.off()
+plot_n_graficos(x=mitad_1$Date1,n=7,mitad_1$Mean,mitad_1$Cal,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 3 mitad_1")
+
+#Hora de analizar los resultados mitad_2
 cor(mitad_2$Cal,mitad_2$Mean)
 cor(mitad_2$Mean,mitad_2$uv_wind1)
 cor(mitad_2$Cal,mitad_2$uv_wind1)
 
+#Mean absolute error=mean(abs(error)) [m/s]
+mean(abs(mitad_2$Mean-mitad_2$uv_wind1))
+mean(abs(mitad_2$Mean-mitad_2$Cal))
+
+#Root Mean Squared Error=sqrt(mean(error^2)) [m/s]
+sqrt(mean((mitad_2$Mean-mitad_2$uv_wind1)^2))
+sqrt(mean((mitad_2$Mean-mitad_2$Cal)^2))
+
+dev.off()
+plot_n_graficos(x=mitad_2$Date1,n=7,mitad_2$Mean,mitad_2$Cal,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 3 mitad_2")
+
+
 
 #CONCLUSIONES----
 
-#1) Por ahora los datos calibrados se parecen mucho a los de era, y deberian parecerse
-#mas a los de los anemos. Por otro lado, esto nos confirma que no estamos haciendo
-#minguna burrada: la calibracion, po lo menos, parece viento!
-#Esto parece indicar que las ftrans no son lo suficientemente "agresivas", por que
-#no cambian de manera sustancial los datos de era.
+#1) En el caso de los datos de la uni, ERA suele dar valores mas altos o iguales a los
+#de los anemos. Por lo tanto, al hacer quantile matching, el calibrado se acerca mucho
+#a los anemos cuando ERA es mayor que los anemos, pero cuando ERA se acerca el calibrado
+#subestima el viento. Si se pudiese saber cuando es ERA mucho mayor que los anemos y
+#cuando parecido, se podría calibrar cada caso independientemente.
 
-#2) Los datos calibrados se parecen mas a era que a las mediciones, pero este parecido
-#es menos acusado cuando se calibra por direcciones. Parece ser que al calibrar por
-#direcciones se consiguen funciones de transferencia mas agresivas, que cambian mas
-#los datos. Esto parece una señal de que tratar las distintas direcciones por separado
-#es el camino a seguir.
+#2) Aunque haya estado sacando correlaciones para comprobar los resultados de este
+#script, me he dado cuenta de que no es lo ideal: la correacion tiene en cuenta como
+#van variando dos vectores mientras que el quantile matching (por lo que tengo
+#entendido) cambia el modulo. Por lo que aunque hagamos el mejor quantile matching
+#del mundo,la correlacion siempre nos va a decir que los datos calibrados se parecen
+#mucho mas a ERA que a las mediciones.
+
+#3) El hacer quantle matching no dejaría obsoleto lo del factor K diferencia de
+#modulo entre punto ERA y anemo?
+
+#4) Aunque el quantile matching no acabe de clavarla al %100 tampoco nos debería
+#importar mucho, ya que no queremos saber el viento preciso que va a hacer en cada
+#momento; solo queremos hacer una estimación de la energia producida en un largo
+#periodo de tiempo. Como el quantile  matching hace que las mediciones y los datos
+#calibrados tengan modulos parecidos, es perfecto para nosotros, auqneu no sea capaz
+#de predecir como va a ser el viento en cada momento.
