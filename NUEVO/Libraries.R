@@ -595,16 +595,16 @@ crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
     }
     kont_i=kont_i+1
   }
-  colnames(cors_anemo_vs_puntos)=c(1:(ncol(cors_anemo_vs_puntos)-1),"%")
+  colnames(cors_anemo_vs_puntos)=1:(ncol(cors_anemo_vs_puntos))
   row.names(cors_anemo_vs_puntos)=dirs
   
   #Bucle para porcentajes
   if (añadir_porcentajes){
     porcentajes_dir=c()
-    for (i in dirs) {
-      porcentajes_dir[i]=nrow(filter(datos_juntos,Dir==i))*100/nrow(datos_juntos)  #Col 3=porcentaje de datos en esa direccion
+    for (i in 1:length(dirs)) {
+      porcentajes_dir[i]=nrow(filter(datos_juntos,Dir==dirs[i]))*100/nrow(datos_juntos)
     }
-    cors_anemo_vs_puntos[,ncol(cors_anemo_vs_puntos)+1]=porcentajes_dir
+    cors_anemo_vs_puntos=cbind(cors_anemo_vs_puntos,porcentajes_dir)
     colnames(cors_anemo_vs_puntos)[ncol(cors_anemo_vs_puntos)]="%"
   }
   
