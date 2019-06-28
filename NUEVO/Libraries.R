@@ -568,6 +568,50 @@ juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Da
   return(datos3)
 }
 
+crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
+  
+  #Esta función coge un data.frame de tipo datos_juntos (aquel donde se juntan las mediciones
+  #de un anemos con las mediciones correspondientes de n puntos de era) y devuelve una tabla
+  #con las correlaciones entre el anemo y los puntos para cada dirección. La función reconoce
+  #la columna llamada "Mean" como las mediciones de anemos y todas las que contengan "uv_wind"
+  #como viento de era.
+  
+  #Si añadir_porcentajes=T, se añade una columna extra que especifica que cantidad de las lineas
+  #corresponden a cada dirección.
+  
+  #Comparar anemo con todos los puntos por direcciones
+  cors_anemo_vs_puntos=data.frame()
+  col_mean=grep("Mean",colnames(datos_juntos)) #Numeros de columna cuyo nombre contenga "Mean"
+  dirs=unique(na.omit(datos_juntos$Dir))
+  dirs=dirs[order(as.numeric(dirs))]
+  
+  #Bucle para correlaciones
+  kont_i=1
+  for (i in grep("uv_wind",colnames(datos_juntos))) { #Vector: Numeros de columnas cuyos nombres contengan "uv_wind
+    kont_j=1
+    for (j in dirs) {
+      cors_anemo_vs_puntos[kont_j,kont_i]=cor(datos_juntos[which(datos_juntos$Dir==j),i],datos_juntos[which(datos_juntos$Dir==j),col_mean],"na")
+      kont_j=kont_j+1
+    }
+    kont_i=kont_i+1
+  }
+  colnames(cors_anemo_vs_puntos)=c(1:(ncol(cors_anemo_vs_puntos)-1),"%")
+  row.names(cors_anemo_vs_puntos)=dirs
+  
+  #Bucle para porcentajes
+  if (añadir_porcentajes){
+    porcentajes_dir=c()
+    for (i in dirs) {
+      porcentajes_dir[i]=nrow(filter(datos_juntos,Dir==i))*100/nrow(datos_juntos)  #Col 3=porcentaje de datos en esa direccion
+    }
+    cors_anemo_vs_puntos[,ncol(cors_anemo_vs_puntos)+1]=porcentajes_dir
+    colnames(cors_anemo_vs_puntos)[ncol(cors_anemo_vs_puntos)]="%"
+  }
+  
+  return(cors_anemo_vs_puntos)
+}
+
+
 # Funciones mapas ---------------------------------------------------------
 
 #Descargar mapas seteando coordenadas

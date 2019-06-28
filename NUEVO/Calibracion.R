@@ -25,7 +25,7 @@ if (!exists("t_reg")) {
 }
 levels(t_reg$ID)  #Que anemos tenemos? Enseña las IDs
 #anemo_elegido=levels(t_reg$ID)[1]
-anemo_elegido="0B75FE3A4FB6"
+anemo_elegido="0B38DAE79059"
 datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==as.character(anemo_elegido))]])
 #huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
@@ -248,29 +248,7 @@ for (i in grep("uv_wind",colnames(datos_juntos))) { #Vector: Numeros de columnas
 rm(col_mean)
 
 #Comparar anemo con todos los puntos por direcciones
-cors_anemo_vs_puntos=data.frame()
-col_mean=grep("Mean",colnames(datos_juntos)) #Numeros de columna cuyo nombre contenga "Mean"
-dirs=unique(na.omit(datos_juntos$Dir))
-dirs=dirs[order(as.numeric(dirs))]
-kont_i=1
-#Bucle para correlaciones
-for (i in grep("uv_wind",colnames(datos_juntos))) { #Vector: Numeros de columnas cuyos nombres contengan "uv_wind
-  kont_j=1
-  for (j in dirs) {
-    cors_anemo_vs_puntos[kont_j,kont_i]=cor(datos_juntos[which(datos_juntos$Dir==j),i],datos_juntos[which(datos_juntos$Dir==j),col_mean],"na")
-  kont_j=kont_j+1
-  }
-  kont_i=kont_i+1
-}
-#Bucle para porcentajes
-porcentajes_dir=c()
-for (i in dirs) {
-  porcentajes_dir[i]=nrow(filter(datos_juntos,Dir==i))*100/nrow(datos_juntos)  #Col 3=porcentaje de datos en esa direccion
-}
-cors_anemo_vs_puntos[,ncol(cors_anemo_vs_puntos)+1]=porcentajes_dir
-colnames(cors_anemo_vs_puntos)=c(1:(ncol(cors_anemo_vs_puntos)-1),"%")
-row.names(cors_anemo_vs_puntos)=dirs
-rm(col_mean,kont_i,kont_j,porcentajes_dir)
+cors_anemo_vs_puntos=crear_tabla_cors_por_dirs(datos_juntos)
 
 #Separar por direcciones de anemos (creo que esto queda obsoleto)
 datos_juntos_dir=list()
