@@ -154,5 +154,7 @@ if(CREAR_VECTOR_ERA5_79_19){
     
     lista_ERA[[i]]<- DATOS_PLOT
   }
+  saveRDS(lista_ERA, here::here('NUEVO/Data_ERA5/Lista_ERA5_Total.RDS'))
   
 }
+
