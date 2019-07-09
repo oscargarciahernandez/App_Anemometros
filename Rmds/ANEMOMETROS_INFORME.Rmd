@@ -1220,3 +1220,153 @@ ggplot()+
 Tras la elaboración de los diagramas de taylor podemos ver como tras realizar un filtrado de los datos por direcciones se consigue una mejora en los resultados. Tambien es apreciable que filtrando los datos por direcciones indicadas del ERA5 se consigue mejorar la correlación y disminuir el RMSE y el MAPE. 
 
 Lo siguiente que haremos será realizar la calibración quantile-mapping empleando el paquete **qmap** y volver a realizar todos los diagramas de taylor y las distribuciones de weibull, esperando obtener una mejora en el bias. 
+
+
+
+# QUANTILE MAPPING
+
+A continuación se empezarán a presentar las pruebas realizadas para realizar la calibración del bias. Las siguientes pruebas se realizarán aplicando primero técnicas más básicas y posteriormente métodos más complejos. 
+
+
+```{r eval=TRUE}
+
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+
+#CALCULAMOS DISTANCIAS ENTRE ERA5 Y ANEMOMETRO
+DISTANCIA_ERA5_ANEMO<- DATOS_JUNTOS_LISTA %>% sapply(function(x){distm(c(x$ERAlon[1], x$ERAlat[1]), c(x$lon[1],x$lat[1]))})
+
+
+#SACAMOS EL PUNTO MÁS CERCANO Y TRABAJAMOS DESDE AQUÍ. 
+PUNTO_MC<- DATOS_JUNTOS_LISTA[[which.min(DISTANCIA_ERA5_ANEMO)]]  %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+PUNTO_MC$ERA_binDir<- PUNTO_MC$ERA_binDir %>% as.character() %>% as.numeric()
+PUNTO_MC$WD_N<- ifelse(PUNTO_MC$WD_N==155, 157.5, PUNTO_MC$WD_N) 
+
+
+
+#CALIBRACION QMAP
+library(qmap)
+library(forecast)
+#SACAMOS LA FUNCION DE TRANSFERENCIA
+PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
+ftrans=fitQmapQUANT(PUNTO_MC$WS_N,PUNTO_MC$ERAWS)
+
+#CALIBRAMOS Y SACAMOS WEIBULL DE NUEVO
+calibrado=doQmapQUANT(PUNTO_MC$ERAWS,ftrans)
+
+PUNTO_MC$CALIB<- calibrado
+
+library(data.table)
+library(reshape)
+library(reshape2)
+library(MASS)
+
+bind_anch<- 0.25
+fitweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+
+shape_factor<- 1700
+DATOS_weibull<- PUNTO_MC %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull$CALIB<- ifelse(DATOS_weibull$CALIB==0,NA,DATOS_weibull$CALIB) 
+
+DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
+
+
+ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="green")+ 
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$CALIB, bind_anch)*shape_factor), col="darkgreen")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+  theme_light()
+
+cdweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=1))
+  dd<- dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2])
+  dd <- cumsum(dd) * c(0, diff(x))
+  return(dd)
+}
+
+bind_anch<- 0.01
+bind_width<- 0.25
+
+
+shape_factor<- 1000
+ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="green")+ 
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$CALIB, bind_anch)*shape_factor), col="darkgreen")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Acumulated weibull distribution", hjust = 0.5))+
+  theme_light()
+
+
+
+ggplot(data = DATOS_weibull %>%  filter(month(Date)==2, week(Date)==6)) + 
+  geom_line(aes(x= Date,
+                y= ERAWS), col="red")+
+  geom_line(aes(x= Date,
+                y= WS_N), col="blue", alpha= 0.4)+
+  geom_line(aes(x= Date,
+                y= CALIB), col="darkgreen") + 
+  theme_light() + 
+  ylab("Wind Speed (m/s)")+
+  ggtitle("Demostration of bias-correction using Quantile mapping")
+
+```
+
