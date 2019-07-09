@@ -1225,7 +1225,7 @@ Lo siguiente que haremos será realizar la calibración quantile-mapping emplean
 
 # QUANTILE MAPPING
 
-A continuación se empezarán a presentar las pruebas realizadas para realizar la calibración del bias. Las siguientes pruebas se realizarán aplicando primero técnicas más básicas y posteriormente métodos más complejos. 
+A continuación se empezarán a presentar las pruebas realizadas para realizar la calibración del bias. Las siguientes pruebas se realizarán aplicando primero técnicas más básicas y posteriormente métodos más complejos. Las gráficas que se presentan a continuacion tienen "trampita", es decir, estamos "entrenando" la funcion de transferencia y aplicando la misma al mismo vector. 
 
 
 ```{r eval=TRUE}
@@ -1368,5 +1368,200 @@ ggplot(data = DATOS_weibull %>%  filter(month(Date)==2, week(Date)==6)) +
   ylab("Wind Speed (m/s)")+
   ggtitle("Demostration of bias-correction using Quantile mapping")
 
+```
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+ taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$WS_N),col = "blue")
+
+ taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$ERAWS),add = TRUE, col = "red")
+ taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$CALIB),add = TRUE, col= "darkgreen")
+```
+
+Se puede ver, que el quantile mapping consigue sobre todo mejorar el bias, pero la correlación se mantiene constante. Esto se ve claramente en el diagrama de taylor. El punto verde representa la serie calibrada mediante quantile mapping. Presenta un error menor que la serie original (rojo). 
+
+
+Ahora, lo que vamos a hacer es: aplicar entrenar y aplicar la funcion de transferencia a diferentes muestras... para poder observar como se comporta el quantile mapping. 
+
+
+Entrenamos la función de transferencia con la mitad de los datos... (6700/2)
+
+```{r  eval=TRUE}
+PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
+
+GRUPO_ENTRENAMIENTO<- PUNTO_MC[1:(nrow(PUNTO_MC)/2), ]
+GRUPO_TEST<-  PUNTO_MC[((nrow(PUNTO_MC)/2):nrow(PUNTO_MC)), ]
+
+
+
+ftrans=fitQmapQUANT(GRUPO_ENTRENAMIENTO$WS_N,
+                    GRUPO_ENTRENAMIENTO$ERAWS)
+
+#CALIBRAMOS Y SACAMOS WEIBULL DE NUEVO
+calibrado=doQmapQUANT(GRUPO_TEST$ERAWS,ftrans)
+
+GRUPO_TEST$CALIB<- calibrado
+
+
+bind_anch<- 0.25
+fitweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+
+shape_factor<- 1700
+DATOS_weibull<- GRUPO_TEST %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull$CALIB<- ifelse(DATOS_weibull$CALIB==0,NA,DATOS_weibull$CALIB) 
+
+DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
+
+
+ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_anch,
+                 alpha=0.4,
+                 fill="green")+ 
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=fitweibull(DATOS_weibull$CALIB, bind_anch)*shape_factor), col="darkgreen")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+  theme_light()
+
+cdweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=1))
+  dd<- dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2])
+  dd <- cumsum(dd) * c(0, diff(x))
+  return(dd)
+}
+
+bind_anch<- 0.01
+bind_width<- 0.25
+
+
+shape_factor<- 1000
+ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="green")+ 
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch),
+                y=cdweibull(DATOS_weibull$CALIB, bind_anch)*shape_factor), col="darkgreen")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Acumulated weibull distribution", hjust = 0.5))+
+  theme_light()
+
+
+
+ggplot(data = DATOS_weibull %>%  filter(month(Date)==2, week(Date)==6)) + 
+  geom_line(aes(x= Date,
+                y= ERAWS), col="red")+
+  geom_line(aes(x= Date,
+                y= WS_N), col="blue", alpha= 0.4)+
+  geom_line(aes(x= Date,
+                y= CALIB), col="darkgreen") + 
+  theme_light() + 
+  ylab("Wind Speed (m/s)")+
+  ggtitle("Demostration of bias-correction using Quantile mapping")
+
+
+ 
+
+
+```
+
+```{r  eval=TRUE, fig.height=6, fig.width=6}
+taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$WS_N),col = "blue")
+
+ taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$ERAWS),add = TRUE, col = "red")
+ taylor.diagram(as.vector(DATOS_weibull$WS_N), 
+                 as.vector(DATOS_weibull$CALIB),add = TRUE, col= "darkgreen")
+
+```
+
+
+Se aprecia claramente como en este caso, el ajuste y la mejora conseguida con el quantile-mapping no es tan acusado. 
+
+
+
+A continuación ponemos a prueba la influencia de la longitud del grupo de entrenamiento
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+
+PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
+GRUPO_TEST<-  PUNTO_MC[((nrow(PUNTO_MC)-1000):nrow(PUNTO_MC)), ]
+taylor.diagram(as.vector(GRUPO_TEST$WS_N), 
+                 as.vector(GRUPO_TEST$WS_N),col = "red")
+
+LENGTH_TRAIN<- vector()
+k<- 1
+for (i in c(8,6,4,2,1)) {
+  
+  GRUPO_ENTRENAMIENTO<- PUNTO_MC[1:((nrow(PUNTO_MC)-1000)/i), ]
+
+LENGTH_TRAIN[k]<- 1:((nrow(PUNTO_MC)-1000)/i) %>% length()
+k<- k+1
+
+ftrans=fitQmapQUANT(GRUPO_ENTRENAMIENTO$WS_N,
+                    GRUPO_ENTRENAMIENTO$ERAWS)
+
+#CALIBRAMOS Y SACAMOS WEIBULL DE NUEVO
+calibrado=doQmapQUANT(GRUPO_TEST$ERAWS,ftrans)
+
+GRUPO_TEST$CALIB<- calibrado
+
+ taylor.diagram(as.vector(GRUPO_TEST$WS_N), 
+                 as.vector(GRUPO_TEST$CALIB),add = TRUE, col= i)
+
+
+}
+
+
+
+lpos<-1.4*sd(GRUPO_TEST$WS_N)
+# add a legend
+legend(lpos+0.2,lpos-0.7,legend=LENGTH_TRAIN,
+       pch=19,col= c(8,6,4,2,1))
 ```
 
