@@ -125,24 +125,36 @@ if(!file.exists(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))){
 
 
 # CREAMOS VECTOR ERA5 PARA QUANTILE MAPPING -------------------------------
+CREAR_VECTOR_ERA5_79_19<- FALSE
 
-RDS_ERA5<- here::here('NUEVO/Data_ERA5/') %>% list.files(full.names = TRUE) %>% .[str_detect(.,'[:digit:]{4}')]
-Df_ERA<- RDS_ERA5[1] %>% readRDS
-
-Tabla_dist<- Df_ERA %>% group_split(lon,lat)%>% lapply(function(x){y<- cbind(x$lon %>% unique, x$lat %>% unique()) %>% 
-  as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
-    distm(x, c(-2.488504, 43.179389))
-  }) 
-
-lista_ERA<- list()
-for (i in 1:length(RDS_ERA5)) {
-  Df_ERA<- RDS_ERA5[i] %>% readRDS
-  Df_ERA_MC<- Df_ERA %>% group_split(lon,lat) %>% .[[which.min(Tabla_dist)]]
-  DATOS_PLOT<- Df_ERA_MC[, c("Date", "uv_wind", "uv_dwi")] %>%
-    mutate(ERA_binDir= cut(uv_dwi ,
-                           breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
-                           labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
-  DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+if(CREAR_VECTOR_ERA5_79_19){
   
-  lista_ERA[[i]]<- DATOS_PLOT
+  #COJEMOS LOS RDS DE ERA5
+  RDS_ERA5<- here::here('NUEVO/Data_ERA5/') %>% list.files(full.names = TRUE) %>% .[str_detect(.,'[:digit:]{4}')]
+  Df_ERA<- RDS_ERA5[1] %>% readRDS
+  
+  #HACEMOS UNA TABLA CON LAS DISTANCIAS DE LOS PUNTOS
+  Tabla_dist<- Df_ERA %>% group_split(lon,lat)%>% lapply(function(x){y<- cbind(x$lon %>% unique, x$lat %>% unique()) %>% 
+    as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+      distm(x, c(-2.488504, 43.179389))
+    }) 
+  
+  
+  #HACEMOS EL MISMO PROCESO EN BUCLE PARA SACAR TODO EL VECTOR ERA5 DESDE EL 79
+  lista_ERA<- list()
+  for (i in 1:length(RDS_ERA5)) {
+    Df_ERA<- RDS_ERA5[i] %>% readRDS
+    Df_ERA_MC<- Df_ERA %>% group_split(lon,lat) %>% .[[which.min(Tabla_dist)]]
+    rm(Df_ERA)
+    DATOS_PLOT<- Df_ERA_MC[, c("Date", "uv_wind", "uv_dwi")] %>%
+      mutate(ERA_binDir= cut(uv_dwi ,
+                             breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                             labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+    DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+    
+    lista_ERA[[i]]<- DATOS_PLOT
+  }
+  saveRDS(lista_ERA, here::here('NUEVO/Data_ERA5/Lista_ERA5_Total.RDS'))
+  
 }
+
