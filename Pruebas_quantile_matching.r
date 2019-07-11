@@ -37,7 +37,7 @@ mean(abs(datos_juntos$Mean-calibrado))
 sqrt(mean((datos_juntos$Mean-datos_juntos$uv_wind1)^2))
 sqrt(mean((datos_juntos$Mean-calibrado)^2))
 
-dev.off()
+
 plot_n_graficos(x=datos_juntos$Date1,n=14,datos_juntos$Mean,calibrado,datos_juntos$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 1")
 
 #Vemos que el calibrado se tiene valores parecidos a los del anemo, pero progresa como ERA.
@@ -71,7 +71,7 @@ mean(abs(mitad_1$Mean-calibrado_mitad_1))
 sqrt(mean((mitad_1$Mean-mitad_1$uv_wind1)^2))
 sqrt(mean((mitad_1$Mean-calibrado_mitad_1)^2))
 
-dev.off()
+
 plot_n_graficos(x=mitad_1$Date1,n=7,mitad_1$Mean,calibrado_mitad_1,mitad_1$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 2 mitad_1")
 
 #Hora de analizar los resultados mitad_2
@@ -87,7 +87,7 @@ mean(abs(mitad_2$Mean-calibrado_mitad_2))
 sqrt(mean((mitad_2$Mean-mitad_1$uv_wind1)^2))
 sqrt(mean((mitad_2$Mean-calibrado_mitad_2)^2))
 
-dev.off()
+
 plot_n_graficos(x=mitad_2$Date1,n=7,mitad_2$Mean,calibrado_mitad_2,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 2 mitad_2")
 
 remove(mitad_1,mitad_2,calibrado_mitad_1,calibrado_mitad_2,ftrans_mitad_1,ftrans_mitad_2)
@@ -170,7 +170,7 @@ mean(abs(mitad_1$Mean-mitad_1$Cal))
 sqrt(mean((mitad_1$Mean-mitad_1$uv_wind1)^2))
 sqrt(mean((mitad_1$Mean-mitad_1$Cal)^2))
 
-dev.off()
+
 plot_n_graficos(x=mitad_1$Date1,n=7,mitad_1$Mean,mitad_1$Cal,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 3 mitad_1")
 
 #Hora de analizar los resultados mitad_2
@@ -186,7 +186,7 @@ mean(abs(mitad_2$Mean-mitad_2$Cal))
 sqrt(mean((mitad_2$Mean-mitad_2$uv_wind1)^2))
 sqrt(mean((mitad_2$Mean-mitad_2$Cal)^2))
 
-dev.off()
+
 plot_n_graficos(x=mitad_2$Date1,n=7,mitad_2$Mean,mitad_2$Cal,mitad_2$uv_wind1,leyenda = c("Mean","Cal","ERA"),main = "Ej 3 mitad_2")
 
 
@@ -206,6 +206,8 @@ datos_juntos=datos_juntos[complete.cases(datos_juntos[,grep("uv_wind",colnames(d
 datos_juntos=datos_juntos[complete.cases(datos_juntos$Mean),] #Quitar lineas donde el anemo tenga NAs
 
 datos_juntos$Dir=as.numeric(datos_juntos$Dir)
+
+#CUARTO EJERCICIO. Dividir datos_remix por la mitad y hacer una calibracion para cada direccion de era.----
 
 #Dividir datos por la mitad. Por ahora vamos con todas las columnas (en un futuro se podria optimizar quitando todas las columnas de fecha repetidas) 
 mitad_1_juntos=datos_juntos[1:(nrow(datos_juntos)/2),]
@@ -228,7 +230,7 @@ remixear_datos_juntos=function(datos_juntos){
   #Construir datos_remix
   datos_remix=datos_juntos[,c("Date","Mean","Gust","Dir")]
   datos_remix[,c("Date_era","lon","lat","uv_wind","uv_dwi")]=NA
-  class(datos_remix$Date_era)="POSIXct"   #Esto es necesario para que luego no nos ponga la fecha en numerico
+  class(datos_remix[,c("Date_era","lon","lat","uv_wind","uv_dwi")])=class(datos_juntos[,c("Date_era","lon","lat","uv_wind","uv_dwi")])  #Esto es necesario para que luego no nos ponga la fecha en numerico
   for (i in 1:nrow(datos_remix)) {
     punto=puntos_era_para_cada_dir[which(names(puntos_era_para_cada_dir)==datos_juntos$Dir[i])]
     columnas=grep(as.character(punto),colnames(datos_juntos))
@@ -335,8 +337,7 @@ computeMASE <- function(forecast,train,test,period){
 computeMASE(mitad_1$uv_wind,mitad_1$uv_wind,mitad_1$Mean,1)
 computeMASE(mitad_1$Cal,mitad_1$uv_wind,mitad_1$Mean,1)
 
-dev.off()
-plot_n_graficos(x=mitad_1$Date_era,n=7,mitad_1$Mean,mitad_1$Cal,mitad_1$uv_wind,leyenda = c("Mean","Cal","ERA"),main = "Ej 4 mitad_1")
+plot_n_graficos(x=mitad_1$Date_era,n=7,mitad_1$Mean,mitad_1$Cal,mitad_1$uv_wind,leyenda = c("Mean","Cal","ERA"),main = "Ej 4 mitad_1",col = c("red","green","grey"))
 
 #Hora de analizar los resultados mitad_2
 cor(mitad_2$Cal,mitad_2$Mean)
@@ -348,10 +349,28 @@ accuracy(f = mitad_2$Cal,x = mitad_2$Mean)
 
 
 
-dev.off()
+
 plot_n_graficos(x=mitad_2$Date_era,n=7,mitad_2$Mean,mitad_2$Cal,mitad_2$uv_wind,leyenda = c("Mean","Cal","ERA"),main = "Ej 4 mitad_2")
 
 
+
+
+#EXTRA. Comprobar efectividad del remix----
+
+datos_remix=remixear_datos_juntos(datos_juntos)
+#Añadimos las columnas del remix de datos_remix y lo metemos en datos_juntos. Asi trabajamos con un solo dataframe
+datos_juntos[,c("Date_era","lon","lat","uv_wind","uv_dwi")]=NA
+datos_juntos[,c("Date_era","lon","lat","uv_wind","uv_dwi")]=datos_remix[,c("Date_era","lon","lat","uv_wind","uv_dwi")]
+rm(datos_remix)
+
+#Analizar resultados
+cors_por_dirs=crear_tabla_cors_por_dirs(datos_juntos = datos_juntos,añadir_porcentajes = F) #remix vs mean  es la columna llamada "10"
+puntos_era_para_cada_dir=apply(cors_por_dirs,1, which.max)  #Esto devuelve un "named int": contiene tanto la direccion como el punto de era mas apropiado.
+for (i in grep("uv_wind",colnames(datos_juntos))) { #Vector: Numeros de columnas cuyos nombres contengan "uv_wind
+  print(paste0(colnames(datos_juntos)[i]," - ",cor(datos_juntos[,i],datos_juntos$Mean)))
+  print(accuracy(datos_juntos[,i],datos_juntos$Mean))
+  print('')
+}
 
 #CONCLUSIONES----
 
