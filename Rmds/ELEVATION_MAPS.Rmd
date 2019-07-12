@@ -1,0 +1,87 @@
+---
+title: "MAPAS JONY"
+author: "Oscar Garcia Hernandez"
+date: "12/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = FALSE, 
+                      warning = FALSE,
+                      fig.align = 'center')
+```
+
+```{r echo=FALSE}
+library(here)
+source(here::here('NUEVO/Libraries.R'))
+```
+
+# INTRO
+
+Sin más, documento para dejar por escrito como se hacen mapas de relieve... emplearemos dos paquetes que a mi parecer estan muy de puta de madre... **elevatr** para obtener los rasters y **rasterVis** para plotearlos, ya que ofrece una manera sencilla de 
+
+```{r}
+library(elevatr)
+library(rasterVis)
+```
+
+
+```{r}
+Datos_anemos<- here::here('NUEVO/Data_calibracion/')
+
+n=max(h$lat)    
+s=min(h$lat)    
+e=max(h$lon)    
+w=min(h$lon) 
+
+incr<- 0.05
+zoom_map<- 14
+
+
+if(n > 0){n<- n + incr}else{n<- n + incr}
+if(s > 0){s<- s - incr}else{s<- s- incr}
+if(e > 0){e<- e + incr}else{e<- e + incr}
+if(w > 0){w<- w - incr}else{w<- w- incr}
+
+
+
+ul <- round(c(n,w),digits = 8)  #Upper Left
+lr <- round(c(s,e), digits = 8)  #Lower Right
+
+
+path_raster<- here::here('Mapas/Rasters/')
+if(!dir.exists(path_raster)){dir.create(path_raster, 
+                                        recursive = TRUE)}
+
+#PONGO ESE IF DENTRO DEL BUCLE PORQUE TARDA LA VIDA
+# Y SEGURAMENTE DESCARGARÉ LOS RASTERS DE VARIAS VECES...VARIOS DIAS
+
+file_raster<- paste0(path_raster,"RASTER_",incr,"_",zoom_map,".RDS")
+if(file.exists(file_raster)){
+  print("Este raster ya existe en: ", file_raster)
+}else{
+  
+  lon_location<- seq(lr[1],ul[1],length.out = 100 ) 
+  lat_location<- seq(ul[2],lr[2], length.out = 100)
+  data_loc<- expand.grid(lat_location,lon_location)
+  colnames(data_loc)<- c("x", "y")
+  
+  spdf <- SpatialPointsDataFrame(coords = data_loc, data = data_loc,
+                                 proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+  
+  
+  map_raster<- get_elev_raster(spdf, z=zoom_map)
+  saveRDS(map_raster, file_raster)
+  
+}
+
+lon_grid<- tabla_jony$lon %>% unique()
+lat_grid<- tabla_jony$lat %>% unique()
+grid_total<- expand.grid(lat_grid, lon_grid)
+colnames(grid_total)<- c("lat", "lon")
+
+```
+
+
+
