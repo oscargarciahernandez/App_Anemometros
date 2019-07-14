@@ -1,0 +1,60 @@
+---
+title: "VARIANDO EL SKEW"
+author: "Oscar Garcia Hernandez"
+date: "11/7/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      message = FALSE,
+                      warning = FALSE)
+```
+```{r}
+library(here)
+source(here::here('NUEVO/Libraries.R'))
+```
+# SKEW
+#### ALAIN, AQUÍ VAN LOS RESULTADOS PARA LAS PRUEBAS VARIANDO EL SKEW, TE COMENTO QUE NO ME HE QUEDADO AGUSTO PRINCIPALMENTE POR LO QUE TE COMENTE: TAL Y COMO ESTA SUJETO EL EFIFICIO CUANDO VARIAS EL ANGULO SE DESCENTRA LA MAQUETA... SEGUNDO: DEBIDO A QUE NO CABE POR LA FORMA OCTOGONAL, SOLAMENTE SE PUEDE HACER LA PRUEBA HASTA 40º DE SKEW... POR LO DEMÁS COMENTAR QUE LOS PEORES RESULTADOS SE CONSIGUEN PARA EL ANGULO 0... LOS OTROS SE COMPORTAN DE MANERA MÁS O MENOS PARECIDA... CURIOSO, NO SABRÍA DECIR PORQUE. LAS GRÁFICAS QUE TE ENVIO REPRESENTAN LAS VELOCIDADES (EJE Y) DURANTE UN PERIODO DE 1 MINUTO, LOS COLORES REPRESENTAN ANGULOS DE SKEW Y CADA GRAFICA ES PARA UNA POTENCIA DEL TUNEL 
+```{r}
+
+txt_files<- here::here('GET_DATA/') %>% list.files(full.names = T)
+
+lista_data<- list()
+for(i in 1:15){
+  
+  x<- txt_files[i]
+  
+  info<- x %>% str_split("/") %>% .[[1]] %>% .[length(.)] %>% 
+    str_split("_") %>% .[[1]]
+  pot<- info[1]
+  angle<- info[2]
+  table<- x %>%  read.table(sep = "\n") %>% as.vector()
+  table<- as.numeric(gsub('[a-zA-Z]', '', table$V1))
+  table<- table %>% .[complete.cases(.)] 
+  table_total<- cbind(table, 
+        rep(pot, length(table)),
+        rep(angle, length(table))) %>% as.data.frame()
+  colnames(table_total)<- c('rpm', 'pot', 'angle')
+  lista_data[[i]]<- table_total
+}
+
+tabla_merge<- lista_data %>% bind_rows()
+tabla_merge<- tabla_merge %>% group_split(pot,angle) %>% lapply(function(y){
+  y$n<- seq(1,nrow(y))
+  return(y)
+}) %>% bind_rows()
+
+
+tabla_merge$rpm <- tabla_merge$rpm %>% as.numeric()
+tabla_merge %>% group_split(pot) %>% lapply(function(x) {
+  x%>% ggplot()+
+  geom_point(aes(x=n, y=rpm,colour= angle), size= 0.5, alpha= 0.3) + 
+  geom_line(aes(x=n, y=SMA(rpm, 20),colour= angle)) + 
+  
+  theme_light()+
+    ggtitle(paste("POTENCIA TUNEL= ", x$pot %>% unique()))
+})
+
+```
+

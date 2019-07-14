@@ -293,9 +293,8 @@ WR_parameters2<- function(data,
 
 #POR DEFECTO DEVUELVE LA ACUMULADA Y LA DISTRIBUIDA... SE PUEDEN PONER A FALSE
 # CUALQUIERA DE LOS DOS
-WEIBULL_PLOT<- function(DATOS_INPUT, ACUMULATED= TRUE, DISTRIBUTION= TRUE){
 
-  bind_anch<- 0.25
+#PRIMERO DEFINIMOS FUNCIONES BÁSICAS
 fitweibull <- function(column, bind_anch) {
   x <- seq(0,10,by=bind_anch)
   fitparam <- column %>%
@@ -303,32 +302,6 @@ fitweibull <- function(column, bind_anch) {
   return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
 }
 
-
-shape_factor<- 1700
-DATOS_weibull<- DATOS_INPUT %>% .[complete.cases(.), ] 
-DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
-DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
-
-
-  DIST_WEIBULL<- ggplot() + 
-    geom_histogram(data= DATOS_weibull, 
-                   aes(x=ERAWS),
-                   binwidth = bind_anch,
-                   alpha=0.4,
-                   fill="red")+
-    geom_histogram(data=DATOS_weibull,
-                   aes(x=WS_N),
-                   binwidth = bind_anch,
-                   alpha=0.4,
-                   fill="blue")+
-    geom_line(aes(x=seq(0,10,by=bind_anch),
-                  y=fitweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor), col="darkred")+
-    geom_line(aes(x=seq(0,10,by=bind_anch),
-                  y=fitweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor), col="darkblue")+
-    ylab("")+
-    xlab("Wind Speed [m/s]")+
-    labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
-    theme_light()
   cdweibull <- function(column, bind_anch) {
   x <- seq(0,10,by=bind_anch)
   fitparam <- column %>%
@@ -338,11 +311,86 @@ DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
   return(dd)
 }
 
-bind_anch<- 0.01
+
+WEIBULL_PLOT<- function(DATOS_INPUT, ACUMULATED= TRUE, 
+                        DISTRIBUTION= TRUE, 
+                        CALIBRATED= FALSE, 
+                        TOTAL_VECTOR= NULL){
+
+bind_anch_dist<- 0.25
+bind_anch_acum<- 0.01
 bind_width<- 0.25
 
 
-shape_factor_acum<- 1000
+DATOS_weibull<- DATOS_INPUT %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
+
+DIST_WEIBULL_p<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch_dist) +
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch_dist)+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch_dist)))+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch_dist)))
+
+
+x<- ggplot_build(DIST_WEIBULL_p)
+dist_count_maxERA<- x$data[[1]]$count %>% max()
+dist_count_maxA <-x$data[[2]]$count %>% max()
+shape_factorERA<- (dist_count_maxERA)/x$data[[3]]$y %>% max()
+shape_factorA<- (dist_count_maxA)/x$data[[4]]$y %>% max()
+
+
+
+
+ACUM_WEIBULL_p<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width)+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width)+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch_acum)))+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch_acum)))
+
+x<- ggplot_build(ACUM_WEIBULL_p)
+count_max<- c(x$data[[1]]$count %>% max(),x$data[[2]]$count %>% max()) %>% max()
+dens_max<- c(x$data[[3]]$y %>% max(),x$data[[4]]$y %>% max()) %>% max()
+shape_factor_acum<- count_max/dens_max
+
+
+
+
+DIST_WEIBULL<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch_dist,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch_dist,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch_dist)*shape_factorERA), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch_dist)*shape_factorA), col="darkblue")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+  theme_light()
+
+
+
+
 ACUM_WEIBULL<- ggplot() + 
   geom_histogram(data= DATOS_weibull, 
                  aes(x=ERAWS),
@@ -354,14 +402,86 @@ ACUM_WEIBULL<- ggplot() +
                  binwidth = bind_width,
                  alpha=0.4,
                  fill="blue")+
-  geom_line(aes(x=seq(0,10,by=bind_anch),
-                y=cdweibull(DATOS_weibull$ERAWS, bind_anch)*shape_factor_acum), col="darkred")+
-  geom_line(aes(x=seq(0,10,by=bind_anch),
-                y=cdweibull(DATOS_weibull$WS_N, bind_anch)*shape_factor_acum), col="darkblue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch_acum)*shape_factor_acum), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch_acum)*shape_factor_acum), col="darkblue")+
   ylab("")+
   xlab("Wind Speed [m/s]")+
   labs(title = element_text("Acumulated weibull distribution", hjust = 0.5))+
   theme_light()
+
+if(CALIBRATED){
+  
+  DATOS_weibull$CALIB<- ifelse(DATOS_weibull$CALIB==0,NA,DATOS_weibull$CALIB)
+  DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.),]
+  DIST_WEIBULL<- DIST_WEIBULL + geom_histogram(data=DATOS_weibull,
+                                               aes(x=CALIB),
+                                               binwidth = bind_anch_dist,
+                                               alpha=0.4,
+                                               fill="green")+ 
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(DATOS_weibull$CALIB,
+                               bind_anch_dist)*shape_factorERA),
+              col="darkgreen")
+  
+
+  ACUM_WEIBULL<- ACUM_WEIBULL + 
+geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="green")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$CALIB, bind_anch_acum)*shape_factor_acum), col="darkgreen")
+  
+}
+if(!is.null(TOTAL_VECTOR)){
+  TOTAL_VECTOR<- ifelse(TOTAL_VECTOR==0,NA,TOTAL_VECTOR)
+  TOTAL_VEC<- TOTAL_VECTOR %>% na.omit()
+  count_ERA<- ggplot() + geom_histogram(aes(x=TOTAL_VEC),
+                                               binwidth = bind_anch_dist) +
+    
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(TOTAL_VEC,
+                               bind_anch_dist)))
+  list_grapht<- ggplot_build(count_ERA)
+  count_ERA_max<- list_grapht %>% .$data %>% .[[1]] %>% .$count %>% max()
+  dist_ERA_max<- list_grapht %>% .$data %>% .[[2]] %>% .$y %>% max()
+  
+  max_count<- c(dist_count_maxA, dist_count_maxERA) %>% max()
+  
+  multiplier_counts<- max_count/count_ERA_max
+  shape_total<- max_count/dist_ERA_max
+  
+  
+
+  
+  DIST_WEIBULL<- DIST_WEIBULL + geom_bar(aes(y=multiplier_counts*(ggplot_build(count_ERA) %>% 
+                                                                    .$data %>% .[[1]] %>% 
+                                                                    .$count),
+                                             x = ggplot_build(count_ERA) %>% 
+                                               .$data %>% .[[1]] %>% .$x),
+                                         stat = "identity",
+                                         alpha=0.4,
+                                         fill="orange")+ 
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(TOTAL_VEC,
+                               bind_anch_dist)*shape_total),
+              col="darkorange")
+  
+
+  ACUM_WEIBULL<- ACUM_WEIBULL +
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(TOTAL_VEC, bind_anch_acum)*shape_factor_acum), col="darkorange")
+  
+}
+
+
+
+
+
+
   if(ACUMULATED & DISTRIBUTION){
     print(list(DIST_WEIBULL, ACUM_WEIBULL))
   }else{
@@ -763,11 +883,9 @@ WEIBULL_PLOT(DATOS_INPUT =DATOS_PLOT)
 
 # DIAGRAMAS DE TAYLOR
 
-A continuación se presentan los diagramas de taylor empleando diferentes estratégias. esto nos permite ver en un solo gráfico el RMSE.
+A continuación se presentan los diagramas de taylor empleando diferentes estratégias. esto nos permite ver en un solo gráfico el RMSE, ORRELACION Y DESVIACIÓN ESTANDAR 
 
-## FILTRANDO POR DIRECCIONES AGRUPADAS
-
-### SIN FILTRADO
+## SIN FILTRADO
 
 ```{r eval=TRUE, fig.height=6, fig.width=6}
 library(plotrix)
@@ -781,7 +899,10 @@ library(DescTools)
   
 ```
 
+## FILTRANDO POR DIRECCIONES AGRUPADAS
+
 ### FILTRANDO POR DIRECCIONES ANEMOMETRO
+
 ```{r eval=TRUE, fig.height=6, fig.width=6}
 #FILTRADO POR DIRECCIONES
 West<- c(247.5,270.0,292.5)
@@ -822,15 +943,21 @@ for (i in 1:length(lista_dir)) {
   tabla_taylor[i,5]<- length(DATOS_PLOT_fil$WS_N)
 }
 
-# get approximate legend position
-lpos<-2*sd(DATOS_PLOT_fil$WS_N)
-# add a legend
-legend(lpos-0.1,lpos-0.7,legend=names(lista_dir),
-       pch=19,col=seq(1,length(lista_dir), by=1))
-
 
 colnames(tabla_taylor)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
 rownames(tabla_taylor)<- names(lista_dir)
+
+tabla_taylor$prctj_cases<- (tabla_taylor$Cases/(tabla_taylor$Cases %>% sum()))*100
+# get approximate legend position
+lpos<-2*sd(DATOS_PLOT_fil$WS_N)
+# add a legend
+legend(lpos-0.3,lpos-0.7,legend=paste0(names(lista_dir),
+                                       " (",
+                                       tabla_taylor$prctj_cases %>% round(),
+                                       " %)"),
+       pch=19,col=seq(1,length(lista_dir), by=1))
+
+
 library(knitr)
 kable(tabla_taylor[order(tabla_taylor$Corr, decreasing = TRUE),])
 
@@ -841,6 +968,17 @@ kable(tabla_taylor[order(tabla_taylor$Corr, decreasing = TRUE),])
 ```{r eval=TRUE, fig.height=6, fig.width=6}
 #filtrando por ERA5
 #filtrando por ERA5
+West<- c(247.5,270.0,292.5)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(157.5,180.0, 202.5)
+
+lista_dir<- list(W=West,NW= North_west,N= North, NE=North_east, 
+     E=East, SE=South_east,S=South, SW=South_west)
 tabla_taylorERA<- matrix(ncol = 5, nrow = length(lista_dir)) %>% as.data.frame()
 for (i in 1:length(lista_dir)) {
   DATOS_PLOT_fil<- DATOS_PLOT %>% filter(ERA_binDir%in%lista_dir[[i]]) %>%
@@ -866,23 +1004,30 @@ for (i in 1:length(lista_dir)) {
   tabla_taylorERA[i,5]<- length(DATOS_PLOT_fil$WS_N)
 }
 
-# get approximate legend position
-lpos<-2*sd(DATOS_PLOT_fil$WS_N)
-# add a legend
-legend(lpos+0.2,lpos-0.7,legend=names(lista_dir),
-       pch=19,col=seq(1,length(lista_dir), by=1))
-
 
 colnames(tabla_taylorERA)<- c("Corr", "SD", "RMSE", "MAPE", "Cases")
 rownames(tabla_taylorERA)<- names(lista_dir)
+
+tabla_taylorERA$prctj_cases<- (tabla_taylorERA$Cases/(tabla_taylorERA$Cases %>% sum()))*100
+# get approximate legend position
+lpos<-2*sd(DATOS_PLOT_fil$WS_N)
+# add a legend
+legend(lpos,lpos-0.7,legend=paste0(names(lista_dir),
+                                       " (",
+                                       tabla_taylorERA$prctj_cases %>% round(),
+                                       " %)"),
+       pch=19,col=seq(1,length(lista_dir), by=1))
+
+
+
 kable(tabla_taylorERA[order(tabla_taylorERA$Corr, decreasing = TRUE),])
 
 
 ```
 
 
+```{r eval=FALSE}
 ### COMPARANDO RESULTADOS
-```{r eval=TRUE}
 
 ggplot()+
   geom_histogram(aes(x=row.names(tabla_taylor),
@@ -1000,11 +1145,12 @@ ggplot()+
   theme_light()
 ```
 
+
+
+```{r eval=FALSE, fig.height=6, fig.width=6}
 ## FILTRANDO POR DIRECCIONES SIN AGRUPAR
 
 ### FILTRANDO POR ANEMOMETRO
-
-```{r eval=TRUE, fig.height=6, fig.width=6}
 
 ######filtrando por anemometro
 lista_dir<- DATOS_PLOT %>% group_split(WD_N) %>% lapply(function(x){
@@ -1061,8 +1207,8 @@ kable(tabla_taylor[order(tabla_taylor$Corr, decreasing = TRUE),])
 
 ```
 
+```{r eval=FALSE, fig.height=6, fig.width=6}
 ### FILTRANDO POR ERA5
-```{r eval=TRUE, fig.height=6, fig.width=6}
 
 #filtrando por ERA5
 lista_dir<- DATOS_PLOT %>% group_split(WD_N) %>% lapply(function(x){
@@ -1118,8 +1264,8 @@ kable(tabla_taylorERA[order(tabla_taylorERA$Corr, decreasing = TRUE),])
 
 ```
 
+```{r eval=FALSE}
 ### COMPARANDO RESULTADOS
-```{r eval=TRUE}
 
 ggplot()+
   geom_histogram(aes(x=row.names(tabla_taylor),
@@ -1250,7 +1396,7 @@ Lo siguiente que haremos será realizar la calibración quantile-mapping emplean
 A continuación se empezarán a presentar las pruebas realizadas para realizar la calibración del bias. Las siguientes pruebas se realizarán aplicando primero técnicas más básicas y posteriormente métodos más complejos. Las gráficas que se presentan a continuacion tienen "trampita", es decir, estamos "entrenando" la funcion de transferencia y aplicando la misma al mismo vector. 
 
 
-```{r eval=TRUE}
+```{r eval=TRUE, results='hide',fig.keep='all'}
 
 
 DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
@@ -1287,7 +1433,7 @@ calibrado=doQmapQUANT(PUNTO_MC$ERAWS,ftrans)
 
 PUNTO_MC$CALIB<- calibrado
 
-DATOS_weibull1<- WEIBULL_PLOT(PUNTO_MC)
+DATOS_weibull1<- WEIBULL_PLOT(PUNTO_MC, CALIBRATED = TRUE)
 
 
 ggplot(data = DATOS_weibull1 %>%  filter(month(Date)==2, week(Date)==6)) + 
@@ -1313,6 +1459,26 @@ ggplot(data = DATOS_weibull1 %>%  filter(month(Date)==2, week(Date)==6)) +
                  as.vector(DATOS_weibull1$CALIB),add = TRUE, col= "darkgreen")
 ```
 
+
+
+```{r eval=TRUE, results='hide',fig.keep='all'}
+lista_total_ERA<- here::here('NUEVO/Data_ERA5/Lista_ERA5_Total.RDS') %>% readRDS()
+
+
+TABLA_TOTAL_ERA5<- lista_total_ERA %>% bind_rows()
+
+
+calibrado_total=doQmapQUANT(TABLA_TOTAL_ERA5$uv_wind %>% na.omit(),ftrans)
+
+
+
+DATOS_weibull1_T<- WEIBULL_PLOT(PUNTO_MC, CALIBRATED = TRUE, 
+                                TOTAL_VECTOR = calibrado_total,
+                                ACUMULATED = TRUE)
+
+
+```
+
 Se puede ver, que el quantile mapping consigue sobre todo mejorar el bias, pero la correlación se mantiene constante. Esto se ve claramente en el diagrama de taylor. El punto verde representa la serie calibrada mediante quantile mapping. Presenta un error menor que la serie original (rojo). 
 
 
@@ -1321,7 +1487,7 @@ Ahora, lo que vamos a hacer es:  entrenar y aplicar la funcion de transferencia 
 
 Entrenamos la función de transferencia con la mitad de los datos... (6700/2)
 
-```{r  eval=TRUE}
+```{r  eval=TRUE, results='hide',fig.keep='all'}
 PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
 
 GRUPO_ENTRENAMIENTO<- PUNTO_MC[1:(nrow(PUNTO_MC)/2), ]
@@ -1337,7 +1503,8 @@ calibrado=doQmapQUANT(GRUPO_TEST$ERAWS,ftrans)
 
 GRUPO_TEST$CALIB<- calibrado
 
-DATOS_weibull2<- WEIBULL_PLOT(GRUPO_TEST)
+
+DATOS_weibull2<- WEIBULL_PLOT(GRUPO_TEST, CALIBRATED = TRUE)
 
 
 ggplot(data = DATOS_weibull2 %>%  filter(month(Date)==2, week(Date)==6)) + 
@@ -1379,12 +1546,15 @@ A continuación ponemos a prueba la influencia de la longitud del grupo de entre
 
 PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
 GRUPO_TEST<-  PUNTO_MC[((nrow(PUNTO_MC)-1000):nrow(PUNTO_MC)), ]
-taylor.diagram(as.vector(GRUPO_TEST$WS_N), 
-                 as.vector(GRUPO_TEST$WS_N),col = "red")
+
 
 LENGTH_TRAIN<- vector()
 k<- 1
 for (i in c(8,6,4,2,1)) {
+  if(k==1){
+    taylor.diagram(as.vector(GRUPO_TEST$WS_N), 
+                 as.vector(GRUPO_TEST$WS_N),col = "red")
+  }
   
   GRUPO_ENTRENAMIENTO<- PUNTO_MC[1:((nrow(PUNTO_MC)-1000)/i), ]
 
@@ -1463,8 +1633,8 @@ MERGE_TEST<- LISTA_TEST %>% bind_rows() %>% .[order(.$Date),]
 
 ```
 
-```{r eval=TRUE}
-DATOS_weibull3<-  WEIBULL_PLOT(MERGE_TEST)
+```{r eval=TRUE, fig.height=6, fig.width=6}
+DATOS_weibull3<-  WEIBULL_PLOT(MERGE_TEST, CALIBRATED = TRUE)
 
 
 ggplot(data = DATOS_weibull3 %>%  filter(month(Date)==2, week(Date)==6)) + 
@@ -1506,7 +1676,7 @@ Se puede observar como no existe una mejora notable respecto al caso anterior en
 
 ## FUNCIONES DE TRANSFERENCIA POR DIRECCION (8 direcciones)
 
-```{r}
+```{r, fig.height=6, fig.width=6}
 PUNTO_MC<- PUNTO_MC %>%  .[complete.cases(.),]
 
 GRUPO_ENTRENAMIENTO<- PUNTO_MC[1:(nrow(PUNTO_MC)/2), ]
@@ -1553,7 +1723,7 @@ MERGE_TEST<- LISTA_TEST8 %>% bind_rows() %>% .[order(.$Date),]
 ```
 
 ```{r eval=TRUE}
-DATOS_weibull8<- WEIBULL_PLOT(MERGE_TEST)
+DATOS_weibull8<- WEIBULL_PLOT(MERGE_TEST, CALIBRATED = TRUE)
 
 
 ggplot(data = DATOS_weibull8 %>%  filter(month(Date)==2, week(Date)==6)) + 
