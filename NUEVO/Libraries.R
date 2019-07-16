@@ -611,6 +611,53 @@ crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
   return(cors_anemo_vs_puntos)
 }
 
+computeMASE <- function(forecast,train,test,period){
+  #Encontrado en:
+  #https://stackoverflow.com/questions/11092536/forecast-accuracy-no-mase-with-two-vectors-as-arguments
+  
+  # forecast - forecasted values
+  # train - data used for forecasting .. used to find scaling factor
+  # test - actual data used for finding MASE.. same length as forecast
+  # period - in case of seasonal data.. if not, use 1
+  
+  forecast <- as.vector(forecast)
+  train <- as.vector(train)
+  test <- as.vector(test)
+  
+  n <- length(train)
+  scalingFactor <- sum(abs(train[(period+1):n] - train[1:(n-period)])) / (n-period)
+  
+  et <- abs(test-forecast)
+  qt <- et/scalingFactor
+  meanMASE <- mean(qt)
+  return(meanMASE)
+}
+
+remixear_datos_juntos=function(datos_juntos){
+  
+  #Esta funcion recibe un dataframe de tipo datos_juntos y escoge los datos necesarios para devolver un datos_remix.
+  #EXPLICACION datos_juntos: dataframe que tiene para cada linea los datos de anemo (Date, Mean, Gust y Dir) y de
+  #n puntos de era (Date_eran,lonn,latn,uv_windn y uv_dwin, sustituyendo la n final con el numero))
+  #EXPLICACION datos_remix: dataframe que tiene para cada linea los datos de anemo (Date, Mean, Gust y Dir) y del
+  #punto de era que haya demostrado tener mejor correlacion  con las mediciones de datos_juntos. lat y lon permiten
+  #conocer el punto de era con el que se ha completado cada linea.
+  
+  #Que punto vamos a usar para cada direccion?
+  cors_por_dirs=crear_tabla_cors_por_dirs(datos_juntos,añadir_porcentajes = F) #Tabla sin porcentajes!
+  puntos_era_para_cada_dir=apply(cors_por_dirs,1, which.max)  #Esto devuelve un "named int": contiene tanto la direccion como el punto de era mas apropiado.
+  
+  #Construir datos_remix
+  datos_remix=datos_juntos[,c("Date","Mean","Gust","Dir")]
+  datos_remix[,c("Date_era","lon","lat","uv_wind","uv_dwi")]=NA
+  class(datos_remix$Date_era)= class(datos_juntos$Date)  #Esto es necesario para que luego no nos ponga la fecha en numerico
+  for (i in 1:nrow(datos_remix)) {
+    punto=puntos_era_para_cada_dir[which(names(puntos_era_para_cada_dir)==datos_juntos$Dir[i])]
+    columnas=grep(as.character(punto),colnames(datos_juntos))
+    datos_remix[i,c("Date_era","lon","lat","uv_wind","uv_dwi")]=datos_juntos[i,columnas,drop = FALSE]  #Esta linea nos jode las fechas, las pone en numerico
+  }
+  return(datos_remix)
+}
+
 
 # Funciones mapas ---------------------------------------------------------
 
