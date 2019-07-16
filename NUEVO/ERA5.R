@@ -131,7 +131,9 @@ if(CREAR_VECTOR_ERA5_79_19){
   
   #COJEMOS LOS RDS DE ERA5
   RDS_ERA5<- here::here('NUEVO/Data_ERA5/') %>% list.files(full.names = TRUE) %>% .[str_detect(.,'[:digit:]{4}')]
-  Df_ERA<- RDS_ERA5[1] %>% readRDS
+  #RDS_ERA5=RDS_ERA5[2]
+  Df_ERA<- RDS_ERA5[1] %>% readRDS #Esto no es muy robusto! Para mi RDS_ERA5[1] = "~/App_Anemometros/NUEVO/Data_ERA5/Data_2018.nc
+  #He tenido que borrar ese elemento de RDS_ERA5 por que readRDS no lee .nc (obviamente!S)
   
   #HACEMOS UNA TABLA CON LAS DISTANCIAS DE LOS PUNTOS
   Tabla_dist<- Df_ERA %>% group_split(lon,lat)%>% lapply(function(x){y<- cbind(x$lon %>% unique, x$lat %>% unique()) %>% 
