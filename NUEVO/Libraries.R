@@ -568,7 +568,7 @@ juntar_datos=function(datos1,datos2,interpolar=F,nombres_col_fechas=c("Date","Da
   return(datos3)
 }
 
-crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
+crear_tabla_cors_por_dirs=function(datos_juntos,porcentajes=T){
   
   #Esta función coge un data.frame de tipo datos_juntos (aquel donde se juntan las mediciones
   #de un anemos con las mediciones correspondientes de n puntos de era) y devuelve una tabla
@@ -576,7 +576,7 @@ crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
   #la columna llamada "Mean" como las mediciones de anemos y todas las que contengan "uv_wind"
   #como viento de era.
   
-  #Si añadir_porcentajes=T, se añade una columna extra que especifica que cantidad de las lineas
+  #Si porcentajes=T, se añade una columna extra que especifica que cantidad de las lineas
   #corresponden a cada dirección.
   
   #Comparar anemo con todos los puntos por direcciones
@@ -599,7 +599,7 @@ crear_tabla_cors_por_dirs=function(datos_juntos,añadir_porcentajes=T){
   row.names(cors_anemo_vs_puntos)=dirs
   
   #Bucle para porcentajes
-  if (añadir_porcentajes){
+  if (porcentajes){
     porcentajes_dir=c()
     for (i in 1:length(dirs)) {
       porcentajes_dir[i]=nrow(filter(datos_juntos,Dir==dirs[i]))*100/nrow(datos_juntos)
@@ -643,7 +643,7 @@ remixear_datos_juntos=function(datos_juntos){
   #conocer el punto de era con el que se ha completado cada linea.
   
   #Que punto vamos a usar para cada direccion?
-  cors_por_dirs=crear_tabla_cors_por_dirs(datos_juntos,añadir_porcentajes = F) #Tabla sin porcentajes!
+  cors_por_dirs=crear_tabla_cors_por_dirs(datos_juntos,porcentajes = F) #Tabla sin porcentajes!
   puntos_era_para_cada_dir=apply(cors_por_dirs,1, which.max)  #Esto devuelve un "named int": contiene tanto la direccion como el punto de era mas apropiado.
   
   #Construir datos_remix
@@ -1016,6 +1016,8 @@ plot_n_graficos=function(x,n=1,...,col=NULL,type=NULL,main="",leyenda=NULL){
         lines(x[valores],y[[j]][valores],col=col[j],type=type[j])
       }
     }
-    legend("topright",legend = leyenda,fill = col)
+    if (is.character(leyenda)) {  #Esto es para no intentar meter una leyenda erronea, o nula
+      legend("topright",legend = leyenda,fill = col)
+    }
   }
 }
