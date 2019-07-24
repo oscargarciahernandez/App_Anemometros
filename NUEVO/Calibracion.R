@@ -2,20 +2,8 @@ library(here)
 source(here::here("NUEVO/Libraries.R"))
 
 #Cargamos la mega tabla ERA5_df y la lista Anemometros----
-
-load(here::here("NUEVO/Data_anemometros/Anemometros.Rdata"))
-load(here::here("NUEVO/Data_ERA5/ERA5_df.Rdata"))  
-
-####CARGAMOS PERO TRABAJANDO CON RDS
-RDS<- FALSE
-if(RDS){
-  ERA5_df<- readRDS(here::here("NUEVO/Data_ERA5/ERA5_df.RDS"))
-  Anemometros<- readRDS(here::here('NUEVO/Data_anemometros/Anemometros.RDS'))
-  
-}
-
-
-
+ERA5_df<- readRDS(here::here("NUEVO/Data_ERA5/ERA5_df.RDS"))
+Anemometros<- readRDS(here::here('NUEVO/Data_anemometros/Anemometros.RDS'))
 
 #Datos_anemos:elegir anemo, crear, rellenar, filtrar----
 
@@ -59,8 +47,7 @@ N_na=which(rowSums(is.na(datos_anemos[,c(2,3,4)]))>0)
   #Berde = error segun filtro nivel 1 (valores negativos o muy altos)
   #Azul = error segun filtro nivel 2 (cambios demasiado bruscos)
   #Violeta = error segun filtro nivel 3 (viento sospechosamente estable)
-graphics.off()
-dev.off()
+
 n=nrow(datos_anemos)/10   #No hace falta redondear, los corchetes [] redondean siempre para abajo
 #n=nrow(datos_anemos)   #Para plotear todo junto
 for (i in seq(1,nrow(datos_anemos),n)) {
@@ -168,20 +155,22 @@ datos_era=readRDS(here::here(paste0("NUEVO/Data_calibracion/",anemo_elegido,"_er
 
 #Plotear datos_era----
 #Plotear de n en n
-graphics.off()
-dev.off()
-n=nrow(datos_era)/1   #No hace falta redondear, los corchetes [] redondean siempre para abajo
-#n=nrow(datos_era)   #Para plotear todo junto
-#NUestros datos estan ordenados cronologicamente! 
-for (i in seq(1,nrow(datos_era),n)) {
-  #layout(c(1,2))
-  #uv
-  plot(datos_era$uv_wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",col="grey",xlab="",ylab="uv_wind")
-  title(main = paste0(datos_era$Date[i]," - ",datos_era$Date[i+n-1]))
-  #wind
-  #plot(datos_era$wind[i:(i+n-1)],x = datos_era$Date[i:(i+n-1)],type="p",xlab="",ylab="wind")
+n=1
+cols_Date=grep('Date',colnames(datos_era))
+cols_uv_wind=grep('uv_wind',colnames(datos_era))
+if (length(cols_Date)==length(cols_uv_wind)) {
+  for (punto in 1:length(cols_Date)) {
+    plot_n_graficos(x=datos_era[,cols_Date[punto]],
+                    n=n,
+                    datos_era[,cols_uv_wind[punto]],
+                    main = paste0('Viento de punto numero ',punto,' de era'))
+    
+  }
+}else{
+  print('ERROR. Parece que datos_era no esta organizado como se esperaba. Por ello, no se ha ploteado.')
 }
-rm(n)
+rm(n,cols_Date,cols_uv_wind,punto)
+
 
 #Si da error "Error in plot.window(...) : need finite 'ylim' values", probar ploteando con n=nrow(datos_era).
 
@@ -213,7 +202,7 @@ Coordenadas_anemos$lat<- Coordenadas_anemos$lat %>% as.character() %>% str_repla
 #Ordenarlos de cercanos a lejanos
 Coordenadas_era=Coordenadas_era[order((Coordenadas_era$lon-Coordenadas_anemos[1,2])^2+(Coordenadas_era$lat-Coordenadas_anemos[1,1])^2),]
 #Coger los n mas cercanos
-n=4
+n=9
 Coordenadas_era=Coordenadas_era[1:n,]
 
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
@@ -247,28 +236,6 @@ for (i in grep("uv_wind",colnames(datos_juntos))) { #Vector: Numeros de columnas
 }
 rm(col_mean)
 
-#Comparar anemo con todos los puntos por direcciones
-cors_anemo_vs_puntos=crear_tabla_cors_por_dirs(datos_juntos)
-
-#Separar por direcciones de anemos (creo que esto queda obsoleto)
-datos_juntos_dir=list()
-dirs=unique(datos_juntos$Dir)      #Que direcciones tenemos en el anemo?
-dirs=dirs[-which(is.na(dirs))]  #Quitar NA
-dirs=as.numeric(dirs)           #ESTAN EN CHARACTER!  Cambiar a numerico para que se ordenen bien
-dirs=dirs[order(dirs)]          #Ordenar de menor a mayor
-for (i in 1:length(dirs)) {
-  datos_juntos_dir[[i]]=datos_juntos[which(datos_juntos$Dir==dirs[i]),]
-}
-names(datos_juntos_dir)=dirs       #Los elementos de la lista se llamaran como la direcion que les corresponde
-
-#Correlaciones por direcciones (creo que esto queda obsoleto)
-cors_dir=data.frame()  #Aqui iran las correlaciones correspondientes a cada direccion
-cors_dir[1:length(datos_juntos_dir),1]=names(datos_juntos_dir)  #Col 1=las direcciones
-for (i in 1:length(datos_juntos_dir)) {  
-  cors_dir[i,2]=cor(datos_juntos_dir[[i]]$uv_wind,datos_juntos_dir[[i]]$Mean,"na") #Col 2=las correlaciones
-  cors_dir[i,3]=nrow(datos_juntos_dir[[i]])*100/sum(unlist(lapply(datos_juntos_dir,nrow)))  #Col 3=porcentaje de datos en esa direccion
-}
-colnames(cors_dir)=c("Dir","cor","%")
 
 windRose(mydata = datos_juntos,ws="Mean",wd = "Dir",paddle = F)
 windRose(mydata = datos_juntos,ws="uv_wind",wd="uv_dwi",paddle = F)
@@ -300,4 +267,35 @@ plot(x=datos_juntos_dir$`247.5`$Date[200:500],y=datos_juntos_dir$`247.5`$Mean[20
 lines(x=datos_juntos_dir$`247.5`$Date[200:500],y=datos_juntos_dir$`247.5`$uv_wind[200:500],col="grey")
 lines(x=datos_juntos_dir$`247.5`$Date[200:500],y=k*datos_juntos_dir$`247.5`$uv_wind[200:500],col="black")
 
-#cut(datos_juntos_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_juntos_dir)),0)) 
+#cut(datos_juntos_dir[[1]]$uv_dwi, breaks = c(0,seq(11.5,349.5,22.5),360), labels = c(as.numeric(names(datos_juntos_dir)),0))
+
+#Analisis por direcciones
+datos_juntos$Dir=as.numeric(datos_juntos$Dir)
+dirs_anemo=unique(datos_juntos$Dir)
+dirs_anemo=sort(dirs_anemo)
+dirs_era=unique(unlist(((datos_juntos[,grep('uv_dwi',colnames(datos_juntos))])),use.names = F))
+dirs_era=sort(dirs_era)
+
+pos_uv_dwi=grep('uv_dwi',colnames(datos_juntos))
+
+dirs_anemo_vs_dirs_era=list()
+for (i in 1:length(pos_uv_dwi)) {  #i=index de columnas de viento de era, una por punto
+  dirs_anemo_vs_dirs_era[[i]]=data.frame()
+  for (j in 1:length(dirs_anemo)) {
+    for (k in 1:length(dirs_era)) {
+      dirs_anemo_vs_dirs_era[[i]][k,j]=sum((datos_juntos$Dir==dirs_anemo[j]) & datos_juntos[,pos_uv_dwi[i]]==dirs_era[k],na.rm = T)
+    }
+  }
+}
+sum(unlist(dirs_anemo_vs_dirs_era))/length(pos_uv_dwi)==nrow(datos_juntos)
+
+dirs_era_vs_dirs_anemo=list()
+for (i in 1:length(pos_uv_dwi)) {  #i=index de columnas de viento de era, una por punto
+  dirs_era_vs_dirs_anemo[[i]]=data.frame()
+  for (j in 1:length(dirs_anemo)) {
+    for (k in 1:length(dirs_era)) {
+      dirs_era_vs_dirs_anemo[[i]][k,j]=sum((datos_juntos$Dir==dirs_anemo[j]) & datos_juntos[,pos_uv_dwi[i]]==dirs_era[k],na.rm = T)
+    }
+  }
+}
+sum(unlist(dirs_era_vs_dirs_anemo))/length(pos_uv_dwi)==nrow(datos_juntos)
