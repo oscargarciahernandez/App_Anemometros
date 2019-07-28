@@ -353,7 +353,7 @@ filtrar_datos=function(datos_anemos,
   #Analizar los inputs.Errores?
   if (!is.data.frame(datos_anemos)) {stop("El input no es un dataframe")}
   if (nrow(datos_anemos)==0)  {stop("El dataframe esta vacio")}
-  if (sum(unlist(lapply(datos_anemos, class))!=c("POSIXct","POSIXt","numeric","numeric","character"))) {stop("Formato inadecuado")}
+  if (sum(unlist(lapply(datos_anemos, class))!=c("POSIXct","POSIXt","numeric","numeric","numeric"))) {stop("Formato inadecuado")}
   
   #Nivel 1 -- Fitros de viento medio
   N1_mean=c()
