@@ -56,17 +56,22 @@ for (col_era in grep('uv_wind',colnames(datos_juntos),value=T)) {
   }
 }
 
-#Graficar
-for (col_era in grep('uv_wind',colnames(datos_juntos),value=T)) {
-  i=regmatches(col_era, regexpr("\\d+", col_era))  #numero del punto de era
-  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos$uv_wind1,datos_juntos$qm1,leyenda = c("Mean","ERA","Cal"),main = "Punto 1")
+#Graficar punto por punto
+for (col_qm in grep('qm',colnames(datos_juntos),value=T)) {
+  i=regmatches(col_qm, regexpr("\\d+", col_qm))  #numero del punto de era
+  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos[,get(paste0('uv_wind',i))],datos_juntos[,get(col_qm)],leyenda = c("Mean",paste0("ERA",i),col_qm),main = paste0('Punto',i))
 }
+
+#Graficar todos los puntos, pero solo el calibrado y el anemo (codigo hecho para 9 puntos)
+plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,
+                datos_juntos$qm1,datos_juntos$qm2,datos_juntos$qm3,datos_juntos$qm4,datos_juntos$qm5,datos_juntos$qm6,datos_juntos$qm7,datos_juntos$qm8,datos_juntos$qm9,leyenda = c("Mean","qm1","qm2","qm3","qm4","qm5","qm6","qm7","qm8","qm9"),col = 'black')
 
 #Medidas
 for (col_era in grep('uv_wind',colnames(datos_juntos),value=T)) {
   i=regmatches(col_era, regexpr("\\d+", col_era))  #numero del punto de era
-  print(paste0('Medidas punto ',i))
+  print(paste0('Punto ',i,' a pelo vs anemo'))
   print(accuracy(datos_juntos$Mean,datos_juntos[,get(col_era)]))
+  print(paste0('Punto ',i,' calibrado vs anemo'))
   print(accuracy(datos_juntos$Mean,datos_juntos[,get(paste0('qm',i))]))
   print('----------------------')
 }
