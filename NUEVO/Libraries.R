@@ -664,7 +664,8 @@ remixear_datos_juntos=function(datos_juntos){
 #Descargar mapas seteando coordenadas
 download_maps<- function(ul,lr, 
                          maptyp=NULL,
-                         res=40){
+                         res=40,
+                         PATH_TO_DOWNLOAD){
   if(is.character(maptyp)){
     maptypes<- maptyp
   }else{
@@ -699,8 +700,8 @@ download_maps<- function(ul,lr,
         map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
         rm(map1)
        
-        if(!dir.exists(here::here("NUEVO/Mapas/"))){dir.create(here::here("NUEVO/Mapas/"))}
-        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        if(!dir.exists(PATH_TO_DOWNLOAD)){dir.create(PATH_TO_DOWNLOAD)}
+        dirpath<- paste0(PATH_TO_DOWNLOAD,ul[1],"_",lr[2],"/")
         
         if(!dir.exists(dirpath)){dir.create(dirpath)}
         
@@ -733,7 +734,7 @@ download_maps<- function(ul,lr,
     map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
     rm(map1)
     
-    dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+    dirpath<- paste0(PATH_TO_DOWNLOAD,ul[1],"_",lr[2],"/")
     
     if(!dir.exists(dirpath)){dir.create(dirpath)}
     saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes,res,".RDS"))
@@ -766,6 +767,23 @@ map_wpoints<- function(map.latlon,
   
 }
 
+
+map_anemo_point<- function(map.latlon,
+                       Coord_anemo){
+  pmap<-autoplot(map.latlon)+
+    geom_point(data = Coord_anemo, aes(lon,lat),shape=21,
+               size=3, colour="black", fill="red")+
+    theme(axis.line=element_blank(),axis.text.x=element_blank(),
+          axis.text.y=element_blank(),axis.ticks=element_blank(),
+          axis.title.x=element_blank(),
+          axis.title.y=element_blank(),legend.position="none",
+          panel.background=element_blank(),panel.border=element_blank(),panel.grid.major=element_blank(),
+          panel.grid.minor=element_blank(),plot.background=element_blank())
+  
+  print(pmap)
+  return(pmap)
+  
+}
 
 #Rosa de los vientos para plotear sobre mapas
 plot.windrose <- function(data,
@@ -918,8 +936,8 @@ WR_parameters<- function(data,
 
 
 
-find_mapfolder<- function(){
-  map_folder<- list.dirs(here::here("NUEVO/Mapas/"))
+find_mapfolder<- function(PATH_MAPS){
+  map_folder<- list.dirs(PATH_MAPS)
   map_folder1<- str_split(map_folder, "/")
   map_folder2<- map_folder[str_detect(sapply(map_folder1, function(x) x[length(x)]),"[[:digit:]]")]
   return(map_folder2)

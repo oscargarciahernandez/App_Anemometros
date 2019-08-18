@@ -53,8 +53,8 @@ def req(year):
 from multiprocessing import Pool
 
 if __name__ == "__main__":
-    r = Pool(len(np.arange(2018, 2020)))
-    r.map(req, list(map(str, np.arange(2018, 2020))))
+    r = Pool(len(np.arange(2019, 2020)))
+    r.map(req, list(map(str, np.arange(2019, 2020))))
 
 
 

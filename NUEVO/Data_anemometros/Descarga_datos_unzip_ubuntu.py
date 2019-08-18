@@ -1,4 +1,4 @@
-﻿#EXPLICACI0N
+#EXPLICACI0N
 #Este script contiene las funciones necesarias para bajar los cvs
 
 
@@ -29,10 +29,13 @@ def conseguir_ids():
        #Esta funcion muestra la id de cada sensor
        #Devuelve el vetor ids
        
+       # PHONE ID1: 640689911849
+       # PHONE IDI2: 711105842261
+       
        import requests
        import re
        
-       url="https://measurements.mobile-alerts.eu/Home/SensorsOverview?phoneid=640689911849"
+       url="https://measurements.mobile-alerts.eu/Home/SensorsOverview?phoneid=711105842261"
        codigo_html=requests.get(url).text
        pattern=re.compile('<a href="/Home/MeasurementDetails\?deviceid='
                          '.+'
@@ -79,11 +82,12 @@ def bajar_cvs(fechainicio,fechafinal,id_sensor,driver):
        #IMPORTANTE. Esto es un parche para el proble de MobileAlerts de cuando
        #pusieron la fecha como el culo (mes/dia/año)
        fechainicio=fechainicio[3:6]+fechainicio[0:3]+fechainicio[6:]
+       fechafinal= fechafinal[3:6]+fechafinal[0:3]+fechafinal[6:]
        #IMPORTANTE. Fin del parche.
        
        #Vamos a mirar el codigo html de la pagina web donde nos salen todos los
        #sensores, y ver que url le corressponde a id_sensor
-       url_menu="https://measurements.mobile-alerts.eu/Home/SensorsOverview?phoneid=640689911849"
+       url_menu="https://measurements.mobile-alerts.eu/Home/SensorsOverview?phoneid=711105842261"
        codigo_html=requests.get(url_menu).text
        if isinstance(id_sensor,int):
               pattern=re.compile('<a href="/Home/MeasurementDetails\?deviceid='
@@ -114,8 +118,14 @@ def bajar_cvs(fechainicio,fechafinal,id_sensor,driver):
        cajatexto_fechafinal.clear()   #Vaciar la segunda cajetilla
        cajatexto_fechainicio.send_keys(fechainicio)  #Escribir fechainicio en la primera cajetilla
        cajatexto_fechafinal.send_keys(fechafinal)    #Escribir fechafinal en la segunda cajetilla
-       boton_exportar=driver.find_element_by_css_selector("button.btn:nth-child(11)")
+       
+       #boton_refresh=driver.find_element_by_css_selector("button.btn:nth-child(10)")
+       #boton_refresh.click()
+       #time.sleep(5)
+       
+       boton_exportar=WebDriverWait(driver, 10).until(EC.visibility_of_element_located((By.CSS_SELECTOR, "button.btn:nth-child(11)")))
        boton_exportar.click()
+       time.sleep(10)
 
 def crear_driver():
        #Esta funcion crea el objeto driver de selenium. Tiene el directorio de
@@ -141,6 +151,10 @@ import datetime
 import os
 import numpy as np
 import zipfile
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time 
 
 path_registro=conseguir_path_app_anemometros() + '/NUEVO/Data_anemometros/TABLA_REGISTRO.csv'
 with open(path_registro,'rt') as csvfile:        #He cambiado 'rb' por 'rt'. Daba error.
@@ -151,7 +165,7 @@ path_data_anemometros=conseguir_path_app_anemometros() + '//NUEVO/Data_anemometr
 os.chdir(path_data_anemometros)
 driver=crear_driver()
 
-for x in [1,2,3]:
+for x in [1,2,4]:
     id_sensor= data[x][0]    #Aqui tenias puesto phone_id pero no es correcto y
     #puede crear confusiones (mezclaba la id del telefono, que es igual para
     #todos los sensores, con la id de cada sensor)
@@ -161,6 +175,7 @@ for x in [1,2,3]:
     fecha_fin=fecha_ahora.strftime("%d/%m/%Y") 
     
     bajar_cvs(fecha_ini,fecha_fin,id_sensor,driver)
+    time.sleep(15)
     
 driver.close()
 

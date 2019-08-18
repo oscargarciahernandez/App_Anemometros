@@ -18,7 +18,7 @@ if (!exists("t_reg")) {
 #ENSAÑAMOS LOS ANEMOMETROS DISPONIBLES Y ELEGIMOS UNO
 levels(t_reg$ID)  
 
-anemo_elegido="0B38DAE79059"
+anemo_elegido="0B76C7C0FD4F"
 
 #RELLENAMOS HUECOS
 datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==as.character(anemo_elegido))]])

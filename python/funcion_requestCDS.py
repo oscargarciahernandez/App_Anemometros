@@ -1,16 +1,17 @@
 import numpy
 import cdsapi
 
+
 def req(year):
     import cdsapi
     c = cdsapi.Client()
     c.retrieve(
     'reanalysis-era5-single-levels',
     {
-        'variable':[
-            '10m_u_component_of_neutral_wind','10m_u_component_of_wind','10m_v_component_of_neutral_wind',
-            '10m_v_component_of_wind','10m_wind_direction','10m_wind_gust_since_previous_post_processing',
-            '10m_wind_speed','2m_temperature','instantaneous_10m_wind_gust'
+        'variable': [
+                '100m_u_component_of_wind','100m_v_component_of_wind','10m_u_component_of_neutral_wind',
+            '10m_u_component_of_wind','10m_v_component_of_neutral_wind','10m_v_component_of_wind',
+            '10m_wind_gust_since_previous_post_processing','instantaneous_10m_wind_gust'
         ],
         'product_type':'reanalysis',
         'year': year,

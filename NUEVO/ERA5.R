@@ -37,9 +37,11 @@ if(HACER_HISTORICO){
     data_ERA_ls<- Formato_fecha_ERA(data_ERA_ls)
     
     #Convertir de lista a data.frame. PROBLEMAS CON LA RAM
+    #IMPORTANTE... SI DA ERROR SE SOLUCIONA CON LA FUNCION ls_to_df_ERA_2019
     ERA5_df<- ls_to_df_ERA(data_ERA_ls)
     
     #metemos las etiquetas de direccion y redondeamSos los valores
+    #IMPORTANTE... SI DA ERROR SE SOLUCIONA CON LA FUNCION Dirlab_round_ERA_2019
     ERA5_df<-Dirlab_round_ERA(ERA5_df)
     
     file_name<- ERA5_file %>% str_split("/") %>% .[[1]] %>%
@@ -125,7 +127,7 @@ if(!file.exists(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))){
 
 
 # CREAMOS VECTOR ERA5 PARA QUANTILE MAPPING -------------------------------
-CREAR_VECTOR_ERA5_79_19<- FALSE
+CREAR_VECTOR_ERA5_79_19<- TRUE
 
 if(CREAR_VECTOR_ERA5_79_19){
   
