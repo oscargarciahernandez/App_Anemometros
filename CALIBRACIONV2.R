@@ -29,7 +29,7 @@ datos_anemos=datos_anemos[order(datos_anemos$Date),]
 #FILTRAMOS DATOS ANEMOS
 #ME DEVULVE ERROR PORQUE NECESITA QUE LA COLUMNA DIR SEA CHARACTER??? 
 
-datos_anemos$Dir<-as.character(datos_anemos$Dir)
+#datos_anemos$Dir<-as.character(datos_anemos$Dir)
 lista_pos_errores=filtrar_datos(datos_anemos,desglosar = TRUE)
 
 
@@ -64,7 +64,7 @@ datos_anemos=datos_anemos[-(1:which(datos_anemos$Date < filter(t_reg,ID==anemo_e
 
 #PONEMOS EN FORMATO LOS DATOS DE LOS ANEMOMETROSE
 #CARGAMOS COORDENADAS ANEMOS Y ELIMINAMOS LAS COMAS
-Coordenadas_anemos=filter(t_reg,ID==anemo_elegido) %>% select(lon,lat)  #Primero lon, luego lat
+Coordenadas_anemos<- filter(t_reg,ID==anemo_elegido) %>% dplyr::select(lon,lat)  #Primero lon, luego lat
 Coordenadas_anemos$lon<- Coordenadas_anemos$lon %>% as.character() %>% str_replace(",",".") %>% as.numeric()
 Coordenadas_anemos$lat<- Coordenadas_anemos$lat %>% as.character() %>% str_replace(",",".") %>% as.numeric()
 
@@ -77,7 +77,7 @@ datos_anemos$lon<- rep(Coordenadas_anemos$lon, nrow(datos_anemos))
 datos_anemos$lat<- rep(Coordenadas_anemos$lat, nrow(datos_anemos))
 
 #CREAMOS ANEMOS TABLA PARA NO JODER DATOS ANEMOS
-ANEMOS_TABLA<- datos_anemos[,c(1,5,6,2,4,3)]
+ANEMOS_TABLA<- datos_anemos[,c("Date","lon","lat", "Mean", "Dir","Gust")]
 colnames(ANEMOS_TABLA)<-c("Date","lon","lat", "WS", "WD","WSMAX")
 
 #CREAMOS TABLA HORARIA EN LOS ANEMOMETROS
@@ -125,12 +125,13 @@ REPLACE_NNONA <- function(dat) {
   return(dat)
 }
 
-ANEMOS_TABLA_ADDROWS<-ANEMOS_TABLA_ADDROWS  %>% mutate(WS_l= na.interpolation(.$WS, "linear"),
-         WS_sp= na.interpolation(.$WS, "spline"),
-         WS_st= na.interpolation(.$WS, "stine"),
+ANEMOS_TABLA_ADDROWS<-ANEMOS_TABLA_ADDROWS  %>% 
+  mutate(WS_l= na.interpolation(.$WS, "linear"),
+         #WS_sp= na.interpolation(.$WS, "spline"),
+         #WS_st= na.interpolation(.$WS, "stine"),
          WSMAX_l= na.interpolation(.$WSMAX, "linear"),
-         WSMAX_sp= na.interpolation(.$WSMAX, "spline"),
-         WSMAX_st= na.interpolation(.$WSMAX, "stine"),
+         #WSMAX_sp= na.interpolation(.$WSMAX, "spline"),
+         #WSMAX_st= na.interpolation(.$WSMAX, "stine"),
          WS_N=REPLACE_NNONA(.$WS),
          WSMAX_N=REPLACE_NNONA(.$WSMAX),
          WD_N=REPLACE_NNONA(.$WD))
@@ -140,7 +141,7 @@ ANEMOS_TABLA_ADDROWS<-ANEMOS_TABLA_ADDROWS  %>% mutate(WS_l= na.interpolation(.$
 
 #GUARDAMOS DATOS ANEMOS LIMPIOS 
 path_anemo<- here::here('NUEVO/Data_calibracion/') %>% paste0(anemo_elegido)
-ifelse(dir.exists(path_anemo),NA, dir.create(path_anemo,recursive = T))
+ifelse(dir.exists(path_anemo),('YA EXISTE EL DIRECTORIO'), dir.create(path_anemo,recursive = T))
 
 #GUARDAMOS EL ARCHIVO CON EL IDENTIFICADOR DEL ANEMOMETRO Y CON LA ULTIMA FECHA CONTENIDA EN 
 # LA TABLA
@@ -168,7 +169,7 @@ if (!exists("Coordenadas_era")) {
 }
 
 #COJEMOS LOS N PUNTOS DE ERA MÁS CERCANOS
-n=9
+n=50
 Coordenadas_era_cercanas=Coordenadas_era[order(distm(Coordenadas_era, 
                                                      Coordenadas_anemos, 
                                                      fun = distHaversine)[,1]),] %>% 
@@ -178,19 +179,41 @@ Coordenadas_era_cercanas=Coordenadas_era[order(distm(Coordenadas_era,
 ERA5_df_CERCANOS=filter(ERA5_df,
                         lat %in% Coordenadas_era_cercanas$lat,
                         lon %in% Coordenadas_era_cercanas$lon) %>% 
-  select(Date,"lon",lat,"uv_wind",uv_dwi)
+  dplyr::select(Date,lon,lat,uv_wind,uv_dwi)
 colnames(ERA5_df_CERCANOS)<- c("Date", "ERAlon",
                                "ERAlat","ERAWS","ERAWD")
 
 
-#LEY LOGARITMICA PARA MODIFICAR LA ALTURA DEL PUNTO DE ERA5
-zo=3 # RUGOSIDAD
-z=155 + 3.5*6 + 1.5 #ALTURA ANEMO
-zr=401 + 10 #ALTURA ERA
-k=log(z/zo)/log(zr/zo)  #FACTOR K
+library(rgbif)
+ALTURA_ANEMO<- elevation(longitude = Coordenadas_anemos$lon,
+                         latitude = Coordenadas_anemos$lat, 
+                         username = 'proyectoroseo')
 
-ERA5_df_CERCANOS$ERAWS<- ERA5_df_CERCANOS$ERAWS*k
+ERA_LIST<- ERA5_df_CERCANOS %>% group_by(ERAlat, ERAlon) %>% group_split()
 
+
+ERA_LIST_CORRECTED<-list()
+for(i in 1:length(ERA_LIST) ){
+  ERA_DATA<- ERA_LIST[[i]]
+  
+  ALTURA_ERA<- elevation(longitude =ERA_DATA$ERAlon %>% unique(),
+                                        latitude = ERA_DATA$ERAlat %>% unique(), 
+                                        username = 'proyectoroseo')
+  
+  #LEY LOGARITMICA PARA MODIFICAR LA ALTURA DEL PUNTO DE ERA5
+  zo=2 # RUGOSIDAD
+  z=ALTURA_ANEMO$elevation_geonames #ALTURA ANEMO
+  zr=ifelse(ALTURA_ERA$elevation_geonames<0,
+            0,
+            ALTURA_ERA$elevation_geonames) + 10 #ALTURA ERA
+
+  k=log(z/zo)/log(zr/zo)  #FACTOR K
+  
+  ERA_DATA$ERAWS_CORRECTED<- ERA_DATA$ERAWS*k
+  ERA_LIST_CORRECTED[[i]]<- ERA_DATA
+}
+
+ERA5_df_CERCANOS<- ERA_LIST_CORRECTED %>% bind_rows()
 
 # JUNTAMOS DATOS DE ERA5 Y ANEMOMETROS ------------------------------------
 
@@ -210,6 +233,11 @@ nombre_archivo<- paste0("ERA5_",
                         DATOS_JUNTOS$Date %>% max() %>% 
                           str_split(" ") %>% .[[1]] %>% .[1], ".RDS")
 saveRDS(DATOS_JUNTOS,paste0(path_anemo, "/",nombre_archivo) )
+
+
+
+
+
 
 
 

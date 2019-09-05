@@ -324,6 +324,8 @@ bind_width<- 0.25
 
 DATOS_weibull<- DATOS_INPUT %>% .[complete.cases(.), ] 
 DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull$ERAWS<- ifelse(DATOS_weibull$ERAWS==0,NA,DATOS_weibull$ERAWS) 
+
 DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
 
 DIST_WEIBULL_p<- ggplot() + 
@@ -497,12 +499,21 @@ return(DATOS_weibull)
 
 Sin miedo, este gráfico interactivo tiene el propósito de permitirnos interactuar con nuestros datos, como una manera de poder entender mejor como se comportan. Después se irán presentando los resultados previos a la calibración del bias. Empleando diferentes métodos. 
 
-```{r echo=FALSE, eval=FALSE}
+```{r echo=FALSE, eval=TRUE}
 ### CARGAMOS DATOS
 DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
 
-DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
-  .[str_detect(., "ERA5")] %>% readRDS()
+ERA5_FILES<-  DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")]
+
+DATES_FILES<- ERA5_FILES %>% sapply(function(x){
+  filename<- str_split(x, '/') %>% .[[1]] %>% .[length(.)]
+  date_filename<- str_replace(filename, 'ERA5_', '') %>% str_replace(. , '.RDS','') %>% ymd()
+  date_filename
+})
+
+
+DATOS_JUNTOS<- ERA5_FILES[which.max(DATES_FILES)] %>% readRDS()
 
 
 DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
@@ -853,8 +864,17 @@ A continuación se presentan las gráficas de distrubución de velocidades y su 
 
 DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
 
-DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
-  .[str_detect(., "ERA5")] %>% readRDS()
+ERA5_FILES<-  DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")]
+
+DATES_FILES<- ERA5_FILES %>% sapply(function(x){
+  filename<- str_split(x, '/') %>% .[[1]] %>% .[length(.)]
+  date_filename<- str_replace(filename, 'ERA5_', '') %>% str_replace(. , '.RDS','') %>% ymd()
+  date_filename
+})
+
+
+DATOS_JUNTOS<- ERA5_FILES[which.max(DATES_FILES)] %>% readRDS()
 
 
 DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
@@ -883,7 +903,7 @@ WEIBULL_PLOT(DATOS_INPUT =DATOS_PLOT)
 
 # DIAGRAMAS DE TAYLOR
 
-A continuación se presentan los diagramas de taylor empleando diferentes estratégias. esto nos permite ver en un solo gráfico el RMSE, ORRELACION Y DESVIACIÓN ESTANDAR 
+A continuación se presentan los diagramas de taylor empleando diferentes estratégias. esto nos permite ver en un solo gráfico el RMSE, CORRELACION Y DESVIACIÓN ESTANDAR 
 
 ## SIN FILTRADO
 
@@ -1398,11 +1418,19 @@ A continuación se empezarán a presentar las pruebas realizadas para realizar l
 
 ```{r eval=TRUE, results='hide',fig.keep='all'}
 
-
 DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
 
-DATOS_JUNTOS<- DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
-  .[str_detect(., "ERA5")] %>% readRDS()
+ERA5_FILES<-  DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")]
+
+DATES_FILES<- ERA5_FILES %>% sapply(function(x){
+  filename<- str_split(x, '/') %>% .[[1]] %>% .[length(.)]
+  date_filename<- str_replace(filename, 'ERA5_', '') %>% str_replace(. , '.RDS','') %>% ymd()
+  date_filename
+})
+
+
+DATOS_JUNTOS<- ERA5_FILES[which.max(DATES_FILES)] %>% readRDS()
 
 
 DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
@@ -1457,6 +1485,13 @@ ggplot(data = DATOS_weibull1 %>%  filter(month(Date)==2, week(Date)==6)) +
                  as.vector(DATOS_weibull1$ERAWS),add = TRUE, col = "red")
  taylor.diagram(as.vector(DATOS_weibull1$WS_N), 
                  as.vector(DATOS_weibull1$CALIB),add = TRUE, col= "darkgreen")
+ 
+ lpos<-1.5*sd(DATOS_weibull1$WS_N)
+# add a legend
+legend(lpos-0.3,lpos,legend=c('ERA5 sin calibrar',
+                              'ERA5 calibrado'),
+       pch = 19,
+       col=c('red', 'darkgreen'))
 ```
 
 

@@ -1,0 +1,805 @@
+---
+title: "Quantile mapping calibration"
+author: "Oscar Garcia Hernandez"
+date: "2/9/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      eval=FALSE,
+                      warning = FALSE,
+                      fig.align = "center",
+                      message = FALSE)
+library(knitr)
+```
+
+
+```{r eval=TRUE}
+source(here::here('NUEVO/Libraries.R'))
+library(MASS)
+```
+
+```{r eval=TRUE}
+download_maps<- function(ul,lr, 
+                         maptyp=NULL,
+                         res=40){
+  
+  #SI NO INTRODUCIMOS TIPO DE MAPA SE DESCARGAN LOS SIGUIENTES MAPAS
+  if(is.character(maptyp)){
+    maptypes<- maptyp
+  }else{
+    maptypes<- c("waze", "bing",
+                 "esri","esri-topo", "nps", 
+                 "apple-iphoto", "skobbler",
+                 "hillshade")
+  }
+  
+  
+  if(length(maptypes)>1){
+    res1<- res
+    for (i in 1:length(maptypes)) {
+      res<- res1
+      
+      
+      tryCatch({
+        while(TRUE){
+          tryCatch({
+            map1<- openmap(ul,lr, minNumTiles=res,
+                           type=maptypes[i],
+                           zoom=NULL)
+            
+          },error=function(e){cat("Error Java")})
+          
+          if(!exists("map1")){
+            res<- res-1
+            print("Bajando minNumtiles")
+            if(res<1){break}
+          }else{
+            print(paste0(maptypes[i],": Descargado con minNumtiles=", res))
+            break}
+        }
+        map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+        rm(map1)
+       
+        if(!dir.exists(here::here("NUEVO/Mapas/"))){dir.create(here::here("NUEVO/Mapas/"))}
+        dirpath<- here::here(paste0("NUEVO/Mapas/",ul[1],"_",lr[2],"/"))
+        
+        if(!dir.exists(dirpath)){dir.create(dirpath)}
+        
+        saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes[i],res,".RDS"))
+        print(paste0("Guardado ",paste0(dirpath,"/",maptypes[i],res,".RDS")))
+        rm(map1) 
+          
+       
+      }, error=function(e){print(paste0(maptypes[i],": No descargado"))})
+    }
+    
+  }else{
+    while(TRUE){
+      tryCatch({
+        #INTENTAMOS DESCARGAR MAPA Y SI HAY FALLO BAJAMOS LA RESOLUCION Y VOLVEMOS A INTENTAR
+        map1<- openmap(ul,lr, minNumTiles=res,
+                      type=maptypes,
+                      zoom=NULL)
+        
+      },error=function(e){cat("Error Java")})
+      
+      
+      if(!exists("map1")){
+        res<- res-1
+        print("Bajando minNumtiles")
+        if(res<1){break}
+      }else{
+        print(paste0(maptypes,": Descargado con minNumtiles=", res))
+        break}
+    }
+    
+    #TRANSFORMACION DE COORDEANDAS PARA TENERLO EN FORMATO "NORMAL"
+    map.latlon <- openproj(map1, projection = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs")
+    rm(map1)
+    
+    
+    #CREAMOS DIRECTORIO
+    dir_raiz<- here::here("Mapas/")
+    dirpath<- paste0(dir_raiz,ul[1],"_",lr[2],"/")
+    
+    if(!dir.exists(dirpath)){dir.create(dirpath, recursive = T)}
+    
+    #GUARDAMOS MAPA
+    saveRDS(map.latlon, file=paste0(dirpath,"/",maptypes,res,".RDS"))
+    return(paste0(dirpath,"/",maptypes,res,".RDS"))
+      
+    }
+    
+}
+
+
+
+
+plot.windrose <- function(data,
+                          spd,
+                          dir,
+                          spdres = 0.5,
+                          dirres = 22.5,
+                          spdmin = 0,
+                          spdmax = 15,
+                          spdseq = NULL,
+                          palette,
+                          countmax = NA,
+                          opacity=0.6,
+                          border_color="NA",
+                          border_size=0.001){
+  
+  
+  # Look to see what data was passed in to the function
+  if (is.numeric(spd) & is.numeric(dir)){
+    # assume that we've been given vectors of the speed and direction vectors
+    data <- data.frame(spd = spd,
+                       dir = dir)
+    spd = "spd"
+    dir = "dir"
+  }
+  # Tidy up input data ----
+  n.in <- NROW(data)
+  dnu <- (is.na(data[[spd]]) | is.na(data[[dir]]))
+  data[[spd]][dnu] <- NA
+  data[[dir]][dnu] <- NA
+  data<-data[,c(spd,dir)]
+  
+  # figure out the wind speed bins ----
+  if (missing(spdseq)){
+    spdseq <- seq(spdmin,spdmax,spdres)
+  } 
+  # get some information about the number of bins, etc.
+  n.spd.seq <- length(spdseq)
+  n.colors.in.range <- n.spd.seq - 1
+  
+  # create the color map
+  spd.colors <- colorRampPalette(brewer.pal(min(max(3,n.colors.in.range),
+                                                min(9,n.colors.in.range)),
+                                            palette ))(n.colors.in.range)
+  
+  if (max(data[[spd]],na.rm = TRUE) > spdmax){    
+    spd.breaks <- c(spdseq,
+                    max(data[[spd]],na.rm = TRUE))
+    spd.labels <- c(paste(c(spdseq[1:n.spd.seq-1]),
+                          '-',
+                          c(spdseq[2:n.spd.seq])),
+                    paste(spdmax,
+                          "-",
+                          max(data[[spd]],na.rm = TRUE)))
+    spd.colors <- c(spd.colors, "grey50")
+  } else{
+    spd.breaks <- spdseq
+    spd.labels <- paste(c(spdseq[1:n.spd.seq-1]),
+                        '-',
+                        c(spdseq[2:n.spd.seq]))    
+  }
+  data$spd.binned <- cut(x = data[[spd]],
+                         breaks = spd.breaks,
+                         labels = spd.labels,
+                         ordered_result = TRUE)
+  # clean up the data
+  data <- na.omit(data)
+  
+  # figure out the wind direction bins
+  dir.breaks <- c(-dirres/2,
+                  seq(dirres/2, 360-dirres/2, by = dirres),
+                  360+dirres/2)  
+  dir.labels <- c(paste(360-dirres/2,"-",dirres/2),
+                  paste(seq(dirres/2, 360-3*dirres/2, by = dirres),
+                        "-",
+                        seq(3*dirres/2, 360-dirres/2, by = dirres)),
+                  paste(360-dirres/2,"-",dirres/2))
+  # assign each wind direction to a bin
+  dir.binned <- cut(data[[dir]],
+                    breaks = dir.breaks,
+                    ordered_result = TRUE)
+  levels(dir.binned) <- dir.labels
+  data$dir.binned <- dir.binned
+  
+  
+  
+  # deal with change in ordering introduced somewhere around version 2.2
+  if(packageVersion("ggplot2") > "2.2"){    
+    cat("ggplot2 version > V2.2")
+    data$spd.binned = with(data, factor(spd.binned, levels = rev(levels(spd.binned))))
+    spd.colors = rev(spd.colors)
+  }
+  
+  # create the plot ----
+  p.windrose <- ggplot(data = data,
+                       aes(x = dir.binned,
+                           fill = spd.binned)) +
+    geom_bar(width = 1,color=border_color, size=border_size, alpha=opacity) + 
+    scale_x_discrete(drop = FALSE,
+                     labels = waiver()) + 
+    theme(legend.position = "none",
+          plot.background = element_rect(fill= "transparent", colour= NA),
+          panel.background = element_rect(fill= "transparent", colour = NA),
+          panel.grid.major = element_line(colour = "NA"), 
+          axis.line = element_line(colour = NA),
+          axis.text.y=element_blank(), 
+          axis.ticks.y = element_blank(), 
+          axis.text.x = element_blank()) +
+    xlab("")+ ylab("") +
+    coord_polar(start = -((dirres/2)/360) * 2*pi)+
+    scale_fill_manual(name = "Wind Speed (m/s)", 
+                      values = spd.colors,
+                      drop = FALSE)
+  
+  # adjust axes if required
+  if (!is.na(countmax)){
+    p.windrose <- p.windrose +
+      ylim(c(0,countmax))
+  }
+  
+  # print the plot
+  print(p.windrose)  
+  
+  # return the handle to the wind rose
+  return(p.windrose)
+}
+
+WR_parameters2<- function(data,
+                         anchura=0.06, 
+                         opacidad=0.5, 
+                         paleta,
+                         lon_pos,
+                         lat_pos,
+                         spd_name,
+                         dir_name,
+                         border_size=0.5){
+  p_ros<-data %>% group_by(., lon,lat)%>% do(subplots = plot.windrose(., spd = spd_name,
+                                    dir=dir_name,
+                                    dirres = 22.5,
+                                    spdseq= c(0,0.3,1,2,3,5,7,10,15,20),
+                                    palette = paleta,
+                                    opacity = opacidad,
+                                    border_color = "white",
+                                    border_size = border_size)) %>%
+  mutate(subgrobs = list(annotation_custom(ggplotGrob(subplots),
+                                           x = lon_pos-anchura,      # change from 1 to other 
+                                           y = lat_pos-anchura,      # values if necessary,
+                                           xmax = lon_pos+anchura,   # depending on the map's
+                                           ymax = lat_pos+anchura))) # resolution.
+
+
+  
+  return(p_ros)
+}
+
+
+#A LA FUNCION DE WEIBULL PLOT HAY QUE METER UN DATAFRAME QUE CONTENGA 
+# COLUMNA ERAWS= velocidad del viento era
+# COLUMNA WS_N= velocidad del viento anemo
+
+#POR DEFECTO DEVUELVE LA ACUMULADA Y LA DISTRIBUIDA... SE PUEDEN PONER A FALSE
+# CUALQUIERA DE LOS DOS
+
+#PRIMERO DEFINIMOS FUNCIONES BÁSICAS
+fitweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=2))
+  return(dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2]))
+}
+
+  cdweibull <- function(column, bind_anch) {
+  x <- seq(0,10,by=bind_anch)
+  fitparam <- column %>%
+    fitdistr(densfun=dweibull,start=list(scale=1,shape=1))
+  dd<- dweibull(x, scale=fitparam$estimate[1], shape=fitparam$estimate[2])
+  dd <- cumsum(dd) * c(0, diff(x))
+  return(dd)
+}
+
+
+WEIBULL_PLOT<- function(DATOS_INPUT, ACUMULATED= TRUE, 
+                        DISTRIBUTION= TRUE, 
+                        CALIBRATED= FALSE, 
+                        TOTAL_VECTOR= NULL){
+
+bind_anch_dist<- 0.25
+bind_anch_acum<- 0.01
+bind_width<- 0.25
+
+
+DATOS_weibull<- DATOS_INPUT %>% .[complete.cases(.), ] 
+DATOS_weibull$WS_N<- ifelse(DATOS_weibull$WS_N==0,NA,DATOS_weibull$WS_N) 
+DATOS_weibull$ERAWS<- ifelse(DATOS_weibull$ERAWS==0,NA,DATOS_weibull$ERAWS) 
+
+DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.), ]
+
+DIST_WEIBULL_p<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch_dist) +
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch_dist)+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch_dist)))+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch_dist)))
+
+
+x<- ggplot_build(DIST_WEIBULL_p)
+dist_count_maxERA<- x$data[[1]]$count %>% max()
+dist_count_maxA <-x$data[[2]]$count %>% max()
+shape_factorERA<- (dist_count_maxERA)/x$data[[3]]$y %>% max()
+shape_factorA<- (dist_count_maxA)/x$data[[4]]$y %>% max()
+
+
+
+
+ACUM_WEIBULL_p<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width)+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width)+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch_acum)))+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch_acum)))
+
+x<- ggplot_build(ACUM_WEIBULL_p)
+count_max<- c(x$data[[1]]$count %>% max(),x$data[[2]]$count %>% max()) %>% max()
+dens_max<- c(x$data[[3]]$y %>% max(),x$data[[4]]$y %>% max()) %>% max()
+shape_factor_acum<- count_max/dens_max
+
+
+
+
+DIST_WEIBULL<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_anch_dist,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_anch_dist,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch_dist)*shape_factorERA), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch_dist)*shape_factorA), col="darkblue")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Speed distribution and Weibull fit", hjust = 0.5))+
+  theme_light()
+
+
+  DIST_WEIBULL_WITHOUT_BARS<- ggplot() + 
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$ERAWS, bind_anch_dist)), col='red')+
+  geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                y=fitweibull(DATOS_weibull$WS_N, bind_anch_dist)),  col='blue')+
+    ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Weibull fit", hjust = 0.5))+
+  theme_light()
+
+
+
+ACUM_WEIBULL<- ggplot() + 
+  geom_histogram(data= DATOS_weibull, 
+                 aes(x=ERAWS),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="red")+
+  geom_histogram(data=DATOS_weibull,
+                 aes(x=WS_N),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="blue")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$ERAWS, bind_anch_acum)*shape_factor_acum), col="darkred")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$WS_N, bind_anch_acum)*shape_factor_acum), col="darkblue")+
+  ylab("")+
+  xlab("Wind Speed [m/s]")+
+  labs(title = element_text("Acumulated weibull distribution", hjust = 0.5))+
+  theme_light()
+
+if(CALIBRATED){
+  
+  DATOS_weibull$CALIB<- ifelse(DATOS_weibull$CALIB==0,NA,DATOS_weibull$CALIB)
+  DATOS_weibull<- DATOS_weibull %>% .[complete.cases(.),]
+  DIST_WEIBULL<- DIST_WEIBULL + geom_histogram(data=DATOS_weibull,
+                                               aes(x=CALIB),
+                                               binwidth = bind_anch_dist,
+                                               alpha=0.4,
+                                               fill="green")+ 
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(DATOS_weibull$CALIB,
+                               bind_anch_dist)*shape_factorERA),
+              col="darkgreen")
+  
+
+  ACUM_WEIBULL<- ACUM_WEIBULL + 
+geom_histogram(data=DATOS_weibull,
+                 aes(x=CALIB),
+                 binwidth = bind_width,
+                 alpha=0.4,
+                 fill="green")+
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(DATOS_weibull$CALIB, bind_anch_acum)*shape_factor_acum), col="darkgreen")
+  
+}
+if(!is.null(TOTAL_VECTOR)){
+  TOTAL_VECTOR<- ifelse(TOTAL_VECTOR==0,NA,TOTAL_VECTOR)
+  TOTAL_VEC<- TOTAL_VECTOR %>% na.omit()
+  count_ERA<- ggplot() + geom_histogram(aes(x=TOTAL_VEC),
+                                               binwidth = bind_anch_dist) +
+    
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(TOTAL_VEC,
+                               bind_anch_dist)))
+  list_grapht<- ggplot_build(count_ERA)
+  count_ERA_max<- list_grapht %>% .$data %>% .[[1]] %>% .$count %>% max()
+  dist_ERA_max<- list_grapht %>% .$data %>% .[[2]] %>% .$y %>% max()
+  
+  max_count<- c(dist_count_maxA, dist_count_maxERA) %>% max()
+  
+  multiplier_counts<- max_count/count_ERA_max
+  shape_total<- max_count/dist_ERA_max
+  
+  
+
+  
+  DIST_WEIBULL<- DIST_WEIBULL + geom_bar(aes(y=multiplier_counts*(ggplot_build(count_ERA) %>% 
+                                                                    .$data %>% .[[1]] %>% 
+                                                                    .$count),
+                                             x = ggplot_build(count_ERA) %>% 
+                                               .$data %>% .[[1]] %>% .$x),
+                                         stat = "identity",
+                                         alpha=0.4,
+                                         fill="orange")+ 
+    geom_line(aes(x=seq(0,10,by=bind_anch_dist),
+                  y=fitweibull(TOTAL_VEC,
+                               bind_anch_dist)*shape_total),
+              col="darkorange")
+  
+
+  ACUM_WEIBULL<- ACUM_WEIBULL +
+  geom_line(aes(x=seq(0,10,by=bind_anch_acum),
+                y=cdweibull(TOTAL_VEC, bind_anch_acum)*shape_factor_acum), col="darkorange")
+  
+}
+
+
+
+
+
+
+  if(ACUMULATED & DISTRIBUTION){
+    print(list(DIST_WEIBULL, DIST_WEIBULL_WITHOUT_BARS, ACUM_WEIBULL))
+  }else{
+    if (ACUMULATED) {print(ACUM_WEIBULL)}
+    if (DISTRIBUTION) {print(DIST_WEIBULL)}
+  }
+return(DATOS_weibull)
+} 
+
+```
+
+
+```{r eval=TRUE, results='hide',fig.keep='all'}
+
+DATA_FOLDERS<- list.dirs(here::here('NUEVO/Data_calibracion/'), recursive = F)
+
+ERA5_FILES<-  DATA_FOLDERS[1] %>% list.files(full.names = T) %>% 
+  .[str_detect(., "ERA5")]
+
+DATES_FILES<- ERA5_FILES %>% sapply(function(x){
+  filename<- str_split(x, '/') %>% .[[1]] %>% .[length(.)]
+  date_filename<- str_replace(filename, 'ERA5_', '') %>% str_replace(. , '.RDS','') %>% ymd()
+  date_filename
+})
+
+CODIGO_ANEMOMETRO<- ERA5_FILES[which.max(DATES_FILES)] %>% str_split('/') %>% .[[1]] %>% .[length(.)-1]
+
+DATOS_JUNTOS<- ERA5_FILES[which.max(DATES_FILES)] %>% readRDS()
+
+
+DATOS_JUNTOS_LISTA<- DATOS_JUNTOS %>% group_split(ERAlon,ERAlat)
+#PLOTEOS PARA COMPROBAR SIMILITUD ENTRE ERA5 Y ANEMOMETRO
+
+Tabla_dist<- DATOS_JUNTOS_LISTA %>% lapply(function(x){y<- cbind(x$ERAlon %>% unique, x$ERAlat %>% unique()) %>% as.data.frame(); colnames(y)<- c("lon","lat"); return(y)}) %>% sapply(., function(x){
+  distm(x, c(DATOS_JUNTOS_LISTA[[1]]$lon %>% unique,
+             DATOS_JUNTOS_LISTA[[1]]$lat %>% unique))
+}) 
+
+DATOS_PLOT<- DATOS_JUNTOS_LISTA[[which.min(Tabla_dist)]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+
+
+#ANTES DE TAYLOR VAMOS A HACER WEIBULL
+
+DATOS_WEIBULL<- WEIBULL_PLOT(DATOS_INPUT =DATOS_PLOT)
+
+
+```
+
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+library(plotrix)
+library(DescTools)
+library(forecast)
+library(viridis)
+
+
+k<- 1
+TABLA_ACCURACY<- data.frame(matrix(ncol = 8))
+for (i in rev(order((Tabla_dist)))) {
+  DATOS_PLOT<- DATOS_JUNTOS_LISTA[[i]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+if(k==1){
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS), col = viridis(length(rev(order((Tabla_dist)))))[k])
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$WS_N),add = TRUE)
+}
+  
+ taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS),add = TRUE, col = viridis(length(rev(order((Tabla_dist)))))[k], pcex = 1, alpha=0.5)
+  
+
+
+TABLA_ACCURACY[k, ]<- c(DATOS_PLOT$ERAlon %>% unique(), 
+                        DATOS_PLOT$ERAlat %>% unique(),
+                        accuracy(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS)),
+                        cor(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS), use = 'complete.obs'))
+ k<-k+1
+
+}
+lpos<-2*sd(DATOS_PLOT$WS_N)
+# add a legend
+legend(lpos+ 0.5,lpos,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km'),
+       pch=19,col=viridis(length(rev(order((Tabla_dist))))))
+
+
+rownames(TABLA_ACCURACY)<- paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')
+colnames(TABLA_ACCURACY)<- c( 'LON','LAT', 'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
+kable(TABLA_ACCURACY)
+
+  
+```
+
+```{r  fig.height = 10, fig.width = 10, fig.align = "center", eval=FALSE}
+library(elevatr)
+library(rasterVis)
+incr<- 0.005
+
+n=max(TABLA_ACCURACY$LAT)+ incr  
+s=min(TABLA_ACCURACY$LAT)- incr
+e=max(TABLA_ACCURACY$LON)+ incr
+w=min(TABLA_ACCURACY$LON)- incr
+
+
+ul <- round(c(n,w),digits = 2)  #Upper Left
+lr <- round(c(s,e), digits = 2)  #Lower Right
+
+
+lon_location<- seq(lr[1],ul[1],length.out = 100 ) 
+lat_location<- seq(ul[2],lr[2], length.out = 100)
+data_loc<- expand.grid(lat_location,lon_location)
+colnames(data_loc)<- c("x", "y")
+
+spdf <- SpatialPointsDataFrame(coords = data_loc, data = data_loc,
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+PATH_MAPS<- paste0(here::here('NUEVO/Mapas/'), CODIGO_ANEMOMETRO)
+if(!dir.exists(PATH_MAPS)){dir.create(PATH_MAPS)}
+
+NOMBRE_RASTER<- paste0(PATH_MAPS, '/map_raster1.RDS')
+
+if(file.exists(NOMBRE_RASTER)){
+  map_raster<- readRDS(NOMBRE_RASTER)
+}else{
+  map_raster<- get_elev_raster(spdf, z=12)
+  saveRDS(map_raster,NOMBRE_RASTER)
+  }
+
+
+
+
+
+
+
+INDICES_ERROR<- colnames(TABLA_ACCURACY)[c(3,4,5,8)] 
+for(i in 1:length(INDICES_ERROR)){
+  
+  nombre_ind<- INDICES_ERROR[i]
+  columna<- TABLA_ACCURACY[, which(colnames(TABLA_ACCURACY)==nombre_ind)]
+  
+  p1<- levelplot(map_raster, main=nombre_ind,
+                par.settings=GrTheme()) + 
+  layer(panel.points(DATOS_PLOT$lon %>% unique(),
+                     DATOS_PLOT$lat %>% unique(),
+                     pch=21, cex=1, colour='white', fill= 'white'))
+  
+  #AÑADO ESTE IF PARA REPRESENTAR EL MEJOR VALOR DE CORRELACION DE ACUERDO A LOS COLORES EMPLEADOS
+  # CON LOS ERRORES. ES DECIR... COLOR MAS CLARO, MEJOR
+  if(nombre_ind=='CORR'){
+    
+      p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= viridis(nrow(TABLA_ACCURACY))[1:nrow(TABLA_ACCURACY)])
+  }else{
+     p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= rev(viridis(nrow(TABLA_ACCURACY))[1:nrow(TABLA_ACCURACY)]))
+
+    
+    
+  }
+ 
+p<- p1+p2
+l1 <- p1$legend$right
+l2 <- p2$legend$bottom
+ll <- mergedTrellisLegendGrob(l1, l2)
+p$legend$right$fun <-ll
+
+print(p)
+  
+}
+
+
+```
+
+
+```{r eval=TRUE}
+
+DATOS_JUNTOS_DIST<- DATOS_JUNTOS %>% group_by(ERAlon, ERAlat)%>% group_split() %>%
+  lapply(function(x){
+    x$DIST<- distm(c(x$lon %>% unique(),
+                     x$lat %>% unique()),
+                   c(x$ERAlon %>% unique(),
+                     x$ERAlat %>% unique())) %>% rep(nrow(x))
+    return(x)
+    
+  })%>% bind_rows()
+
+DATOS_JUNTOS_FEBR<- DATOS_JUNTOS_DIST%>% mutate(Distancia = as.factor(round(DIST/1000, 2)),
+                            ERA_binDir= cut(ERAWD ,
+                                            breaks =c(0,seq(22.5,337.5,22.5),360, 361),
+                                            labels = c(0,seq(22.5,337.5,22.5),0))) %>% 
+  filter(month(Date)==2, week(Date)==6)
+
+
+
+DATOS_JUNTOS_FEBR%>% 
+  ggplot()+
+  geom_line(aes(x= Date, y= ERAWS, colour = Distancia ))+
+  scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+  geom_line(aes(x=Date, y= WS_N ), col= 'red', alpha= 0.5, size= 1.5)+
+   theme_light() + 
+  ylab("Wind Speed (m/s)")+
+  ggtitle("ERA5 comparation of 12 nearest points") + 
+
+  geom_text(data =DATOS_JUNTOS_FEBR[seq(1,
+                                        nrow(DATOS_JUNTOS_FEBR),
+                                        length.out = 20),], 
+            aes(x=Date,y=6.5,
+                angle=(-as.numeric(ERA_binDir)+90)+180,
+                label="→"),
+            color="blue", 
+            alpha=0.5,
+            size=15)
+```
+
+
+
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+# DIAGRAMA DE TAYLOR FILTRADO POR DIRECCIONES
+
+#La siguiente gráfica no se si me gusta... porque el filtrado por direcciones lo he hecho haciendo grupos de 3. Tenemos 16 direcciones en total y hemos dividio en 8 direcciones. Es decir, la direccion 292.5º cuenta el grupo de W y NW. Se podria mejorar haciendo 8 grupos de 2 direcciones o 16 grupos de 1. 
+
+library(plotrix)
+library(DescTools)
+library(forecast)
+library(viridis)
+
+West<- c(247.5,270.0,292.5)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(157.5,180.0, 202.5)
+
+lista_dir<- list(W=West,NW= North_west,N= North, NE=North_east, 
+     E=East, SE=South_east,S=South, SW=South_west)
+
+
+LISTA_ACCURACY<- list()
+for (j in 1:length(lista_dir)) {
+  TABLA_ACCURACY<- data.frame(matrix(ncol = 10))
+
+  k<- 1
+  for (i in rev(order((Tabla_dist)))) {
+  DATOS_PLOT<- DATOS_JUNTOS_LISTA[[i]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+DATOS_PLOT<- DATOS_PLOT %>% filter(ERA_binDir%in%lista_dir[[j]])
+if(k==1){
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS),
+                 col = viridis(length(rev(order((Tabla_dist)))))[k], 
+                 pch = j)
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$WS_N),add = TRUE)
+}
+  
+ taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS),
+                add = TRUE,
+                col = viridis(length(rev(order((Tabla_dist)))), alpha = 0.7)[k], 
+                pcex = 1,
+                pch = j)
+  
+
+
+TABLA_ACCURACY[k, ]<- c(DATOS_PLOT$ERAlon %>% unique() %>% round(2), 
+                        DATOS_PLOT$ERAlat %>% unique()%>% round(2),
+                        Tabla_dist[i]%>% round(2),
+                        lista_dir[[j]] %>% paste(collapse = '-'),
+                        accuracy(as.vector(DATOS_PLOT$WS_N)%>% round(2),
+                                 as.vector(DATOS_PLOT$ERAWS))%>% round(2),
+                        cor(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS), use = 'complete.obs')%>% round(2))
+ k<-k+1
+
+}
+  
+lpos<-2*sd(DATOS_PLOT$WS_N)
+# add a legend
+legend(lpos+ 0.5,lpos,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km'),
+       pch=j,col=viridis(length(rev(order((Tabla_dist))))))
+  
+colnames(TABLA_ACCURACY)<- c( 'LON','LAT','DISTANCIA','DIRECCION',
+                              'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
+
+  LISTA_ACCURACY[[j]]<- TABLA_ACCURACY  
+
+}
+
+
+kable(LISTA_ACCURACY %>% bind_rows())
+
+  
+```
+
+
+
+
+

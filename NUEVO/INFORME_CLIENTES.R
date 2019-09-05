@@ -7,6 +7,9 @@ DATOS<- here::here("NUEVO/Data_calibracion/0B76C7C0FD4F/ERA5_2019-06-01.RDS") %>
 PATH_TO_DOWNLOAD_MAPS<-  here::here('NUEVO/Mapas/0B76C7C0FD4F/')
 
 
+# FIJAMOS COORDENADAS PARA LOS MAPAS -------------------------------------------------------------------
+
+
 LON_ANEMOMETRO= unique(DATOS$lon)
 LAT_ANEMOMETRO= unique(DATOS$lat)
 
@@ -99,8 +102,6 @@ for( i in c(0.1,0.05,0.01,0.005,0.0025)){
 
 
 
-
-
 # CREAMOS MAPA CON ROSA DE LOS VIENTOS ------------------------------------
 
 DATOS_ROSA<- DATOS %>% filter(ERAlon, ERAlat)
@@ -156,4 +157,150 @@ for (i in 1: length(MAP_FILES)) {
     
   }
 }
+
+
+# CONSTRUIMOS CURVA DE POTENCIA DE AEROGENERADORES BORNAY -----------------
+library(WindCurves)
+
+
+WIND_TURBINE_CURVE<- function(VSTART, VNOM,VOFF,
+                              PNOM, PPICO, RADIO){
+  V<- c(VSTART, VNOM/2)
+  P<- c(0.5*1.2*pi*RADIO^2*VSTART^3 * 0.3, 
+        0.5*1.2*pi*RADIO^2*(VNOM/2)^3 * 0.5)
+  
+  Bornay<- data.frame(v= c(0,V,VNOM,(VNOM+VOFF)/2,VOFF),wp = c(0,P,PNOM,(PNOM+PPICO)/2,PPICO))
+  
+  AJUSTE_CURVA<- fitcurve(Bornay)
+  
+  INTER_LOG_CURVE<- spline(AJUSTE_CURVA$Speed,AJUSTE_CURVA$`Logistic Function`, n = 100)
+  INTER_LOG_CURVE$WS <- INTER_LOG_CURVE$x
+  INTER_LOG_CURVE$WP<- INTER_LOG_CURVE$y
+  INTER_LOG_CURVE$x<- NULL
+  INTER_LOG_CURVE$y<- NULL
+  
+  return(list(INTERP= INTER_LOG_CURVE, FITTED = AJUSTE_CURVA))
+}
+
+
+#AEROGENERADOR BORNAY +13
+#RANGO 2/30 m/S
+# ARRANQUE 3 m/s
+#P NOMINAL 1500W (12 m/s)
+#P NOMINAL 2500W (DICE 14 m/s para frenado)
+
+DATOS_7MIN<- here::here("NUEVO/Data_calibracion/0B76C7C0FD4F/0B76C7C0FD4F_2019-08-13.RDS") %>% readRDS()
+
+RADIO13 <- 2.86/2
+VSTART13<- 3
+VNOM13<- 12
+VOFF13<- 30
+PNOM13<- 1500
+PPICO13<- 2500
+
+
+RADIO25.2 <- 4.05/2
+VSTART25.2<- 3
+VNOM25.2<- 12
+VOFF25.2<- 30
+PNOM25.2<- 3000
+PPICO25.2<- 4500
+
+RADIO25.3 <- 4.05/2
+VSTART25.3<- 3
+VNOM25.3<- 12
+VOFF25.3<- 30
+PNOM25.3<- 5000
+PPICO25.3<- 7500
+
+CURVE13<- WIND_TURBINE_CURVE(VSTART = VSTART13,
+                             VNOM = VNOM13,
+                             VOFF = VOFF13, 
+                             PNOM = PNOM13,
+                             PPICO = PPICO13,
+                             RADIO = RADIO13)
+
+CURVE25.2<- WIND_TURBINE_CURVE(VSTART = VSTART25.2,
+                             VNOM = VNOM25.2,
+                             VOFF = VOFF25.2, 
+                             PNOM = PNOM25.2,
+                             PPICO = PPICO25.2,
+                             RADIO = RADIO25.2)
+
+CURVE25.3<- WIND_TURBINE_CURVE(VSTART = VSTART25.3,
+                             VNOM = VNOM25.3,
+                             VOFF = VOFF25.3, 
+                             PNOM = PNOM25.3,
+                             PPICO = PPICO25.3,
+                             RADIO = RADIO25.3)
+
+
+ggplot()+
+  geom_line(aes(x=CURVE13$INTERP$WS, y= CURVE13$INTERP$WP), colour= "red")+
+  geom_line(aes(x=CURVE25.2$INTERP$WS, y= CURVE25.2$INTERP$WP),colour= "green")+
+  geom_line(aes(x=CURVE25.3$INTERP$WS, y= CURVE25.3$INTERP$WP), colour= "pink") + 
+  geom_line(aes(x=CURVE13$FITTED$Speed, y= CURVE13$FITTED$Power), colour= "red", linetype = 'dashed')+
+  geom_line(aes(x=CURVE25.2$FITTED$Speed, y= CURVE25.2$FITTED$Power),colour= "green", linetype = 'dashed')+
+  geom_line(aes(x=CURVE25.3$FITTED$Speed, y= CURVE25.3$FITTED$Power), colour= "pink", linetype = 'dashed') + 
+  theme_light()
+
+
+
+
+
+DATOS_7MIN$BORN13<- DATOS_7MIN$WS_N %>% cut(CURVE13$INTERP$WS %>% round(1), 
+                   labels= CURVE13$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+DATOS_7MIN$BORN13_MAX<- DATOS_7MIN$WSMAX %>% cut(CURVE13$INTERP$WS %>% round(1), 
+                                            labels= CURVE13$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+
+DATOS_7MIN$BORN25.2<- DATOS_7MIN$WS_N %>% cut(CURVE25.2$INTERP$WS %>% round(1), 
+                                            labels= CURVE25.2$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+DATOS_7MIN$BORN25.2_MAX<- DATOS_7MIN$WSMAX %>% cut(CURVE25.2$INTERP$WS %>% round(1), 
+                                                 labels= CURVE25.2$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+
+DATOS_7MIN$BORN25.3<- DATOS_7MIN$WS_N %>% cut(CURVE25.3$INTERP$WS %>% round(1), 
+                                            labels= CURVE25.3$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+DATOS_7MIN$BORN25.3_MAX<- DATOS_7MIN$WSMAX %>% cut(CURVE25.3$INTERP$WS %>% round(1), 
+                                                 labels= CURVE25.3$INTERP$WP[1:99]) %>%
+  as.character()%>% as.numeric()
+
+
+
+
+DATOS_7MIN<- DATOS_7MIN %>% .[complete.cases(.),]
+DATOS_7MIN$DIFF_TIME<-lubridate::make_difftime(c(0,diff.difftime(DATOS_7MIN$Date)), units = 'mins')
+
+DATOS_7MIN$DIFF_TIME<- ifelse(DATOS_7MIN$DIFF_TIME>0.15 , 0.15, DATOS_7MIN$DIFF_TIME)
+
+
+DATOS_7MIN<- DATOS_7MIN %>% mutate(Emed_BORN13 = BORN13 * as.numeric(DIFF_TIME),
+                      Emax_BORN13 = BORN13_MAX * as.numeric(DIFF_TIME),
+                      Emix_BORN13 = (Emed_BORN13 + Emax_BORN13)/2)
+
+DATOS_7MIN<- DATOS_7MIN %>% mutate(Emed_BORN25.2 = BORN25.2 * as.numeric(DIFF_TIME),
+                                   Emax_BORN25.2 = BORN25.2_MAX * as.numeric(DIFF_TIME),
+                                   Emix_BORN25.2 = (Emed_BORN25.2 + Emax_BORN25.2)/2)
+
+DATOS_7MIN<- DATOS_7MIN %>% mutate(Emed_BORN25.3 = BORN25.3 * as.numeric(DIFF_TIME),
+                                   Emax_BORN25.3 = BORN25.3_MAX * as.numeric(DIFF_TIME),
+                                   Emix_BORN25.3 = (Emed_BORN25.3 + Emax_BORN25.3)/2)
+
+
+
+
+DATOS_7MIN$Emix_BORN13 %>% sum()
+DATOS_7MIN$Emix_BORN25.2 %>% sum()
+DATOS_7MIN$Emix_BORN25.3 %>% sum()
+
+
 
