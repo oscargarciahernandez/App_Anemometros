@@ -27,8 +27,13 @@ datos_juntos=as.data.table(datos_juntos)
 #Quitar columnas innecesarias
 datos_juntos[,grep('(Gust)|(Dir)|(lon)|(lat)|(Date\\d)',colnames(datos_juntos),value=T)]=NULL
 
-#Preparar cross_validation----
-nPartes=10  #Numero de partes en las que se va a dividir el histórico
+#Preparar cross_validation (leave one out, mejor entrenamiento posible)----
+
+#En vez de ejecutar todo podemos cargar los resultados
+datos_juntos=readRDS(here::here('/NUEVO/Data_calibracion/datos_juntos_leave_one_out.rds'))
+
+nPartes=nrow(datos_juntos)  #"Leave-one-out", se entrena el modelo para cada dato calibrado
+
 (range(datos_juntos$Date)[2]-range(datos_juntos$Date)[1])/nPartes #Cuanto tiempo tendra cada parte?
 for (i in 1:nPartes) {
   datos_juntos[round((i-1)*nrow(datos_juntos)/nPartes):round(i*nrow(datos_juntos)/nPartes),Parte := i]
@@ -59,12 +64,17 @@ for (col_era in grep('uv_wind',colnames(datos_juntos),value=T)) {
   }
 }
 
+#Vamos a guardar esto por que con lo que tarda en hacerse...
+if (nPartes==nrow(datos_juntos)) {
+  saveRDS(datos_juntos,here::here('/NUEVO/Data_calibracion/datos_juntos_leave_one_out.rds'))
+}
+
 #Graficar punto por punto
 cols_qm_dirs=grep('qm\\d+_dirs',colnames(datos_juntos),value=T)
 cols_qm=grep('qm\\d',colnames(datos_juntos),value=T) %>% .[!(. %in% cols_qm_dirs)]
-for (cols_qm[j] in cols_qm) {
-  i=regmatches(cols_qm[j], regexpr("\\d+", cols_qm[j]))  #numero del punto de era
-  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos[,get(paste0('uv_wind',i))],datos_juntos[,get(cols_qm[j])],leyenda = c("Mean",paste0("ERA",i),cols_qm[j]),main = paste0('Punto ',i))
+for (col_qm in cols_qm) {
+  i=regmatches(col_qm, regexpr("\\d+", col_qm))  #numero del punto de era
+  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos[,get(paste0('uv_wind',i))],datos_juntos[,get(col_qm)],leyenda = c("Mean",paste0("ERA",i),col_qm),main = paste0('Punto ',i))
 }
 
 #Graficar todos los puntos, pero solo el calibrado y el anemo (codigo hecho para 9 puntos)
@@ -120,9 +130,9 @@ for (col_era in grep('uv_wind',colnames(datos_juntos),value=T)) {
 }
 
 #Graficar punto por punto
-for (cols_qm[j] in grep('qm\\d+_dirs',colnames(datos_juntos),value=T)) {
-  i=regmatches(cols_qm[j], regexpr("\\d+", cols_qm[j]))  #numero del punto de era
-  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos[,get(paste0('uv_wind',i))],datos_juntos[,get(cols_qm[j])],leyenda = c("Mean",paste0("ERA",i),cols_qm[j]),main = paste0('Punto ',i))
+for (col_qm_dirs in grep('qm\\d+_dirs',colnames(datos_juntos),value=T)) {
+  i=regmatches(col_qm_dirs, regexpr("\\d+", col_qm_dirs))  #numero del punto de era
+  plot_n_graficos(x=datos_juntos$Date,n=10,datos_juntos$Mean,datos_juntos[,get(paste0('uv_wind',i))],datos_juntos[,get(col_qm_dirs)],leyenda = c("Mean",paste0("ERA",i),col_qm_dirs),main = paste0('Punto ',i))
 }
 
 #Graficar todos los puntos, pero solo el calibrado y el anemo (codigo hecho para 9 puntos)
@@ -163,6 +173,17 @@ for (i in (cols_qm %>% regmatches(.,gregexpr("\\d+", .)) %>% unlist)) {
   print(accuracy(datos_juntos$Mean,datos_juntos[,get(paste0('qm',i,'_dirs'))]))
   print('----------------------')
 }
+
+#Preparar cross_validation ()----
+
+
+nPartes=  #Numero de partes (de 'cv folds') en las que se separan los datos para la cross-validation
+
+(range(datos_juntos$Date)[2]-range(datos_juntos$Date)[1])/nPartes #Cuanto tiempo tendra cada parte?
+for (i in 1:nPartes) {
+  datos_juntos[round((i-1)*nrow(datos_juntos)/nPartes):round(i*nrow(datos_juntos)/nPartes),Parte := i]
+}
+
 
 #3. Como el 1 pero invirtiendo los periodos de entrenamiento y validación----
 
