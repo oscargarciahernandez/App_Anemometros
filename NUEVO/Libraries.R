@@ -282,26 +282,30 @@ direccion_en_numerico=function(datos_anemos){
 
 # Funciones Calibración ---------------------------------------------------
 
-buscar_huecos_anemos=function(datos_anemos){
+buscar_huecos=function(vector_fechas,periodo){
+  require(data.table)
   #Esta funcion busca que huecos tenemos en las mediciones.
   #No sobreescribe nada, solo devuelve el dataframe huecos.
   #huecos[1] muestra cual es la medicion posterior (en el tiempo) al hueco.
   #huecos[2] muestra cual es la medicion anterior (en el tiempo) al hueco.
   #Las fechas estan en numerico (segundos desde 1970-01-01)
-  huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
+  #Periodo especifica la distancia entre mediciones esperable en segundos. Por ejemplo, periodo=3600 para una serie horaria
+  huecos=data.table(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
   colnames(huecos)=c("despues","antes")
   cont=1
-  for(i in 1:(dim(datos_anemos)[1]-1)){
-    difer=time_length((datos_anemos$Date[i]-datos_anemos$Date[i+1]))     #La duracion del hueco en segundos, formato numeric
-    if (isTRUE(difer<=0)){
-      print(paste0("ERROR! datos_anemos$Date[",as.character(i-1),"]-datos_anemos$Date[",as.character(i),"]=",as.character(difer/60)," minutos"))
+  vector_fechas=sort(vector_fechas)
+  for(i in 1:(length(vector_fechas)-1)){
+    difer=as.numeric(time_length((vector_fechas[i+1]-vector_fechas[i]),unit = 's'))     #La duracion del hueco en segundos, formato numeric
+    if (difer<=0){
+      print(paste0("ERROR! vector_fechas[",as.character(i-1),"]-vector_fechas[",as.character(i),"]=",as.character(difer/60)," minutos"))
     }
-    if (isTRUE(difer>7*1.5*60)){
-      huecos[cont,1]=datos_anemos$Date[i]
-      huecos[cont,2]=datos_anemos$Date[i+1]
+    if (difer>periodo*1.5){  #3600 por que esperamos que los datos sean horarios. 1,5 para diferenciar bien los huecos
+      huecos[cont,1]=vector_fechas[i+1]
+      huecos[cont,2]=vector_fechas[i]
       cont=cont+1
     }
   }
+  huecos[,diferencia_H := despues-antes]
   return(huecos)
 }
 
