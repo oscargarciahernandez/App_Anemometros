@@ -109,6 +109,11 @@ for (col_era in cols_era) {
 
 
 #2. 1 + separado por uv_dwi (=direcciones de era)----
+
+#Aqui se ve que no hay mucha esperanza de que añadir puntos implique añadir info relevante...
+cor(datos_juntos[cols_era])
+cor(datos_juntos[c(cols_era,'Mean')])
+
 #Crear funciones de transferencia (ftrans). #La de cada parte se entrena con las mediciones que NO son de la parte (Parte != i)
 lista_ftrans_dirs=list() #Lista de listas de listas (toma ya!)
 
@@ -225,5 +230,24 @@ fit = fitdistr(datos_juntos[Mean > 0,Mean],"weibull") #No acepta ceros
 k<-coef(fit)['shape']
 c<-coef(fit)['scale']
 
+y=dweibull(x = seq(0,max(datos_juntos[Mean > 0,Mean]),by=0.1),shape = k,scale = c)
+
 summary(datos_juntos$Mean)
-histo=datos_juntos$Mean %>% hist(.,seq(0, max(.), by=0.1))
+histo=datos_juntos[Mean > 0,Mean] %>% hist(.,seq(0, max(.), by=0.1))
+
+#Manera de calcular el coeficiente para escalar la curva de weibull
+shape_factor=sum(histo$counts)*max(histo$breaks)/length(histo$breaks)
+
+ggplot()+
+  geom_histogram(mapping = aes(x=Mean),data = datos_juntos[Mean>0,],binwidth = 0.1,alpha=0.4,fill="blue",col="blue")+
+  geom_line(aes(x=x,y=y*shape_factor))
+
+
+
+#Modelado curva de potencia
+x=seq(0,30,0.1)
+Pmax=2000
+cut_in=3
+cut_off=25
+y=Pmax/2*tanh(0.3*(x-(cut_off-cut_in)/2))+Pmax/2
+plot(x,y)
