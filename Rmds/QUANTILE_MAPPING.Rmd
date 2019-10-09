@@ -11,13 +11,14 @@ knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
                       fig.align = "center",
                       message = FALSE)
-library(knitr)
 ```
 
 
 ```{r eval=TRUE}
 source(here::here('NUEVO/Libraries.R'))
 library(MASS)
+library(knitr)
+
 ```
 
 ```{r eval=TRUE}
@@ -489,6 +490,7 @@ return(DATOS_weibull)
 
 ```
 
+# ANALISIS DE LOS PUNTOS MAS CERCANOS ERA5 CON 1 AÑO DE DATOS
 
 ```{r eval=TRUE, results='hide',fig.keep='all'}
 
@@ -531,7 +533,7 @@ DATOS_WEIBULL<- WEIBULL_PLOT(DATOS_INPUT =DATOS_PLOT)
 
 ```
 
-
+# UNCORRECTED ERA5
 ```{r eval=TRUE, fig.height=6, fig.width=6}
 library(plotrix)
 library(DescTools)
@@ -572,8 +574,8 @@ TABLA_ACCURACY[k, ]<- c(DATOS_PLOT$ERAlon %>% unique(),
 }
 lpos<-2*sd(DATOS_PLOT$WS_N)
 # add a legend
-legend(lpos+ 0.5,lpos,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km'),
-       pch=19,col=viridis(length(rev(order((Tabla_dist))))))
+legend(lpos+ 1.9,lpos+0.5,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')[seq(1,length(Tabla_dist), length.out = 10)],
+       pch=19,col=viridis(length(rev(order((Tabla_dist)))))[seq(1,length(Tabla_dist), length.out = 10)])
 
 
 rownames(TABLA_ACCURACY)<- paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')
@@ -583,10 +585,10 @@ kable(TABLA_ACCURACY)
   
 ```
 
-```{r  fig.height = 10, fig.width = 10, fig.align = "center", eval=FALSE}
+```{r  fig.height = 10, fig.width = 10, fig.align = "center", eval=TRUE}
 library(elevatr)
 library(rasterVis)
-incr<- 0.005
+incr<- 0.02
 
 n=max(TABLA_ACCURACY$LAT)+ incr  
 s=min(TABLA_ACCURACY$LAT)- incr
@@ -608,7 +610,9 @@ spdf <- SpatialPointsDataFrame(coords = data_loc, data = data_loc,
 PATH_MAPS<- paste0(here::here('NUEVO/Mapas/'), CODIGO_ANEMOMETRO)
 if(!dir.exists(PATH_MAPS)){dir.create(PATH_MAPS)}
 
-NOMBRE_RASTER<- paste0(PATH_MAPS, '/map_raster1.RDS')
+NOMBRE_RASTER<- paste0(PATH_MAPS, '/map_raster_',
+                       paste(ul, collapse = ''),
+                       paste(lr, collapse = ''), '.RDS')
 
 if(file.exists(NOMBRE_RASTER)){
   map_raster<- readRDS(NOMBRE_RASTER)
@@ -670,8 +674,150 @@ print(p)
 
 ```
 
+# CORRECTED ERA5
 
-```{r eval=TRUE}
+# CORRECTED WITH UNVARIANT SURFACE ROUGHNESS
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+library(plotrix)
+library(DescTools)
+library(forecast)
+library(viridis)
+
+
+k<- 1
+TABLA_ACCURACY_C<- data.frame(matrix(ncol = 8))
+for (i in rev(order((Tabla_dist)))) {
+  DATOS_PLOT<- DATOS_JUNTOS_LISTA[[i]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+if(k==1){
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS_CORRECTED), col = viridis(length(rev(order((Tabla_dist)))))[k])
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$WS_N),add = TRUE)
+}
+  
+ taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS_CORRECTED),add = TRUE, col = viridis(length(rev(order((Tabla_dist)))))[k], pcex = 1, alpha=0.5)
+  
+
+
+TABLA_ACCURACY_C[k, ]<- c(DATOS_PLOT$ERAlon %>% unique(), 
+                        DATOS_PLOT$ERAlat %>% unique(),
+                        accuracy(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS_CORRECTED)),
+                        cor(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS_CORRECTED), use = 'complete.obs'))
+ k<-k+1
+
+}
+lpos<-2*sd(DATOS_PLOT$WS_N)
+# add a legend
+legend(lpos+ 9,lpos+5,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')[seq(1,length(Tabla_dist), length.out = 10)],
+       pch=19,col=viridis(length(rev(order((Tabla_dist)))))[seq(1,length(Tabla_dist), length.out = 10)])
+
+
+rownames(TABLA_ACCURACY_C)<- paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')
+colnames(TABLA_ACCURACY_C)<- c( 'LON','LAT', 'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
+kable(TABLA_ACCURACY_C)
+
+  
+```
+
+```{r  fig.height = 10, fig.width = 10, fig.align = "center", eval=TRUE}
+library(elevatr)
+library(rasterVis)
+incr<- 0.02
+
+n=max(TABLA_ACCURACY_C$LAT)+ incr  
+s=min(TABLA_ACCURACY_C$LAT)- incr
+e=max(TABLA_ACCURACY_C$LON)+ incr
+w=min(TABLA_ACCURACY_C$LON)- incr
+
+
+ul <- round(c(n,w),digits = 2)  #Upper Left
+lr <- round(c(s,e), digits = 2)  #Lower Right
+
+
+lon_location<- seq(lr[1],ul[1],length.out = 100 ) 
+lat_location<- seq(ul[2],lr[2], length.out = 100)
+data_loc<- expand.grid(lat_location,lon_location)
+colnames(data_loc)<- c("x", "y")
+
+spdf <- SpatialPointsDataFrame(coords = data_loc, data = data_loc,
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+PATH_MAPS<- paste0(here::here('NUEVO/Mapas/'), CODIGO_ANEMOMETRO)
+if(!dir.exists(PATH_MAPS)){dir.create(PATH_MAPS)}
+
+NOMBRE_RASTER<- paste0(PATH_MAPS, '/map_raster_',
+                       paste(ul, collapse = ''),
+                       paste(lr, collapse = ''), '.RDS')
+
+if(file.exists(NOMBRE_RASTER)){
+  map_raster<- readRDS(NOMBRE_RASTER)
+}else{
+  map_raster<- get_elev_raster(spdf, z=12)
+  saveRDS(map_raster,NOMBRE_RASTER)
+  }
+
+
+
+
+
+
+
+INDICES_ERROR<- colnames(TABLA_ACCURACY_C)[c(3,4,5,8)] 
+for(i in 1:length(INDICES_ERROR)){
+  
+  nombre_ind<- INDICES_ERROR[i]
+  columna<- TABLA_ACCURACY_C[, which(colnames(TABLA_ACCURACY_C)==nombre_ind)]
+  
+  p1<- levelplot(map_raster, main=nombre_ind,
+                par.settings=GrTheme()) + 
+  layer(panel.points(DATOS_PLOT$lon %>% unique(),
+                     DATOS_PLOT$lat %>% unique(),
+                     pch=21, cex=1, colour='white', fill= 'white'))
+  
+  #AÑADO ESTE IF PARA REPRESENTAR EL MEJOR VALOR DE CORRELACION DE ACUERDO A LOS COLORES EMPLEADOS
+  # CON LOS ERRORES. ES DECIR... COLOR MAS CLARO, MEJOR
+  if(nombre_ind=='CORR'){
+    
+      p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY_C[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= viridis(nrow(TABLA_ACCURACY_C))[1:nrow(TABLA_ACCURACY_C)])
+  }else{
+     p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY_C[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= rev(viridis(nrow(TABLA_ACCURACY_C))[1:nrow(TABLA_ACCURACY_C)]))
+
+    
+    
+  }
+ 
+p<- p1+p2
+l1 <- p1$legend$right
+l2 <- p2$legend$bottom
+ll <- mergedTrellisLegendGrob(l1, l2)
+p$legend$right$fun <-ll
+
+print(p)
+  
+}
+
+
+```
+```{r eval=TRUE, eval=FALSE}
 
 DATOS_JUNTOS_DIST<- DATOS_JUNTOS %>% group_by(ERAlon, ERAlat)%>% group_split() %>%
   lapply(function(x){
@@ -714,7 +860,7 @@ DATOS_JUNTOS_FEBR%>%
 
 
 
-```{r eval=TRUE, fig.height=6, fig.width=6}
+```{r eval=TRUE, fig.height=6, fig.width=6, eval=FALSE}
 # DIAGRAMA DE TAYLOR FILTRADO POR DIRECCIONES
 
 #La siguiente gráfica no se si me gusta... porque el filtrado por direcciones lo he hecho haciendo grupos de 3. Tenemos 16 direcciones en total y hemos dividio en 8 direcciones. Es decir, la direccion 292.5º cuenta el grupo de W y NW. Se podria mejorar haciendo 8 grupos de 2 direcciones o 16 grupos de 1. 
@@ -739,7 +885,7 @@ lista_dir<- list(W=West,NW= North_west,N= North, NE=North_east,
 
 LISTA_ACCURACY<- list()
 for (j in 1:length(lista_dir)) {
-  TABLA_ACCURACY<- data.frame(matrix(ncol = 10))
+  TABLA_ACCURACY_C<- data.frame(matrix(ncol = 10))
 
   k<- 1
   for (i in rev(order((Tabla_dist)))) {
@@ -769,7 +915,7 @@ if(k==1){
   
 
 
-TABLA_ACCURACY[k, ]<- c(DATOS_PLOT$ERAlon %>% unique() %>% round(2), 
+TABLA_ACCURACY_C[k, ]<- c(DATOS_PLOT$ERAlon %>% unique() %>% round(2), 
                         DATOS_PLOT$ERAlat %>% unique()%>% round(2),
                         Tabla_dist[i]%>% round(2),
                         lista_dir[[j]] %>% paste(collapse = '-'),
@@ -786,10 +932,10 @@ lpos<-2*sd(DATOS_PLOT$WS_N)
 legend(lpos+ 0.5,lpos,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km'),
        pch=j,col=viridis(length(rev(order((Tabla_dist))))))
   
-colnames(TABLA_ACCURACY)<- c( 'LON','LAT','DISTANCIA','DIRECCION',
+colnames(TABLA_ACCURACY_C)<- c( 'LON','LAT','DISTANCIA','DIRECCION',
                               'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
 
-  LISTA_ACCURACY[[j]]<- TABLA_ACCURACY  
+  LISTA_ACCURACY[[j]]<- TABLA_ACCURACY_C  
 
 }
 
@@ -799,6 +945,304 @@ kable(LISTA_ACCURACY %>% bind_rows())
   
 ```
 
+
+## CORRECTED USING ERA5 SURFACE ROUGHNESS
+
+```{r eval=TRUE, fig.height=6, fig.width=6}
+library(plotrix)
+library(DescTools)
+library(forecast)
+library(viridis)
+
+
+k<- 1
+TABLA_ACCURACY_C2<- data.frame(matrix(ncol = 8))
+for (i in rev(order((Tabla_dist)))) {
+  DATOS_PLOT<- DATOS_JUNTOS_LISTA[[i]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+if(k==1){
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS_CORRECTED_ZO1), col = viridis(length(rev(order((Tabla_dist)))))[k])
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$WS_N),add = TRUE)
+}
+  
+ taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS_CORRECTED_ZO1),add = TRUE, col = viridis(length(rev(order((Tabla_dist)))))[k], pcex = 1, alpha=0.5)
+  
+
+
+TABLA_ACCURACY_C2[k, ]<- c(DATOS_PLOT$ERAlon %>% unique(), 
+                        DATOS_PLOT$ERAlat %>% unique(),
+                        accuracy(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS_CORRECTED_ZO1)),
+                        cor(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS_CORRECTED_ZO1), use = 'complete.obs'))
+ k<-k+1
+
+}
+lpos<-2*sd(DATOS_PLOT$WS_N)
+# add a legend
+legend(lpos+ 9,lpos+5,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')[seq(1,length(Tabla_dist), length.out = 10)],
+       pch=19,col=viridis(length(rev(order((Tabla_dist)))))[seq(1,length(Tabla_dist), length.out = 10)])
+
+
+rownames(TABLA_ACCURACY_C2)<- paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km')
+colnames(TABLA_ACCURACY_C2)<- c( 'LON','LAT', 'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
+kable(TABLA_ACCURACY_C2)
+
+  
+```
+
+```{r  fig.height = 10, fig.width = 10, fig.align = "center", eval=TRUE}
+library(elevatr)
+library(rasterVis)
+incr<- 0.02
+
+n=max(TABLA_ACCURACY_C2$LAT)+ incr  
+s=min(TABLA_ACCURACY_C2$LAT)- incr
+e=max(TABLA_ACCURACY_C2$LON)+ incr
+w=min(TABLA_ACCURACY_C2$LON)- incr
+
+
+ul <- round(c(n,w),digits = 2)  #Upper Left
+lr <- round(c(s,e), digits = 2)  #Lower Right
+
+
+lon_location<- seq(lr[1],ul[1],length.out = 100 ) 
+lat_location<- seq(ul[2],lr[2], length.out = 100)
+data_loc<- expand.grid(lat_location,lon_location)
+colnames(data_loc)<- c("x", "y")
+
+spdf <- SpatialPointsDataFrame(coords = data_loc, data = data_loc,
+                               proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+PATH_MAPS<- paste0(here::here('NUEVO/Mapas/'), CODIGO_ANEMOMETRO)
+if(!dir.exists(PATH_MAPS)){dir.create(PATH_MAPS)}
+
+NOMBRE_RASTER<- paste0(PATH_MAPS, '/map_raster_',
+                       paste(ul, collapse = ''),
+                       paste(lr, collapse = ''), '.RDS')
+
+if(file.exists(NOMBRE_RASTER)){
+  map_raster<- readRDS(NOMBRE_RASTER)
+}else{
+  map_raster<- get_elev_raster(spdf, z=12)
+  saveRDS(map_raster,NOMBRE_RASTER)
+  }
+
+
+
+
+
+
+
+INDICES_ERROR<- colnames(TABLA_ACCURACY_C2)[c(3,4,5,8)] 
+for(i in 1:length(INDICES_ERROR)){
+  
+  nombre_ind<- INDICES_ERROR[i]
+  columna<- TABLA_ACCURACY_C2[, which(colnames(TABLA_ACCURACY_C2)==nombre_ind)]
+  
+  p1<- levelplot(map_raster, main=nombre_ind,
+                par.settings=GrTheme()) + 
+  layer(panel.points(DATOS_PLOT$lon %>% unique(),
+                     DATOS_PLOT$lat %>% unique(),
+                     pch=21, cex=1, colour='white', fill= 'white'))
+  
+  #AÑADO ESTE IF PARA REPRESENTAR EL MEJOR VALOR DE CORRELACION DE ACUERDO A LOS COLORES EMPLEADOS
+  # CON LOS ERRORES. ES DECIR... COLOR MAS CLARO, MEJOR
+  if(nombre_ind=='CORR'){
+    
+      p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY_C2[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= viridis(nrow(TABLA_ACCURACY_C2))[1:nrow(TABLA_ACCURACY_C2)])
+  }else{
+     p2 <- spplot(SpatialPointsDataFrame(TABLA_ACCURACY_C2[order(columna),][,c('LON', 'LAT')],
+                                      data = data.frame(IND=columna[order(columna)] %>% 
+                                                          round(4)%>% as.factor())),
+               pch=20, colour='NA', 
+               cex=3,zcol= c('IND'),
+               col.regions= rev(viridis(nrow(TABLA_ACCURACY_C2))[1:nrow(TABLA_ACCURACY_C2)]))
+
+    
+    
+  }
+ 
+p<- p1+p2
+l1 <- p1$legend$right
+l2 <- p2$legend$bottom
+ll <- mergedTrellisLegendGrob(l1, l2)
+p$legend$right$fun <-ll
+
+print(p)
+  
+}
+
+
+```
+```{r eval=TRUE, eval=FALSE}
+
+DATOS_JUNTOS_DIST<- DATOS_JUNTOS %>% group_by(ERAlon, ERAlat)%>% group_split() %>%
+  lapply(function(x){
+    x$DIST<- distm(c(x$lon %>% unique(),
+                     x$lat %>% unique()),
+                   c(x$ERAlon %>% unique(),
+                     x$ERAlat %>% unique())) %>% rep(nrow(x))
+    return(x)
+    
+  })%>% bind_rows()
+
+DATOS_JUNTOS_FEBR<- DATOS_JUNTOS_DIST%>% mutate(Distancia = as.factor(round(DIST/1000, 2)),
+                            ERA_binDir= cut(ERAWD ,
+                                            breaks =c(0,seq(22.5,337.5,22.5),360, 361),
+                                            labels = c(0,seq(22.5,337.5,22.5),0))) %>% 
+  filter(month(Date)==2, week(Date)==6)
+
+
+
+DATOS_JUNTOS_FEBR%>% 
+  ggplot()+
+  geom_line(aes(x= Date, y= ERAWS, colour = Distancia ))+
+  scale_color_viridis(discrete = TRUE, option = "D", direction = -1)+
+  geom_line(aes(x=Date, y= WS_N ), col= 'red', alpha= 0.5, size= 1.5)+
+   theme_light() + 
+  ylab("Wind Speed (m/s)")+
+  ggtitle("ERA5 comparation of 12 nearest points") + 
+
+  geom_text(data =DATOS_JUNTOS_FEBR[seq(1,
+                                        nrow(DATOS_JUNTOS_FEBR),
+                                        length.out = 20),], 
+            aes(x=Date,y=6.5,
+                angle=(-as.numeric(ERA_binDir)+90)+180,
+                label="→"),
+            color="blue", 
+            alpha=0.5,
+            size=15)
+```
+
+
+
+
+```{r eval=TRUE, fig.height=6, fig.width=6, eval=FALSE}
+# DIAGRAMA DE TAYLOR FILTRADO POR DIRECCIONES
+
+#La siguiente gráfica no se si me gusta... porque el filtrado por direcciones lo he hecho haciendo grupos de 3. Tenemos 16 direcciones en total y hemos dividio en 8 direcciones. Es decir, la direccion 292.5º cuenta el grupo de W y NW. Se podria mejorar haciendo 8 grupos de 2 direcciones o 16 grupos de 1. 
+
+library(plotrix)
+library(DescTools)
+library(forecast)
+library(viridis)
+
+West<- c(247.5,270.0,292.5)
+North_west<-c(292.5,315.0,337.5)
+South_west<- c(202.5, 225.0, 247.5)
+North<- c(0.0,22.5,337.5)
+North_east<- c(22.5,45.0,67.5)
+East<- c(67.5,90,112.5)
+South_east<- c(112.5,135.0,157.5)
+South<- c(157.5,180.0, 202.5)
+
+lista_dir<- list(W=West,NW= North_west,N= North, NE=North_east, 
+     E=East, SE=South_east,S=South, SW=South_west)
+
+
+LISTA_ACCURACY<- list()
+for (j in 1:length(lista_dir)) {
+  TABLA_ACCURACY_C2<- data.frame(matrix(ncol = 10))
+
+  k<- 1
+  for (i in rev(order((Tabla_dist)))) {
+  DATOS_PLOT<- DATOS_JUNTOS_LISTA[[i]] %>%
+  mutate(ERA_binDir= cut(ERAWD ,
+                         breaks =c(0,seq(22.5,337.5,22.5),360, 361), 
+                         labels = c(0,seq(22.5,337.5,22.5),0) %>% as.factor()))
+DATOS_PLOT$ERA_binDir<- DATOS_PLOT$ERA_binDir %>% as.character() %>% as.numeric()
+
+DATOS_PLOT$WD_N<- ifelse(DATOS_PLOT$WD_N==155, 157.5, DATOS_PLOT$WD_N) 
+DATOS_PLOT<- DATOS_PLOT %>% filter(ERA_binDir%in%lista_dir[[j]])
+if(k==1){
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS),
+                 col = viridis(length(rev(order((Tabla_dist)))))[k], 
+                 pch = j)
+   taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$WS_N),add = TRUE)
+}
+  
+ taylor.diagram(as.vector(DATOS_PLOT$WS_N), 
+                 as.vector(DATOS_PLOT$ERAWS),
+                add = TRUE,
+                col = viridis(length(rev(order((Tabla_dist)))), alpha = 0.7)[k], 
+                pcex = 1,
+                pch = j)
+  
+
+
+TABLA_ACCURACY_C2[k, ]<- c(DATOS_PLOT$ERAlon %>% unique() %>% round(2), 
+                        DATOS_PLOT$ERAlat %>% unique()%>% round(2),
+                        Tabla_dist[i]%>% round(2),
+                        lista_dir[[j]] %>% paste(collapse = '-'),
+                        accuracy(as.vector(DATOS_PLOT$WS_N)%>% round(2),
+                                 as.vector(DATOS_PLOT$ERAWS))%>% round(2),
+                        cor(as.vector(DATOS_PLOT$WS_N),
+                                 as.vector(DATOS_PLOT$ERAWS), use = 'complete.obs')%>% round(2))
+ k<-k+1
+
+}
+  
+lpos<-2*sd(DATOS_PLOT$WS_N)
+# add a legend
+legend(lpos+ 0.5,lpos,legend=paste(round(Tabla_dist[rev(order((Tabla_dist)))]/1000, 2), 'km'),
+       pch=j,col=viridis(length(rev(order((Tabla_dist))))))
+  
+colnames(TABLA_ACCURACY_C2)<- c( 'LON','LAT','DISTANCIA','DIRECCION',
+                              'ME','RMSE','MAE','MPE', 'MAPE', 'CORR')
+
+  LISTA_ACCURACY[[j]]<- TABLA_ACCURACY_C2  
+
+}
+
+
+kable(LISTA_ACCURACY %>% bind_rows())
+
+  
+```
+
+
+
+
+```{r eval=TRUE}
+TABLA_ACCURACY$id<- 'UNCORRECTED'
+TABLA_ACCURACY_C$id<- 'CORRECTED_UNVARIANT_ZO'
+TABLA_ACCURACY_C2$id<- 'CORRECTED_VARIANT_ZO'
+
+TABLA_ACCURACY_TOTAL<- bind_rows(list(TABLA_ACCURACY,
+                                      TABLA_ACCURACY_C, 
+                                      TABLA_ACCURACY_C2))
+
+ggplot()+
+  geom_boxplot(data = TABLA_ACCURACY_TOTAL, aes(y= ME, x= id))+
+  theme_light()
+
+ggplot()+
+  geom_boxplot(data = TABLA_ACCURACY_TOTAL, aes(y= RMSE, x= id))+
+  theme_light()
+
+ggplot()+
+  geom_boxplot(data = TABLA_ACCURACY_TOTAL, aes(y= MAE, x= id))+
+  theme_light()
+
+ggplot()+
+  geom_boxplot(data = TABLA_ACCURACY_TOTAL, aes(y= CORR, x= id))+
+  theme_light()
+```
 
 
 
