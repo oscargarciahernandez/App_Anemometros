@@ -19,6 +19,10 @@ library(rJava)
 library(rgdal)
 library(RColorBrewer)
 library(geosphere)
+library(qmap)
+library(forecast)
+library(data.table)
+library(plotrix)
 # Funciones ERA5 ----------------------------------------------------------
 
 
