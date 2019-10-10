@@ -57,8 +57,17 @@ if(HACER_HISTORICO){
     
     
   }
+  
+  #Windows no acepta mc.cores>1
+  if(.Platform$OS.type=="windows"){
+    mc.cores=1
+    }else{
+    mc.cores=getOption("mc.cores", parallel::detectCores()/2)
+  }
+  
   mclapply(ERA5_allfiles[!NC_files%in%RDS_files], print,
-           mc.cores = getOption("mc.cores", parallel::detectCores()/2))
+           mc.cores = mc.cores)
+  rm(mc.cores)
 }
 
 
@@ -117,6 +126,10 @@ if(!file.exists(here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))){
   Data_2018$wind<- NULL
   Data_2018$dwi<- NULL
   Data_2018$Dir_dwi<- NULL
+  
+  Data_2019$wind<- NULL
+  Data_2019$dwi<- NULL
+  Data_2019$Dir_dwi<- NULL
   
   ERA5_df<- rbind(Data_2018, Data_2019) %>% .[order(.$Date), ]
   saveRDS(ERA5_df, file = here::here('NUEVO/Data_ERA5/ERA5_df.RDS'))
