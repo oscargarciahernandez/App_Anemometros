@@ -287,14 +287,12 @@ direccion_en_numerico=function(datos_anemos){
 # Funciones Calibración ---------------------------------------------------
 
 buscar_huecos=function(vector_fechas,periodo){
-  require(data.table)
   #Esta funcion busca que huecos tenemos en las mediciones.
   #No sobreescribe nada, solo devuelve el dataframe huecos.
   #huecos[1] muestra cual es la medicion posterior (en el tiempo) al hueco.
   #huecos[2] muestra cual es la medicion anterior (en el tiempo) al hueco.
-  #Las fechas estan en numerico (segundos desde 1970-01-01)
   #Periodo especifica la distancia entre mediciones esperable en segundos. Por ejemplo, periodo=3600 para una serie horaria
-  huecos=data.table(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
+  huecos=data.frame(a=as.POSIXct(character(),tz="UTC"), b=as.POSIXct(character(),tz="UTC"))  #Creamos relleno de esta forma para que cada columna este ya en el formato que queremos
   colnames(huecos)=c("despues","antes")
   cont=1
   vector_fechas=sort(vector_fechas)
@@ -309,7 +307,6 @@ buscar_huecos=function(vector_fechas,periodo){
       cont=cont+1
     }
   }
-  huecos[,diferencia_H := despues-antes]
   return(huecos)
 }
 
@@ -319,7 +316,7 @@ rellenar_huecos_anemos=function(datos_anemos){
   #Devuelve un data.frame parecido, pero con las mediciones filtradas por MobileAlerts.
   #Las lineas añadidas tienen la fecha en la que se supone que se tendrian que haber hecho mediciones.
   #El resto (mean, gust, dir) son NAs.
-  huecos=buscar_huecos_anemos(datos_anemos)
+  huecos=buscar_huecos(datos_anemos$Date,periodo=7*60) #Esto de suponer que va a haber una columna llamada Date no es lo mejor...
   lista=list()  #Vamos a crear un a lista que contega dataframes. Estos seran los cachitos que van a conformar datos_anemos_rellenado.
   lista[[1]]=datos_anemos[1:which(datos_anemos$Date==huecos[1,1]),]
   for (i in 1:(nrow(huecos)))
