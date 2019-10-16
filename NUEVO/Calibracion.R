@@ -15,7 +15,7 @@ levels(t_reg$ID)  #Que anemos tenemos? Enseña las IDs
 #anemo_elegido=levels(t_reg$ID)[1]
 anemo_elegido="0B38DAE79059"
 datos_anemos=rellenar_huecos_anemos(Anemometros[[which(names(Anemometros)==as.character(anemo_elegido))]])
-#huecos=buscar_huecos_anemos(Anemometros$`0B38DAE79059`)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
+huecos=buscar_huecos(Anemometros$`0B38DAE79059`$Date,periodo=7*60)  #Para saber donde nos ha metido NAs la funcion rellenar_huecos_anemos
 
 #Ordenar cronologicamente datos_anemos
 datos_anemos=datos_anemos[order(datos_anemos$Date),]
@@ -100,7 +100,7 @@ datos_anemos=readRDS(here::here(paste0("NUEVO/Data_calibracion/",anemo_elegido,"
 if (!exists("t_reg")) {#Cargamos la tabla de registro, para poder extraer coordenadas_anemos de anemo_elegido
   t_reg<- read.csv(here::here("NUEVO/Data_anemometros/TABLA_REGISTRO.csv"), sep=";")
 }
-Coordenadas_anemos=filter(t_reg,ID==anemo_elegido) %>% select(lon,lat)  #Primero lon, luego lat
+Coordenadas_anemos=filter(t_reg,ID==anemo_elegido) %>% dplyr::select(lon,lat)  #Primero lon, luego lat
 
 #Pongo este if por que el comando unique tarda lo suyo, para evitar que se ejecute mas de lo necesario
 if (!exists("Coordenadas_era")) {
@@ -127,7 +127,7 @@ rm(n)
 #De todo ERA5_df, coger solo los datos relativos a los puntos de Coordendas_era
 datos_era=filter(ERA5_df,lat %in% Coordenadas_era$lat,lon %in% Coordenadas_era$lon)
 #Coger solo columnas que nos interesan
-datos_era=select(datos_era,Date,"lon",lat,"uv_wind",uv_dwi) #Select acepta nombres de columnas tanto con comillas como sin
+datos_era=dplyr::select(datos_era,Date,"lon",lat,"uv_wind",uv_dwi) #Select acepta nombres de columnas tanto con comillas como sin
 
 #Reorganizar datos_era con juntar_datos. Primero los mas cercanos al anemo
 #Por ahora los juntamos en datos_era2
